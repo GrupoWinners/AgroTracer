@@ -17,7 +17,7 @@
 | **Revisor (outro integrante)** | ☐ Samela |
 | **Data da revisão** | 07/10/2026 |
 | **Link/print do card no board** | AG-114 AG-115 |
-| **Commit/PR** | Referenciado nesta Pull Request (`docs/s0-t01-evidencia-aprovacao`) |
+| **Commit/PR** | [#1 (PR)](https://github.com/GrupoWinners/AgroTracer/pull/1) |
 
 ---
 
