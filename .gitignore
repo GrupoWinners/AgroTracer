@@ -1,0 +1,31 @@
+# Ambiente virtual Python
+.venv/
+venv/
+
+# Cache do Python
+__pycache__/
+*.pyc
+
+# Configuracoes locais do PyCharm
+.idea/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Arquivos de testes e lint
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# Dependencias WordPress/JavaScript
+mode_modules/
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
