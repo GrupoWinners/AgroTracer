@@ -22,6 +22,7 @@ htmlcov/
 
 # Logs
 *.log
+!docs/evidencias/**/*.log
 
 # Dependencias WordPress/JavaScript
 mode_modules/

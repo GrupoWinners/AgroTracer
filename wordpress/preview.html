@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroTracer v3.0 - Homologação de Interface Desktop Rural (Task S1-T03)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./agrotracer-bridge/assets/css/agrotracer-screens.css">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8f9fa;">
+
+<div class="agrotracer-app" id="agrotracer-app-root">
+  <!-- TOP NAVIGATION BAR -->
+  <header class="agro-header">
+    <div class="agro-brand" onclick="AgroTracer.switchScreen('dashboard')">
+      <img src="./agrotracer-bridge/assets/images/logo-agrotracer-emblem.png" alt="AgroTracer" class="agro-brand-logo-img">
+      <span>AGROTRACER</span>
+    </div>
+
+    <nav class="agro-nav" aria-label="Navegação Principal">
+      <button type="button" class="agro-nav-item active" data-screen="dashboard">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        <span>Dashboard</span>
+      </button>
+
+      <button type="button" class="agro-nav-item" data-screen="fazendas">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 21h18"></path>
+          <path d="M5 21V7l8-4v18"></path>
+          <path d="M19 21V11l-6-3"></path>
+          <path d="M9 9h1"></path>
+          <path d="M9 13h1"></path>
+          <path d="M9 17h1"></path>
+        </svg>
+        <span>Fazendas</span>
+      </button>
+
+      <button type="button" class="agro-nav-item" data-screen="lotes">
+        <svg viewBox="0 0 24 24">
+          <path d="M17 10h.01"></path>
+          <path d="M7 10h.01"></path>
+          <path d="M4 14c0 3 3 5 8 5s8-2 8-5"></path>
+          <circle cx="12" cy="11" r="5"></circle>
+        </svg>
+        <span>Lotes e Animais</span>
+      </button>
+
+      <button type="button" class="agro-nav-item" data-screen="manejo">
+        <svg viewBox="0 0 24 24">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          <path d="M9 12h6"></path>
+          <path d="M9 16h6"></path>
+        </svg>
+        <span>Manejo</span>
+      </button>
+
+      <button type="button" class="agro-nav-item" data-screen="certificados">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <polyline points="9 12 11 14 15 10"></polyline>
+        </svg>
+        <span>Certificados</span>
+      </button>
+    </nav>
+
+    <div class="agro-header-right">
+      <button type="button" class="agro-notification-btn" title="Notificações Pendentes" aria-label="Notificações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span class="agro-badge-count">3</span>
+      </button>
+
+      <div class="agro-user-menu" title="Perfil de Acesso Rural">
+        <div class="agro-avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <span class="agro-user-name">João Silva</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:#94a3b8;">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="agro-main">
+    <!-- ====================================================================
+         MÓDULO A: DASHBOARD DO PRODUTOR
+         ==================================================================== -->
+    <section id="screen-dashboard" class="agro-screen active" aria-labelledby="dashboard-title">
+      <div class="agro-welcome-section">
+        <div class="agro-welcome-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 id="dashboard-title" class="agro-welcome-title">Olá, João Silva!</h1>
+          <p class="agro-welcome-subtitle">Bem-vindo à visão geral da Fazenda Modelo (MS).</p>
+        </div>
+      </div>
+
+      <!-- Próximas Ações Recomendadas -->
+      <div class="agro-section-title-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          <path d="M9 12h6"></path>
+          <path d="M9 16h6"></path>
+        </svg>
+        <h2 class="agro-section-title">Próximas ações</h2>
+      </div>
+
+      <div class="agro-actions-grid">
+        <div class="agro-action-card warning-card">
+          <div class="agro-action-card-left">
+            <div class="agro-action-card-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:28px;height:28px;">
+                <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+              </svg>
+            </div>
+            <div class="agro-action-card-text">
+              <strong>Atenção:</strong> Período de manejo do lote <strong>LT-2026-001</strong> termina em <strong>2 dias (30/09/2026)</strong>. Registre o fechamento/abate para iniciar a certificação.
+            </div>
+          </div>
+          <button type="button" class="agro-btn agro-btn-primary" onclick="AgroTracer.switchScreen('lotes')">
+            Registrar abate
+          </button>
+        </div>
+
+        <div class="agro-action-card info-card">
+          <div class="agro-action-card-left">
+            <div class="agro-action-card-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:28px;height:28px;">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+              </svg>
+            </div>
+            <div class="agro-action-card-text">
+              <strong>Nova versão do método didático v1.1 disponível.</strong>
+              <span>Consulte mudanças nas estimativas de teste.</span>
+            </div>
+          </div>
+          <button type="button" class="agro-btn agro-btn-secondary">
+            Ver nova versão
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Cards (4 Cards) -->
+      <div class="agro-kpi-grid">
+        <div class="agro-kpi-card">
+          <div class="agro-kpi-icon-wrap" title="Lotes Ativos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 21h18"></path>
+              <path d="M5 21V7l8-4v18"></path>
+              <path d="M19 21V11l-6-3"></path>
+              <path d="M9 9h1"></path>
+              <path d="M9 13h1"></path>
+            </svg>
+          </div>
+          <div class="agro-kpi-content">
+            <div class="agro-kpi-label">Lotes ativos</div>
+            <div class="agro-kpi-value">12</div>
+          </div>
+        </div>
+
+        <div class="agro-kpi-card">
+          <div class="agro-kpi-icon-wrap" title="Total de Animais">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 10h.01"></path>
+              <path d="M7 10h.01"></path>
+              <path d="M4 14c0 3 3 5 8 5s8-2 8-5"></path>
+              <circle cx="12" cy="11" r="5"></circle>
+            </svg>
+          </div>
+          <div class="agro-kpi-content">
+            <div class="agro-kpi-label">Total de animais</div>
+            <div class="agro-kpi-value">1.250</div>
+            <div class="agro-kpi-footnote">Em 150 hectares de pastagem</div>
+          </div>
+        </div>
+
+        <div class="agro-kpi-card">
+          <div class="agro-kpi-icon-wrap" title="Emissões Totais">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+              <path d="M2 21c0-3 1.85-5.36 5.08-6"></path>
+            </svg>
+          </div>
+          <div class="agro-kpi-content">
+            <div class="agro-kpi-label">Emissões totais (kg CO₂e)</div>
+            <div class="agro-kpi-value">13.650</div>
+            <div class="agro-kpi-footnote">Parâmetros didáticos do AgroTracer MVP; não representam fator oficial.</div>
+          </div>
+        </div>
+
+        <div class="agro-kpi-card">
+          <div class="agro-kpi-icon-wrap" title="Certificados Válidos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <polyline points="9 12 11 14 15 10"></polyline>
+            </svg>
+          </div>
+          <div class="agro-kpi-content">
+            <div class="agro-kpi-label">Certificados válidos</div>
+            <div class="agro-kpi-value">8</div>
+            <div class="agro-kpi-pill success">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              4 prontos para emissão
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumo dos Lotes em Destaque -->
+      <div class="agro-card">
+        <div class="agro-card-header">
+          <div class="agro-card-header-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            <h3 class="agro-card-title">Resumo dos lotes em destaque</h3>
+          </div>
+        </div>
+
+        <div class="agro-card-body">
+          <div class="agro-table-responsive">
+            <table class="agro-table">
+              <thead>
+                <tr>
+                  <th>Código do lote</th>
+                  <th>Status</th>
+                  <th>Último manejo</th>
+                  <th>Animais</th>
+                  <th>Prontidão</th>
+                  <th style="text-align: right;">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>LT-2026-001</strong></td>
+                  <td>
+                    <span class="agro-badge warning">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                      Em manejo
+                    </span>
+                  </td>
+                  <td style="color: var(--agro-text-secondary);">Pastagem v1.0 · termina 30/09</td>
+                  <td>50</td>
+                  <td>
+                    <div class="agro-progress-wrap">
+                      <div class="agro-progress-bar">
+                        <div class="agro-progress-fill" style="width: 90%;"></div>
+                      </div>
+                      <span class="agro-progress-text">90%</span>
+                    </div>
+                  </td>
+                  <td style="text-align: right;">
+                    <div style="display:inline-flex; gap:8px;">
+                      <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('lotes')">
+                        Ver detalhes
+                      </button>
+                      <button type="button" class="agro-btn agro-btn-primary agro-btn-sm" onclick="AgroTracer.switchScreen('lotes')">
+                        Manejo
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td><strong>LT-2026-003</strong></td>
+                  <td>
+                    <span class="agro-badge info">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                      Fechado
+                    </span>
+                  </td>
+                  <td style="color: var(--agro-text-secondary);">Dieta base v1.0 · fim 15/09</td>
+                  <td>100</td>
+                  <td>
+                    <div class="agro-progress-wrap">
+                      <div class="agro-progress-bar">
+                        <div class="agro-progress-fill" style="width: 100%;"></div>
+                      </div>
+                      <span class="agro-progress-text">100%</span>
+                    </div>
+                  </td>
+                  <td style="text-align: right;">
+                    <div style="display:inline-flex; gap:8px;">
+                      <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('lotes')">
+                        Ver detalhes
+                      </button>
+                      <button type="button" class="agro-btn agro-btn-primary agro-btn-sm" onclick="AgroTracer.showToast('Certificado gerado com Idempotency-Key.')">
+                        Emitir certificado
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td><strong>LT-2025-090</strong></td>
+                  <td>
+                    <span class="agro-badge success">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                      Certificado
+                    </span>
+                  </td>
+                  <td style="color: var(--agro-text-muted);">—</td>
+                  <td>75</td>
+                  <td>
+                    <div class="agro-progress-wrap">
+                      <div class="agro-progress-bar">
+                        <div class="agro-progress-fill" style="width: 100%;"></div>
+                      </div>
+                      <span class="agro-progress-text">100%</span>
+                    </div>
+                  </td>
+                  <td style="text-align: right;">
+                    <div style="display:inline-flex; gap:8px;">
+                      <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('lotes')">
+                        Ver detalhes
+                      </button>
+                      <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm">
+                        Baixar PDF
+                      </button>
+                      <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm">
+                        Ver QR
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         MÓDULO B: GESTÃO DE PROPRIEDADES RURAIS (FAZENDAS & TALHÕES)
+         ==================================================================== -->
+    <section id="screen-fazendas" class="agro-screen" aria-labelledby="farms-module-title">
+      <div class="agro-master-detail-grid">
+        <aside class="agro-sidebar-card" aria-label="Lista de Fazendas">
+          <div class="agro-sidebar-header">
+            <h2 id="farms-module-title" class="agro-sidebar-title">Minhas Propriedades</h2>
+            <button type="button" class="agro-btn agro-btn-primary agro-sidebar-action-btn" onclick="AgroTracer.showToast('Formulário de nova fazenda ativado.')">
+              + Nova Fazenda
+            </button>
+          </div>
+
+          <div class="agro-search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="search-farms-input" class="agro-search-input" placeholder="Buscar Fazenda..." aria-label="Buscar Fazenda">
+          </div>
+
+          <div class="agro-list-items">
+            <div class="agro-list-item selected" data-farm-id="1">
+              <div class="agro-list-item-left">
+                <div class="agro-list-item-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                </div>
+                <div class="agro-list-item-info">
+                  <div class="agro-list-item-title">Fazenda Modelo</div>
+                  <div class="agro-list-item-sub">Aquidauana - MS</div>
+                </div>
+              </div>
+              <div class="agro-list-item-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <div class="agro-list-item" data-farm-id="2">
+              <div class="agro-list-item-left">
+                <div class="agro-list-item-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                </div>
+                <div class="agro-list-item-info">
+                  <div class="agro-list-item-title">Fazenda São Bento</div>
+                  <div class="agro-list-item-sub">Corumbá - MS</div>
+                </div>
+              </div>
+              <div class="agro-list-item-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <div class="agro-list-item" data-farm-id="3">
+              <div class="agro-list-item-left">
+                <div class="agro-list-item-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                </div>
+                <div class="agro-list-item-info">
+                  <div class="agro-list-item-title">Fazenda Boa Vista</div>
+                  <div class="agro-list-item-sub">Miranda - MS</div>
+                </div>
+              </div>
+              <div class="agro-list-item-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <div class="agro-list-item" data-farm-id="4">
+              <div class="agro-list-item-left">
+                <div class="agro-list-item-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                </div>
+                <div class="agro-list-item-info">
+                  <div class="agro-list-item-title">Fazenda Estrela do Sul</div>
+                  <div class="agro-list-item-sub">Bodoquena - MS</div>
+                </div>
+              </div>
+              <div class="agro-list-item-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <div class="agro-list-item" data-farm-id="5">
+              <div class="agro-list-item-left">
+                <div class="agro-list-item-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                </div>
+                <div class="agro-list-item-info">
+                  <div class="agro-list-item-title">Fazenda Recanto Verde</div>
+                  <div class="agro-list-item-sub">Coxim - MS</div>
+                </div>
+              </div>
+              <div class="agro-list-item-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Detalhes da Fazenda Selecionada -->
+        <main class="agro-detail-main">
+          <div class="agro-detail-top-bar">
+            <a href="#fazendas" class="agro-back-link" onclick="AgroTracer.switchScreen('fazendas')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              Voltar para Fazendas
+            </a>
+          </div>
+
+          <div class="agro-detail-header-card">
+            <div class="agro-detail-title-group">
+              <div class="agro-detail-hero-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <h2 id="farm-detail-name" class="agro-detail-title">Fazenda Modelo</h2>
+                  <span class="agro-badge success" style="font-size:11.5px;">Selecionada</span>
+                </div>
+                <div class="agro-detail-meta">
+                  <span class="agro-detail-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <span id="farm-detail-location">Aquidauana - MS</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="agro-detail-actions">
+              <button type="button" class="agro-btn agro-btn-secondary" id="btn-cancel-farm">Cancelar</button>
+              <button type="button" class="agro-btn agro-btn-secondary" id="btn-edit-farm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                Editar
+              </button>
+              <button type="button" class="agro-btn agro-btn-danger" id="btn-delete-farm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Excluir fazenda
+              </button>
+            </div>
+          </div>
+
+          <!-- Form: Dados da Fazenda -->
+          <div class="agro-card">
+            <div class="agro-card-header">
+              <div class="agro-card-header-left">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                  <path d="M9 12h6"></path>
+                  <path d="M9 16h6"></path>
+                </svg>
+                <h3 class="agro-card-title">Dados da Fazenda</h3>
+              </div>
+            </div>
+
+            <form id="form-edit-farm">
+              <div class="agro-form-grid">
+                <div class="agro-form-group">
+                  <label class="agro-form-label" for="farm-input-name">
+                    Nome da Propriedade <span class="required">*</span>
+                  </label>
+                  <input type="text" id="farm-input-name" class="agro-input" value="Fazenda Modelo" required>
+                </div>
+
+                <div class="agro-form-group">
+                  <label class="agro-form-label" for="farm-input-car">
+                    Número do CAR <span class="required">*</span>
+                  </label>
+                  <div class="agro-input-wrap">
+                    <input type="text" id="farm-input-car" class="agro-input error has-icon" value="MS-5002708-1234.5678.9ABC.DEF0.1234.5678" required>
+                    <div class="agro-input-icon">
+                      <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;color:#dc2626;">
+                        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div id="farm-car-error" class="agro-field-error">
+                    Este CAR já está cadastrado em outra fazenda.
+                  </div>
+                  <div class="agro-field-help">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    Dado declarado pelo produtor. Verifique se o número está correto.
+                  </div>
+                </div>
+
+                <div class="agro-form-group">
+                  <label class="agro-form-label" for="farm-select-city">
+                    Município <span class="required">*</span>
+                  </label>
+                  <select id="farm-select-city" class="agro-input">
+                    <option value="Aquidauana" selected>Aquidauana</option>
+                    <option value="Corumbá">Corumbá</option>
+                    <option value="Miranda">Miranda</option>
+                    <option value="Bodoquena">Bodoquena</option>
+                    <option value="Coxim">Coxim</option>
+                  </select>
+                </div>
+
+                <div class="agro-form-group">
+                  <label class="agro-form-label" for="farm-select-uf">
+                    UF <span class="required">*</span>
+                  </label>
+                  <select id="farm-select-uf" class="agro-input">
+                    <option value="MS" selected>MS</option>
+                    <option value="MT">MT</option>
+                    <option value="GO">GO</option>
+                    <option value="MG">MG</option>
+                    <option value="SP">SP</option>
+                  </select>
+                </div>
+
+                <div class="agro-form-group">
+                  <label class="agro-form-label" for="farm-input-coord">
+                    Coordenadas (opcional)
+                  </label>
+                  <div class="agro-input-wrap">
+                    <input type="text" id="farm-input-coord" class="agro-input has-icon" value="-20.4683, -55.7847">
+                    <div class="agro-input-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="agro-form-group">
+                  <div class="agro-callout-info">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <div>
+                      O CAR é um dado declarado pelo produtor e pode estar sujeito a validação externa pelos órgãos competentes.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="agro-form-footer">
+                <button type="submit" id="btn-save-farm" class="agro-btn agro-btn-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                  Salvar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Talhões / Pastagens -->
+          <div class="agro-card">
+            <div class="agro-card-header">
+              <div class="agro-card-header-left">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <h3 class="agro-card-title">Talhões / Pastagens</h3>
+              </div>
+              <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.showToast('Novo talhão adicionado em rascunho.')">
+                + Adicionar Talhão
+              </button>
+            </div>
+
+            <div class="agro-card-body">
+              <div class="agro-table-responsive">
+                <table class="agro-table">
+                  <thead>
+                    <tr>
+                      <th>Identificador (Piquete)</th>
+                      <th>Área (ha)</th>
+                      <th>Tipo de Pastagem</th>
+                      <th>Última Atualização</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="paddocks-tbody">
+                    <tr>
+                      <td style="font-weight: 500;">Piquete 01</td>
+                      <td>25,50</td>
+                      <td>Braquiária</td>
+                      <td style="color: var(--agro-text-muted); font-size: 12.5px;">12/09/2026 14:32</td>
+                      <td>
+                        <div style="display:flex; gap:6px;">
+                          <button type="button" class="agro-btn agro-btn-secondary agro-btn-icon-only" title="Editar Talhão">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:#10b981;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                          </button>
+                          <button type="button" class="agro-btn agro-btn-danger agro-btn-icon-only" title="Excluir Talhão">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight: 500;">Piquete 02</td>
+                      <td>18,75</td>
+                      <td>Mombaça</td>
+                      <td style="color: var(--agro-text-muted); font-size: 12.5px;">10/09/2026 09:15</td>
+                      <td>
+                        <div style="display:flex; gap:6px;">
+                          <button type="button" class="agro-btn agro-btn-secondary agro-btn-icon-only" title="Editar Talhão">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:#10b981;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                          </button>
+                          <button type="button" class="agro-btn agro-btn-danger agro-btn-icon-only" title="Excluir Talhão">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight: 500;">Piquete 03</td>
+                      <td>32,00</td>
+                      <td>Andropogon</td>
+                      <td style="color: var(--agro-text-muted); font-size: 12.5px;">08/09/2026 16:47</td>
+                      <td>
+                        <div style="display:flex; gap:6px;">
+                          <button type="button" class="agro-btn agro-btn-secondary agro-btn-icon-only" title="Editar Talhão">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:#10b981;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                          </button>
+                          <button type="button" class="agro-btn agro-btn-danger agro-btn-icon-only" title="Excluir Talhão">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight: 500;">Piquete 04</td>
+                      <td>12,30</td>
+                      <td>Tifton 85</td>
+                      <td style="color: var(--agro-text-muted); font-size: 12.5px;">05/09/2026 11:20</td>
+                      <td>
+                        <div style="display:flex; gap:6px;">
+                          <button type="button" class="agro-btn agro-btn-secondary agro-btn-icon-only" title="Editar Talhão">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:#10b981;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                          </button>
+                          <button type="button" class="agro-btn agro-btn-danger agro-btn-icon-only" title="Excluir Talhão">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="agro-table-footer">
+                <span id="paddocks-count-label">Mostrando 1 a 4 de 4 talhões</span>
+                <div class="agro-pagination">
+                  <button type="button" class="agro-pagination-btn" disabled>&lt;</button>
+                  <button type="button" class="agro-pagination-btn active">1</button>
+                  <button type="button" class="agro-pagination-btn" disabled>&gt;</button>
+                  <select class="agro-input" style="padding: 3px 8px; font-size: 12px; width: 68px; margin-left: 6px;">
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         MÓDULO C: GESTÃO DO REBANHO (LOTES & ANIMAIS)
+         ==================================================================== -->
+    <section id="screen-lotes" class="agro-screen" aria-labelledby="lots-module-title">
+      <div class="agro-master-detail-grid">
+        <aside class="agro-sidebar-card" aria-label="Lista de Lotes">
+          <div class="agro-sidebar-header">
+            <h2 id="lots-module-title" class="agro-sidebar-title">Meus Lotes</h2>
+            <button type="button" class="agro-btn agro-btn-primary agro-sidebar-action-btn" onclick="AgroTracer.showToast('Assistente de criação de lote inicializado.')">
+              + Novo Lote
+            </button>
+          </div>
+
+          <div class="agro-search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="search-lot-input" class="agro-search-input" placeholder="Buscar lote..." aria-label="Buscar lote">
+          </div>
+
+          <div class="agro-form-group" style="margin-bottom: 14px;">
+            <label class="agro-form-label" for="filter-lot-farm" style="font-size:12px;">Fazenda</label>
+            <select id="filter-lot-farm" class="agro-input" style="padding: 7px 10px; font-size: 13px;">
+              <option value="all" selected>Todas as fazendas</option>
+              <option value="1">Fazenda Modelo</option>
+              <option value="2">Fazenda São Bento</option>
+              <option value="3">Fazenda Boa Vista</option>
+            </select>
+          </div>
+
+          <div class="agro-list-items">
+            <div class="agro-list-item selected" data-lot-code="LT-2026-001">
+              <div class="agro-list-item-left">
+                <div class="agro-list-item-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                    <circle cx="12" cy="11" r="5"></circle>
+                  </svg>
+                </div>
+                <div class="agro-list-item-info">
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="agro-list-item-title">LT-2026-001</span>
+                    <span class="agro-badge warning" style="font-size:10px; padding:2px 6px;">Em manejo</span>
+                  </div>
+                  <div class="agro-list-item-sub">Fazenda Modelo - Aquidauana/MS</div>
+                  <div style="font-size:11px; color:var(--agro-text-muted); margin-top:2px;">50 animais</div>
+                </div>
+              </div>
+              <div class="agro-list-item-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <div class="agro-list-item" data-lot-code="LT-2026-003">
+              <div class="agro-list-item-left">
+                <div class="agro-list-item-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                    <circle cx="12" cy="11" r="5"></circle>
+                  </svg>
+                </div>
+                <div class="agro-list-item-info">
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="agro-list-item-title">LT-2026-003</span>
+                    <span class="agro-badge info" style="font-size:10px; padding:2px 6px;">Fechado</span>
+                  </div>
+                  <div class="agro-list-item-sub">Fazenda São Bento - Corumbá/MS</div>
+                  <div style="font-size:11px; color:var(--agro-text-muted); margin-top:2px;">100 animais</div>
+                </div>
+              </div>
+              <div class="agro-list-item-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <div class="agro-list-item" data-lot-code="LT-2025-090">
+              <div class="agro-list-item-left">
+                <div class="agro-list-item-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                    <circle cx="12" cy="11" r="5"></circle>
+                  </svg>
+                </div>
+                <div class="agro-list-item-info">
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="agro-list-item-title">LT-2025-090</span>
+                    <span class="agro-badge success" style="font-size:10px; padding:2px 6px;">Certificado</span>
+                  </div>
+                  <div class="agro-list-item-sub">Fazenda Boa Vista - Miranda/MS</div>
+                  <div style="font-size:11px; color:var(--agro-text-muted); margin-top:2px;">75 animais</div>
+                </div>
+              </div>
+              <div class="agro-list-item-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <div class="agro-list-item" data-lot-code="LT-2024-087">
+              <div class="agro-list-item-left">
+                <div class="agro-list-item-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                    <circle cx="12" cy="11" r="5"></circle>
+                  </svg>
+                </div>
+                <div class="agro-list-item-info">
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="agro-list-item-title">LT-2024-087</span>
+                    <span class="agro-badge neutral" style="font-size:10px; padding:2px 6px;">Abatido</span>
+                  </div>
+                  <div class="agro-list-item-sub">Fazenda Estrela do Sul - Bodoquena/MS</div>
+                  <div style="font-size:11px; color:var(--agro-text-muted); margin-top:2px;">0 animais</div>
+                </div>
+              </div>
+              <div class="agro-list-item-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="agro-sidebar-footer">
+            Total de lotes: 4
+          </div>
+        </aside>
+
+        <!-- Detalhes do Lote Selecionado -->
+        <main class="agro-detail-main">
+          <div class="agro-detail-top-bar">
+            <a href="#lotes" class="agro-back-link" onclick="AgroTracer.switchScreen('lotes')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              Voltar para Lotes
+            </a>
+          </div>
+
+          <div class="agro-detail-header-card">
+            <div class="agro-detail-title-group">
+              <div class="agro-detail-hero-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;">
+                  <circle cx="12" cy="11" r="5"></circle>
+                </svg>
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <h2 id="lot-detail-title" class="agro-detail-title">Lote: LT-2026-001</h2>
+                  <span id="lot-detail-badge" class="agro-badge warning" style="font-size:11.5px;">Em manejo</span>
+                </div>
+                <div class="agro-detail-meta">
+                  <span class="agro-detail-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <span id="lot-detail-entry">Entrada: 20/06/2026</span>
+                  </span>
+                  <span class="agro-detail-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path></svg>
+                    <span id="lot-detail-farm">Fazenda Modelo (Aquidauana/MS)</span>
+                  </span>
+                  <span class="agro-detail-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span id="lot-detail-days">Dias em manejo: 72</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="agro-detail-actions">
+              <button type="button" class="agro-btn agro-btn-secondary" id="btn-edit-lot">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                Editar Lote
+              </button>
+              <button type="button" class="agro-btn agro-btn-primary" id="btn-movement-lot" onclick="AgroTracer.showToast('Fluxo de movimentação de lote iniciado.')">
+                + Registrar Movimentação
+              </button>
+            </div>
+          </div>
+
+          <!-- Animais Atualmente no Lote -->
+          <div class="agro-card">
+            <div class="agro-card-header">
+              <div class="agro-card-header-left">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="11" r="5"></circle>
+                </svg>
+                <div>
+                  <h3 class="agro-card-title">Animais Atualmente no Lote</h3>
+                  <p class="agro-card-subtitle">50 animais ativos neste lote.</p>
+                </div>
+              </div>
+              <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" id="btn-open-associate-drawer">
+                + Associar Animais
+              </button>
+            </div>
+
+            <div class="agro-card-body">
+              <div class="agro-table-responsive">
+                <table class="agro-table">
+                  <thead>
+                    <tr>
+                      <th>Identificador Único</th>
+                      <th>Categoria</th>
+                      <th>Data Nasc.</th>
+                      <th>Associado em</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="current-animals-tbody">
+                    <tr>
+                      <td><strong>BR-123456789-0</strong></td>
+                      <td>Bovino Macho</td>
+                      <td>12/03/2022</td>
+                      <td>20/06/2026 10:24</td>
+                      <td>
+                        <div style="display:flex; gap:6px;">
+                          <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm">Ver Histórico</button>
+                          <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal">Desassociar</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><strong>BR-123456790-1</strong></td>
+                      <td>Bovino Fêmea</td>
+                      <td>05/05/2022</td>
+                      <td>21/06/2026 14:32</td>
+                      <td>
+                        <div style="display:flex; gap:6px;">
+                          <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm">Ver Histórico</button>
+                          <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal">Desassociar</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><strong>BR-123456791-2</strong></td>
+                      <td>Bovino Macho</td>
+                      <td>18/07/2022</td>
+                      <td>22/06/2026 09:12</td>
+                      <td>
+                        <div style="display:flex; gap:6px;">
+                          <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm">Ver Histórico</button>
+                          <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal">Desassociar</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><strong>BR-123456792-3</strong></td>
+                      <td>Bovino Fêmea</td>
+                      <td>20/08/2022</td>
+                      <td>22/06/2026 11:45</td>
+                      <td>
+                        <div style="display:flex; gap:6px;">
+                          <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm">Ver Histórico</button>
+                          <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal">Desassociar</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><strong>BR-123456793-4</strong></td>
+                      <td>Bovino Macho</td>
+                      <td>01/09/2022</td>
+                      <td>23/06/2026 08:30</td>
+                      <td>
+                        <div style="display:flex; gap:6px;">
+                          <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm">Ver Histórico</button>
+                          <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal">Desassociar</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><strong>BR-123456794-5</strong></td>
+                      <td>Bovino Fêmea</td>
+                      <td>15/09/2022</td>
+                      <td>24/06/2026 15:00</td>
+                      <td>
+                        <div style="display:flex; gap:6px;">
+                          <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm">Ver Histórico</button>
+                          <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal">Desassociar</button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="agro-table-footer">
+                <span>Mostrando 1 a 6 de 50 animais</span>
+                <div class="agro-pagination">
+                  <button type="button" class="agro-pagination-btn" disabled>&lt;</button>
+                  <button type="button" class="agro-pagination-btn active">1</button>
+                  <button type="button" class="agro-pagination-btn">2</button>
+                  <button type="button" class="agro-pagination-btn">3</button>
+                  <button type="button" class="agro-pagination-btn">4</button>
+                  <button type="button" class="agro-pagination-btn">5</button>
+                  <button type="button" class="agro-pagination-btn">&gt;</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Histórico de Animais no Lote (Temporal Collapsible) -->
+          <div class="agro-card">
+            <div id="historical-collapse-header" class="agro-card-header agro-collapsible-header">
+              <div class="agro-card-header-left">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <div>
+                  <h3 class="agro-card-title">Histórico de Animais no Lote</h3>
+                  <p class="agro-card-subtitle">Animais que já estiveram neste lote (associações encerradas).</p>
+                </div>
+              </div>
+              <div class="agro-collapsible-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                  <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <div id="historical-collapse-content" class="agro-collapsible-content">
+              <div class="agro-table-responsive">
+                <table class="agro-table">
+                  <thead>
+                    <tr>
+                      <th>Identificador Animal</th>
+                      <th>Categoria</th>
+                      <th>Data Associação</th>
+                      <th>Data Desassociação</th>
+                      <th>Dias Permanecidos</th>
+                      <th style="width: 50px;"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>BR-987654321-0</strong></td>
+                      <td>Bovino Macho</td>
+                      <td>10/01/2026 08:15</td>
+                      <td>20/03/2026 17:32</td>
+                      <td>69</td>
+                      <td>
+                        <button type="button" class="agro-btn agro-btn-secondary agro-btn-icon-only" title="Ver Detalhes do Período">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><strong>BR-987654322-1</strong></td>
+                      <td>Bovino Fêmea</td>
+                      <td>15/01/2026 10:24</td>
+                      <td>05/04/2026 09:18</td>
+                      <td>80</td>
+                      <td>
+                        <button type="button" class="agro-btn agro-btn-secondary agro-btn-icon-only" title="Ver Detalhes do Período">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><strong>BR-987654323-2</strong></td>
+                      <td>Bovino Macho</td>
+                      <td>22/01/2026 14:50</td>
+                      <td>12/05/2026 16:40</td>
+                      <td>110</td>
+                      <td>
+                        <button type="button" class="agro-btn agro-btn-secondary agro-btn-icon-only" title="Ver Detalhes do Período">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAIS DO SISTEMA -->
+  <!-- MODAL: ERRO DE VALIDAÇÃO (CONFLITO DE ASSOCIAÇÃO) -->
+  <div id="modal-validation-error" class="agro-modal-backdrop" role="dialog" aria-labelledby="val-modal-title" aria-modal="true">
+    <div class="agro-modal">
+      <div class="agro-modal-header">
+        <div class="agro-modal-header-left">
+          <div class="agro-modal-icon-badge danger">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12" stroke="#ffffff" stroke-width="2.5"></line>
+              <circle cx="12" cy="16" r="1.2" fill="#ffffff"></circle>
+            </svg>
+          </div>
+          <h3 id="val-modal-title" class="agro-modal-title">Erro de Validação</h3>
+        </div>
+        <button type="button" id="btn-close-validation-modal" class="agro-drawer-close" aria-label="Fechar Modal">&times;</button>
+      </div>
+
+      <div class="agro-modal-body">
+        <p style="font-weight: 600; color: var(--agro-text-primary); margin: 0 0 6px 0;">
+          Não foi possível completar a associação.
+        </p>
+        <p style="margin: 0; color: var(--agro-text-secondary);">
+          Alguns animais foram associados concorrentemente em outros lotes. Recarregue a lista.
+        </p>
+
+        <div class="agro-modal-conflict-box">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+          <div>
+            <strong>Exemplo de conflito:</strong>
+            <span>Animal <strong>BR-123456790-1</strong> já possui associação ativa em outro lote.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="agro-modal-footer">
+        <button type="button" id="btn-understand-validation" class="agro-btn agro-btn-primary">
+          Entendi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRMAÇÃO DE AÇÃO CRÍTICA -->
+  <div id="modal-confirm-action" class="agro-modal-backdrop" role="dialog" aria-labelledby="confirm-modal-title" aria-modal="true">
+    <div class="agro-modal">
+      <div class="agro-modal-header">
+        <div class="agro-modal-header-left">
+          <div class="agro-modal-icon-badge warning">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;">
+              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+            </svg>
+          </div>
+          <h3 id="confirm-modal-title" class="agro-modal-title">Confirmar Ação</h3>
+        </div>
+        <button type="button" class="agro-drawer-close" onclick="document.getElementById('modal-confirm-action').classList.remove('active')" aria-label="Fechar Modal">&times;</button>
+      </div>
+
+      <div class="agro-modal-body">
+        <p id="confirm-modal-text" style="margin: 0; color: var(--agro-text-secondary); line-height: 1.5;">
+          Tem certeza que deseja prosseguir com esta operação?
+        </p>
+      </div>
+
+      <div class="agro-modal-footer">
+        <button type="button" id="btn-cancel-confirm" class="agro-btn agro-btn-secondary">
+          Cancelar
+        </button>
+        <button type="button" id="btn-confirm-action" class="agro-btn agro-btn-danger">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRAWER LATERAL: ASSOCIAR ANIMAIS -->
+  <div id="associate-animals-drawer" class="agro-drawer-overlay" aria-hidden="true">
+    <div class="agro-drawer" role="dialog" aria-labelledby="drawer-animals-title">
+      <div class="agro-drawer-header">
+        <h3 id="drawer-animals-title" class="agro-drawer-title">Associar Animais</h3>
+        <button type="button" id="btn-close-associate-drawer" class="agro-drawer-close" aria-label="Fechar Painel">&times;</button>
+      </div>
+
+      <div class="agro-drawer-body">
+        <div class="agro-search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="agro-search-input" placeholder="Buscar por identificador..." aria-label="Buscar animal">
+        </div>
+
+        <div class="agro-form-group" style="margin-bottom: 16px;">
+          <label class="agro-form-label" for="drawer-filter-cat">Categoria</label>
+          <select id="drawer-filter-cat" class="agro-input">
+            <option value="all" selected>Todas</option>
+            <option value="macho">Bovino Macho</option>
+            <option value="femea">Bovino Fêmea</option>
+          </select>
+        </div>
+
+        <table class="agro-selectable-table">
+          <thead>
+            <tr>
+              <th style="width: 32px;"><input type="checkbox" class="agro-checkbox" id="select-all-drawer" aria-label="Selecionar todos"></th>
+              <th>Identificador</th>
+              <th>Categoria</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox" class="agro-checkbox drawer-animal-checkbox" data-animal-id="BR-123456800-7"></td>
+              <td><strong>BR-123456800-7</strong></td>
+              <td>Macho</td>
+              <td><span class="agro-badge success" style="font-size:11px;">Disponível</span></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" class="agro-checkbox drawer-animal-checkbox" data-animal-id="BR-123456801-8"></td>
+              <td><strong>BR-123456801-8</strong></td>
+              <td>Fêmea</td>
+              <td><span class="agro-badge success" style="font-size:11px;">Disponível</span></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" class="agro-checkbox drawer-animal-checkbox" data-animal-id="BR-123456802-9"></td>
+              <td><strong>BR-123456802-9</strong></td>
+              <td>Macho</td>
+              <td><span class="agro-badge success" style="font-size:11px;">Disponível</span></td>
+            </tr>
+            <tr style="background-color: #fff9fa;">
+              <td><input type="checkbox" class="agro-checkbox drawer-animal-checkbox" data-animal-id="BR-123456790-1" data-conflict="true"></td>
+              <td><strong style="color: #991b1b;">BR-123456790-1</strong></td>
+              <td>Fêmea</td>
+              <td><span class="agro-badge danger" style="font-size:11px;">Já em outro lote</span></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" class="agro-checkbox drawer-animal-checkbox" data-animal-id="BR-123456803-0"></td>
+              <td><strong>BR-123456803-0</strong></td>
+              <td>Fêmea</td>
+              <td><span class="agro-badge success" style="font-size:11px;">Disponível</span></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" class="agro-checkbox drawer-animal-checkbox" data-animal-id="BR-123456804-1"></td>
+              <td><strong>BR-123456804-1</strong></td>
+              <td>Macho</td>
+              <td><span class="agro-badge success" style="font-size:11px;">Disponível</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="agro-drawer-footer">
+        <span id="drawer-selected-count" style="font-size:13px; font-weight:600; color:var(--agro-text-secondary);">Selecionados: 0</span>
+        <button type="button" id="btn-add-animals-to-list" class="agro-btn agro-btn-primary">
+          + Adicionar à lista
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER PERSISTENTE -->
+  <div id="agro-toast-container" class="agro-toast-container">
+    <div class="agro-toast" id="initial-demo-toast">
+      <div class="agro-toast-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <div class="agro-toast-content">
+        <p class="agro-toast-title">Fazenda atualizada com sucesso!</p>
+        <div class="agro-toast-correlation">ID da requisição: 8d7c3f2a-9e4b</div>
+      </div>
+      <button type="button" class="agro-toast-close" onclick="document.getElementById('initial-demo-toast').remove()" aria-label="Fechar">&times;</button>
+    </div>
+  </div>
+
+  <!-- PLATFORM FOOTER -->
+  <footer class="agro-footer">
+    <div class="agro-footer-left">
+      <span>&copy; 2026 AgroTracer &middot; Plataforma de Rastreabilidade Acadêmica</span>
+    </div>
+
+    <div class="agro-footer-right">
+      <span>Versão do Motor de Estimativa: <strong>MVP-DIDATICO-1.0</strong></span>
+      <span>&verbar;</span>
+      <span class="agro-health-badge">
+        <span class="agro-health-dot"></span>
+        Health: OK
+      </span>
+      <span>&verbar;</span>
+      <span>X-Correlation-ID: <code class="agro-correlation-id">8d7c3f2a-9e4b</code></span>
+    </div>
+  </footer>
+</div>
+
+<script src="./agrotracer-bridge/assets/js/agrotracer-screens.js"></script>
+</body>
+</html>
