@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import time
 
 
 def build_canonical_string(
@@ -50,3 +51,36 @@ def validar_assinatura(
         assinatura_esperada,
         assinatura_recebida,
     )
+
+
+def validar_timestamp(
+    timestamp: int,
+    agora: int | None = None,
+) -> bool:
+    if type(timestamp) is not int:
+        return False
+
+    if agora is None:
+        agora = int(time.time())
+
+    diferenca = abs(agora - timestamp)
+
+    return diferenca <= 300
+
+
+def validar_timestamp_header(
+    valor: str | None,
+    agora: int | None = None,
+) -> bool:
+    if valor is None:
+        return False
+
+    if not valor.isascii() or not valor.isdecimal():
+        return False
+
+    if len(valor) > 20:
+        return False
+
+    timestamp = int(valor)
+
+    return validar_timestamp(timestamp, agora)
