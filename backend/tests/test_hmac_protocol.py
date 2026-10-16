@@ -2,6 +2,8 @@ from app.core.hmac_protocol import (
     build_canonical_string,
     gerar_assinatura,
     validar_assinatura,
+    validar_timestamp,
+    validar_timestamp_header,
 )
 
 
@@ -55,3 +57,53 @@ def test_assinatura_invalida():
         chave,
         assinatura,
     ) is False
+
+
+def test_timestamp_valido():
+    agora = 1800000000
+
+    assert validar_timestamp(agora - 120, agora) is True
+    assert validar_timestamp(agora + 120, agora) is True
+
+
+def test_timestamp_limite():
+    agora = 1800000000
+
+    assert validar_timestamp(agora - 300, agora) is True
+    assert validar_timestamp(agora + 300, agora) is True
+
+
+def test_timestamp_expirado():
+    agora = 1800000000
+
+    assert validar_timestamp(agora - 301, agora) is False
+
+
+def test_timestamp_futuro():
+    agora = 1800000000
+
+    assert validar_timestamp(agora + 301, agora) is False
+
+
+def test_timestamp_header_valido():
+    agora = 1800000000
+
+    assert validar_timestamp_header("1800000000", agora) is True
+    assert validar_timestamp_header("1799999700", agora) is True
+
+
+def test_timestamp_header_invalido():
+    agora = 1800000000
+
+    valores_invalidos = [
+        None,
+        "",
+        "abc",
+        "-1800000000",
+        "1800000000.0",
+        " 1800000000",
+        "9" * 100,
+    ]
+
+    for valor in valores_invalidos:
+        assert validar_timestamp_header(valor, agora) is False
