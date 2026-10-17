@@ -107,3 +107,50 @@ def test_timestamp_header_invalido():
 
     for valor in valores_invalidos:
         assert validar_timestamp_header(valor, agora) is False
+
+
+def test_vetor_hmac_compartilhado():
+    chave = b"agrotracer_chave_exclusivamente_teste_2026"
+
+    canonical = build_canonical_string(
+        method="POST",
+        path_with_query="/api/v1/fazendas",
+        timestamp=1792020000,
+        nonce="00112233445566778899aabbccddeeff",
+        wp_user_id=42,
+        body=b"{}",
+    )
+
+    assinatura_esperada = (
+        "ca62dbbd01854e311b419ff2e64d3721"
+        "e0ccb6bf698ebcf94f9026e5d562c9bc"
+    )
+
+    assert gerar_assinatura(
+        canonical, chave
+    ) == assinatura_esperada
+
+    assert validar_assinatura(
+        canonical, chave, assinatura_esperada
+    ) is True
+
+
+def test_canonical_string_com_query():
+    resultado = build_canonical_string(
+        method="GET",
+        path_with_query=(
+            "/api/v1/fazendas?"
+            "status=ativo&nome=Fazenda+Azul"
+        ),
+        timestamp=1792020000,
+        nonce="00112233445566778899aabbccddeeff",
+        wp_user_id=42,
+        body=b"",
+    )
+
+    caminho_esperado = (
+        "/api/v1/fazendas?"
+        "nome=Fazenda%20Azul&status=ativo"
+    )
+
+    assert resultado.split("\n")[1] == caminho_esperado
