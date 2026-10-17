@@ -4,7 +4,7 @@
 - **Sprint:** 0 / Integração Sprint 1
 - **Tasks Relacionadas:** `S0-T06` (`feature/PY-06`) e `S1-T03` (`feature/WP-03-fazendas-ui`)
 - **Referência Arquitetural:** ADR-002 — Autenticação e Segurança da Bridge
-- **Responsáveis:** João Vitor (Camada PHP / WordPress Bridge) & Samela Maria (Camada Python / FastAPI Security)
+- **Equipe (Grupo Winners):** DEV Front-end & PO: João Vitor | Back-End & Scrum: Samela Maria | QA & UI: Nadiny Martins
 - **Data da Execução:** 16/10/2026
 - **Status:** ✅ 100% COMPATÍVEL E HOMOLOGADO
 

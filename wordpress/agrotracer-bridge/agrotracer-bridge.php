@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/GrupoWinners/AgroTracer
  * Description: Plataforma de Rastreabilidade Pecuária e Pegada de Carbono - Interface Desktop Rural WordPress homologada para a Task S1-T03.
  * Version: 3.0.1
- * Author: Grupo Winners / João Vitor (Losel), Nadiny Martins & Samela Maria
+ * Author: Grupo Winners — DEV Front-end & PO: João Vitor | Back-End & Scrum: Samela Maria | QA & UI: Nadiny Martins
  * Author URI: https://www.portifoliolosel.dev
  * License: GPLv2 or later
  * Text Domain: agrotracer-bridge

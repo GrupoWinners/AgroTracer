@@ -2,7 +2,7 @@
  * AgroTracer Interactive Frontend Engine
  * Version: 3.0.1
  * Architecture: Task S1-T03 - Interface Desktop Rural WordPress
- * Equipe: Grupo Winners | Dev: João Vitor (Losel) | UI/UX & QA: Nadiny Martins, Samela Maria
+ * Equipe: Grupo Winners | DEV Front-end & PO: João Vitor | Back-End & Scrum: Samela Maria | QA & UI: Nadiny Martins
  */
 
 (function () {
