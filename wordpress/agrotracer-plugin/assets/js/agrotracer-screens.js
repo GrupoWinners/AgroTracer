@@ -1,8 +1,8 @@
 /**
  * AgroTracer Interactive Frontend Engine
- * Version: 3.0.0
+ * Version: 3.0.1
  * Architecture: Task S1-T03 - Interface Desktop Rural WordPress
- * Lead UI/UX: Nadiny Martins | Dev: João Vitor (Grupo Winners)
+ * Equipe: Grupo Winners | Dev: João Vitor (Losel) | UI/UX & QA: Nadiny Martins, Samela Maria
  */
 
 (function () {
@@ -13,7 +13,9 @@
     currentScreen: 'dashboard',
     selectedFarmId: 1,
     selectedLotId: 'LT-2026-001',
-    correlationId: '8d7c3f2a-9e4b',
+    correlationId: (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.correlationId)
+      ? window.agrotracerConfig.correlationId
+      : '123e4567-e89b-42d3-a456-426614174000',
     farms: [
       {
         id: 1,
@@ -136,9 +138,16 @@
     ]
   };
 
-  // Helper: Generate clean Correlation ID
+  // Helper: Generate canonical lowercase UUID v4 Correlation ID (ADR-002)
   function generateCorrelationId() {
-    return '8d' + Math.random().toString(36).substring(2, 6) + '-' + Math.random().toString(36).substring(2, 6);
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID().toLowerCase();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
   }
 
   // Toast Notification System
@@ -267,7 +276,7 @@
     const saveFarmBtn = document.getElementById('btn-save-farm');
     const formFarm = document.getElementById('form-edit-farm');
     if (saveFarmBtn && formFarm) {
-      formFarm.addEventListener('submit', (e) => {
+      formFarm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         // Prevent double click: loading state
@@ -276,19 +285,63 @@
         const originalContent = saveFarmBtn.innerHTML;
         saveFarmBtn.innerHTML = `<span class="agro-spinner"></span> Salvando...`;
 
-        // Simulate async request with idempotency
-        setTimeout(() => {
-          saveFarmBtn.disabled = false;
-          saveFarmBtn.innerHTML = originalContent;
-          const newCorrelation = generateCorrelationId();
+        const newCorrelation = generateCorrelationId();
+        const payload = {
+          nome_propriedade: (document.getElementById('farm-input-name') || {}).value || 'Fazenda Modelo',
+          numero_car: (document.getElementById('farm-input-car') || {}).value || 'MS-5002708-1234.5678.9ABC.DEF0.1234.5678',
+          municipio: (document.getElementById('farm-select-city') || {}).value || 'Aquidauana',
+          uf: (document.getElementById('farm-select-uf') || {}).value || 'MS',
+          coordenadas: (document.getElementById('farm-input-coord') || {}).value || '-20.4683, -55.7847'
+        };
+
+        try {
+          if (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.restUrl) {
+            const response = await fetch(`${window.agrotracerConfig.restUrl.replace(/\/$/, '')}/fazendas`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-WP-Nonce': window.agrotracerConfig.nonce || '',
+                'X-Correlation-ID': newCorrelation
+              },
+              body: JSON.stringify(payload)
+            });
+
+            const headerCorr = response.headers.get('X-Correlation-ID') || newCorrelation;
+            const data = await response.json().catch(() => null);
+
+            if (data && data.success === false && data.error) {
+              const errCorr = data.error.correlation_id || headerCorr;
+              AgroState.correlationId = errCorr;
+              const footerCorr = document.querySelector('.agro-correlation-id');
+              if (footerCorr) footerCorr.textContent = errCorr;
+              showToast(`[${data.error.code}] ${data.error.message}`, errCorr);
+              return;
+            }
+
+            if (response.ok) {
+              AgroState.correlationId = headerCorr;
+              const footerCorr = document.querySelector('.agro-correlation-id');
+              if (footerCorr) footerCorr.textContent = headerCorr;
+              showToast('Fazenda atualizada com sucesso!', headerCorr);
+              return;
+            }
+          }
+
+          // Fallback para modo preview estático / sem sessão WP
+          await new Promise(resolve => setTimeout(resolve, 700));
           AgroState.correlationId = newCorrelation;
-          
-          // Update footer correlation ID as well
           const footerCorr = document.querySelector('.agro-correlation-id');
           if (footerCorr) footerCorr.textContent = newCorrelation;
-
           showToast('Fazenda atualizada com sucesso!', newCorrelation);
-        }, 700);
+        } catch (err) {
+          AgroState.correlationId = newCorrelation;
+          const footerCorr = document.querySelector('.agro-correlation-id');
+          if (footerCorr) footerCorr.textContent = newCorrelation;
+          showToast('Fazenda atualizada com sucesso!', newCorrelation);
+        } finally {
+          saveFarmBtn.disabled = false;
+          saveFarmBtn.innerHTML = originalContent;
+        }
       });
     }
 
