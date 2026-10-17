@@ -1,4 +1,5 @@
-from redis import Redis
+
+from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
 
@@ -9,9 +10,9 @@ class RedisIndisponivel(RuntimeError):
     pass
 
 
-def registrar_nonce(cliente: Redis, nonce: str) -> bool:
+async def registrar_nonce(cliente: Redis, nonce: str) -> bool:
     try:
-        registrado = cliente.set(
+        registrado = await cliente.set(
             name=f"agrotracer:bridge:nonce:{nonce}",
             value="1",
             nx=True,
