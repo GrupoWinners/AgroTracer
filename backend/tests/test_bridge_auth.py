@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 
 from app.core.bridge_auth import verificar_hmac_requisicao
 from app.core.hmac_protocol import (
@@ -63,7 +63,7 @@ def criar_headers_assinados(corpo: bytes) -> dict[str, str]:
 
 def test_requisicao_http_assinada():
     client = TestClient(app_teste)
-    redis_falso = Mock()
+    redis_falso = AsyncMock()
     redis_falso.set.return_value = True
     app_teste.state.redis_cliente = redis_falso
     corpo = b'{"nome":"Fazenda Azul"}'
@@ -80,7 +80,7 @@ def test_requisicao_http_assinada():
 
 def test_requisicao_http_corpo_alterado():
     client = TestClient(app_teste)
-    redis_falso = Mock()
+    redis_falso = AsyncMock()
     redis_falso.set.return_value = True
     app_teste.state.redis_cliente = redis_falso
     corpo_original = b'{"nome":"Fazenda Azul"}'
@@ -99,7 +99,7 @@ def test_requisicao_http_corpo_alterado():
 def test_requisicao_http_nonce_repetido():
     client = TestClient(app_teste)
 
-    redis_falso = Mock()
+    redis_falso = AsyncMock()
     redis_falso.set.side_effect = [True, None]
     app_teste.state.redis_cliente = redis_falso
 
@@ -121,4 +121,4 @@ def test_requisicao_http_nonce_repetido():
     assert primeira.status_code == 200
     assert segunda.status_code == 401
 
-    assert redis_falso.set.call_count == 2
+    assert redis_falso.set.await_count == 2

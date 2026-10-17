@@ -1,5 +1,5 @@
 from fastapi import Request
-from redis import Redis
+from redis.asyncio import Redis
 from app.core.nonce_store import registrar_nonce
 
 from app.core.bridge_headers import (
@@ -57,7 +57,7 @@ async def verificar_hmac_requisicao(
     if not assinatura_valida:
         return False
 
-    return registrar_nonce(
+    return await registrar_nonce(
         cliente_redis,
         headers["nonce"],
     )
