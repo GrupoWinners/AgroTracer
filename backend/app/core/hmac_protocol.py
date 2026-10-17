@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import time
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit
 
 
 def build_canonical_string(
@@ -16,7 +17,7 @@ def build_canonical_string(
 
     campos = [
         method.upper(),
-        path_with_query,
+        normalizar_path_query(path_with_query),
         str(timestamp),
         nonce,
         str(wp_user_id),
@@ -84,3 +85,34 @@ def validar_timestamp_header(
     timestamp = int(valor)
 
     return validar_timestamp(timestamp, agora)
+
+
+def normalizar_path_query(path_with_query: str) -> str:
+    partes = urlsplit(path_with_query)
+
+    if partes.scheme or partes.netloc:
+        raise ValueError("A URL deve conter apenas path e query.")
+
+    if not partes.path.startswith("/"):
+        raise ValueError("O path deve começar com '/'.")
+
+    if "#" in path_with_query:
+        raise ValueError("Fragmentos não são permitidos.")
+
+    parametros = parse_qsl(
+        partes.query,
+        keep_blank_values=True,
+    )
+
+    parametros.sort(key=lambda item: item[0])
+
+    if not parametros:
+        return partes.path
+
+    query = urlencode(
+        parametros,
+        quote_via=quote,
+        safe="",
+    )
+
+    return f"{partes.path}?{query}"
