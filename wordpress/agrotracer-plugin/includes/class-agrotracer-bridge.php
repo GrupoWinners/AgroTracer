@@ -165,8 +165,16 @@ class AgroTracer_Bridge {
     }
 
     /**
+     * Constantes oficiais do protocolo de segurança da Bridge (ADR-002 / S0-T06)
+     */
+    public const TIMESTAMP_TOLERANCE_SECONDS = 300;
+    public const NONCE_TTL_SECONDS           = 660;
+    public const SYSTEM_USER_ID              = 0;
+
+    /**
      * Normaliza path e query string segundo RFC 3986 (ADR-002)
-     * Paridade 100% com normalizar_path_query() do backend FastAPI (feature/PY-06)
+     * Paridade 100% com normalizar_path_query() do backend FastAPI (feature/PY-06),
+     * incluindo rejeição estrita de sequências UTF-8 inválidas (errors="strict").
      */
     public static function normalize_path_query(string $path_with_query): string {
         if (strpos($path_with_query, '#') !== false) {
@@ -174,7 +182,12 @@ class AgroTracer_Bridge {
         }
 
         $partes = parse_url($path_with_query);
-        if ($partes === false || isset($partes['scheme']) || isset($partes['host'])) {
+        if (
+            $partes === false ||
+            isset($partes['scheme']) ||
+            isset($partes['host']) ||
+            strpos($path_with_query, '//') === 0
+        ) {
             throw new InvalidArgumentException('A URL deve conter apenas path e query.');
         }
 
@@ -183,12 +196,16 @@ class AgroTracer_Bridge {
             throw new InvalidArgumentException("O path deve começar com '/'.");
         }
 
+        if (preg_match('//u', $path) !== 1) {
+            throw new InvalidArgumentException('Sequência UTF-8 inválida no path.');
+        }
+
         $query = $partes['query'] ?? '';
         if ($query === '') {
             return $path;
         }
 
-        // Equivalente exato ao parse_qsl(query, keep_blank_values=True) do Python
+        // Equivalente exato ao parse_qsl(query, keep_blank_values=True, errors="strict") do Python
         $pares_brutos = explode('&', $query);
         $parametros = [];
         $idx = 0;
@@ -205,6 +222,11 @@ class AgroTracer_Bridge {
                 $k = urldecode(substr($par, 0, $pos));
                 $v = urldecode(substr($par, $pos + 1));
             }
+
+            if (preg_match('//u', $k) !== 1 || preg_match('//u', $v) !== 1) {
+                throw new InvalidArgumentException('Sequência UTF-8 inválida na query string.');
+            }
+
             $parametros[] = ['key' => $k, 'val' => $v, 'idx' => $idx++];
         }
 
@@ -238,6 +260,10 @@ class AgroTracer_Bridge {
         int $wp_user_id,
         string $raw_body = ''
     ): string {
+        if ($wp_user_id < 0) {
+            throw new InvalidArgumentException('O identificador de usuário deve ser maior ou igual a 0.');
+        }
+
         $body_hash = hash('sha256', $raw_body);
 
         return implode("\n", [
@@ -258,15 +284,22 @@ class AgroTracer_Bridge {
     }
 
     /**
-     * Obtém a chave secreta compartilhada AGROTRACER_BRIDGE_SECRET
+     * Obtém e valida a chave secreta compartilhada AGROTRACER_BRIDGE_SECRET (ASCII >= 32 bytes)
      */
     private static function get_bridge_secret(): string {
-        if (defined('AGROTRACER_BRIDGE_SECRET') && is_string(AGROTRACER_BRIDGE_SECRET) && strlen(AGROTRACER_BRIDGE_SECRET) >= 32) {
+        if (
+            defined('AGROTRACER_BRIDGE_SECRET') &&
+            is_string(AGROTRACER_BRIDGE_SECRET) &&
+            preg_match('/^[\x00-\x7F]{32,}$/', AGROTRACER_BRIDGE_SECRET) === 1
+        ) {
             return AGROTRACER_BRIDGE_SECRET;
         }
 
         $env_secret = getenv('AGROTRACER_BRIDGE_SECRET');
-        if (is_string($env_secret) && strlen($env_secret) >= 32) {
+        if (
+            is_string($env_secret) &&
+            preg_match('/^[\x00-\x7F]{32,}$/', $env_secret) === 1
+        ) {
             return $env_secret;
         }
 
@@ -314,12 +347,13 @@ class AgroTracer_Bridge {
         int $wp_user_id,
         ?string $correlation_id = null,
         ?int $timestamp = null,
-        ?string $nonce = null
+        ?string $nonce = null,
+        ?string $secret_key = null
     ): array {
         $timestamp_utc  = $timestamp ?? time();
         $nonce_hex      = $nonce ?? self::generate_nonce();
         $corr_uuid      = self::resolve_correlation_id($correlation_id);
-        $secret_key     = self::get_bridge_secret();
+        $resolved_key   = $secret_key ?? self::get_bridge_secret();
 
         $canonical = self::build_canonical_string(
             $method,
@@ -330,7 +364,7 @@ class AgroTracer_Bridge {
             $raw_body
         );
 
-        $signature = self::generate_hmac_signature($canonical, $secret_key);
+        $signature = self::generate_hmac_signature($canonical, $resolved_key);
 
         return [
             'Content-Type'           => 'application/json',
@@ -348,9 +382,23 @@ class AgroTracer_Bridge {
      * Includes HMAC-SHA256 signature, 128-bit Nonce, UTC timestamp audit, UUID v4 Correlation ID and BOLA/IDOR protection
      */
     public function handle_create_farm(WP_REST_Request $request) {
+        // Identidade derivada exclusivamente no servidor WordPress (ADR-002)
         $current_user_id = (int) get_current_user_id();
         $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
         $timestamp_utc   = time();
+
+        if ($current_user_id <= self::SYSTEM_USER_ID) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => [
+                    'code'           => 'AUTH_USER_REQUIRED',
+                    'message'        => 'Operação restrita a usuários WordPress.',
+                    'correlation_id' => $correlation_id,
+                    'timestamp'      => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
+                ],
+            ], 403, ['X-Correlation-ID' => $correlation_id]);
+        }
+
         $path_with_query = '/api/v1/fazendas';
 
         $body = [
@@ -425,9 +473,23 @@ class AgroTracer_Bridge {
      * Handles farm listing for the logged in user (BOLA/IDOR protection + ADR-002 headers + RFC 3986 Query Normalization)
      */
     public function handle_get_farms(WP_REST_Request $request) {
+        // Identidade derivada exclusivamente no servidor WordPress (ADR-002)
         $current_user_id = (int) get_current_user_id();
         $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
         $timestamp_utc   = time();
+
+        if ($current_user_id <= self::SYSTEM_USER_ID) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => [
+                    'code'           => 'AUTH_USER_REQUIRED',
+                    'message'        => 'Operação restrita a usuários WordPress.',
+                    'correlation_id' => $correlation_id,
+                    'timestamp'      => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
+                ],
+            ], 403, ['X-Correlation-ID' => $correlation_id]);
+        }
+
         $path_with_query = '/api/v1/fazendas';
 
         $query_params = $request->get_query_params();
@@ -440,7 +502,19 @@ class AgroTracer_Bridge {
             }
         }
 
-        $normalized_path_with_query = self::normalize_path_query($path_with_query);
+        try {
+            $normalized_path_with_query = self::normalize_path_query($path_with_query);
+        } catch (InvalidArgumentException $e) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => [
+                    'code'           => 'AUTH_INVALID_REQUEST',
+                    'message'        => 'Não foi possível autenticar a requisição.',
+                    'correlation_id' => $correlation_id,
+                    'timestamp'      => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
+                ],
+            ], 401, ['X-Correlation-ID' => $correlation_id]);
+        }
 
         $headers = self::build_signed_headers(
             'GET',
