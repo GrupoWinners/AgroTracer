@@ -3,7 +3,7 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
 
-NONCE_TTL_SEGUNDOS = 600
+NONCE_TTL_SEGUNDOS = 660
 
 
 class RedisIndisponivel(RuntimeError):
