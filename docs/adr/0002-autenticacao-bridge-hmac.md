@@ -78,13 +78,23 @@ O FastAPI aceitará timestamps dentro de uma tolerância de ±300 segundos em re
 
 O nonce deverá conter pelo menos 128 bits aleatórios, gerados com fonte criptograficamente segura e independente do nonce nativo do WordPress.
 
-Após verificar a assinatura HMAC, o backend registrará o nonce no Redis por 600 segundos.
+Após verificar a assinatura HMAC, o backend registrará o nonce no Redis por **660 segundos**.
 
-A operação deverá ser atômica, utilizando `SET NX EX 600`.
+A operação deverá ser atômica, utilizando `SET NX EX 660`.
 
 Uma segunda tentativa de utilizar o mesmo nonce durante a janela de retenção será rejeitada.
 
 Se o Redis estiver indisponível, a autenticação falhará de forma segura e a operação protegida não será executada.
+
+### Justificativa do ajuste
+
+Durante a revisão de segurança, foi identificado que o TTL original de 600 segundos poderia expirar enquanto uma requisição ainda estivesse dentro da janela temporal permitida de ±300 segundos.
+
+Para evitar essa possibilidade de reutilização, foi proposta a ampliação do TTL para 660 segundos, acrescentando uma margem de segurança de 60 segundos.
+
+A correção foi implementada no backend Python e validada por testes automatizados.
+
+**Status do ajuste:** proposta aguardando aprovação da equipe e atualização definitiva do protocolo.
 
 ## 6. Envelope de erro
 

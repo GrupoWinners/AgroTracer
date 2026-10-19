@@ -1,6 +1,6 @@
 import asyncio
 from unittest.mock import AsyncMock
-
+from app.core.hmac_protocol import validar_timestamp
 import pytest
 from redis.exceptions import ConnectionError as RedisConnectionError
 
@@ -31,7 +31,7 @@ def test_nonce_novo():
         ex=NONCE_TTL_SEGUNDOS,
     )
 
-    assert NONCE_TTL_SEGUNDOS == 600
+    assert NONCE_TTL_SEGUNDOS == 660
 
 
 def test_nonce_repetido():
@@ -55,3 +55,27 @@ def test_redis_indisponivel():
         asyncio.run(
             registrar_nonce(cliente, NONCE_TESTE)
         )
+
+
+def test_ttl_nonce_cobre_janela_timestamp():
+    primeiro_recebimento = 1800000000
+
+    timestamp = primeiro_recebimento + 300
+
+    ultimo_recebimento_valido = timestamp + 300
+
+    assert validar_timestamp(
+        timestamp,
+        primeiro_recebimento,
+    ) is True
+
+    assert validar_timestamp(
+        timestamp,
+        ultimo_recebimento_valido,
+    ) is True
+
+    tempo_total = (
+        ultimo_recebimento_valido - primeiro_recebimento
+    )
+
+    assert NONCE_TTL_SEGUNDOS > tempo_total
