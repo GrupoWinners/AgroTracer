@@ -1,1 +1,1 @@
-Flake8: verificacao concluida sem erros (exit code 0).
+flake8 app tests: OK
