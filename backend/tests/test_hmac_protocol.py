@@ -1,9 +1,11 @@
+import pytest
 from app.core.hmac_protocol import (
     build_canonical_string,
     gerar_assinatura,
     validar_assinatura,
     validar_timestamp,
     validar_timestamp_header,
+    normalizar_path_query,
 )
 
 
@@ -154,3 +156,49 @@ def test_canonical_string_com_query():
     )
 
     assert resultado.split("\n")[1] == caminho_esperado
+
+
+@pytest.mark.parametrize(
+    "entrada, esperado",
+    [
+        (
+            "/api/v1/fazendas",
+            "/api/v1/fazendas",
+        ),
+        (
+            "/api/v1/fazendas?z=9&a=1",
+            "/api/v1/fazendas?a=1&z=9",
+        ),
+        (
+            "/api/v1/fazendas?"
+            "tag=azul&status=ativo&tag=verde",
+            "/api/v1/fazendas?"
+            "status=ativo&tag=azul&tag=verde",
+        ),
+        (
+            "/api/v1/fazendas?"
+            "nome=Fazenda+Azul&municipio=Uberl%C3%A2ndia",
+            "/api/v1/fazendas?"
+            "municipio=Uberl%C3%A2ndia&nome=Fazenda%20Azul",
+        ),
+        (
+            "/api/v1/fazendas?b=&a=1&b=",
+            "/api/v1/fazendas?a=1&b=&b=",
+        ),
+    ],
+)
+def test_normalizacao_query_edge_cases(entrada, esperado):
+    assert normalizar_path_query(entrada) == esperado
+
+
+@pytest.mark.parametrize(
+    "caminho",
+    [
+        "api/v1/fazendas",
+        "https://exemplo.com/api/v1/fazendas",
+        "/api/v1/fazendas#fragmento",
+    ],
+)
+def test_rejeita_caminhos_invalidos(caminho):
+    with pytest.raises(ValueError):
+        normalizar_path_query(caminho)
