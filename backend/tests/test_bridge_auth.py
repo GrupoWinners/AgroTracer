@@ -122,3 +122,28 @@ def test_requisicao_http_nonce_repetido():
     assert segunda.status_code == 401
 
     assert redis_falso.set.await_count == 2
+
+
+def test_user_id_alterado_invalida_assinatura():
+    client = TestClient(app_teste)
+
+    redis_falso = AsyncMock()
+    app_teste.state.redis_cliente = redis_falso
+
+    corpo = b'{"nome":"Fazenda Azul"}'
+
+    headers = criar_headers_assinados(corpo)
+
+    # Simula alteração da identidade após a assinatura.
+    headers["X-AgroTracer-User-Id"] = "43"
+
+    resposta = client.post(
+        "/api/v1/fazendas?status=ativo",
+        content=corpo,
+        headers=headers,
+    )
+
+    assert resposta.status_code == 401
+    assert resposta.json() == {"autenticado": False}
+
+    redis_falso.set.assert_not_awaited()
