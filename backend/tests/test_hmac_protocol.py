@@ -191,6 +191,15 @@ def test_normalizacao_query_edge_cases(entrada, esperado):
     assert normalizar_path_query(entrada) == esperado
 
 
+def test_rejeita_utf8_invalido_sem_colidir_com_caractere_de_substituicao():
+    caminho_valido = "/api/v1/fazendas?nome=%EF%BF%BD"
+
+    assert normalizar_path_query(caminho_valido) == caminho_valido
+
+    with pytest.raises(UnicodeDecodeError):
+        normalizar_path_query("/api/v1/fazendas?nome=%FF")
+
+
 @pytest.mark.parametrize(
     "caminho",
     [

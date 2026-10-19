@@ -102,6 +102,7 @@ def normalizar_path_query(path_with_query: str) -> str:
     parametros = parse_qsl(
         partes.query,
         keep_blank_values=True,
+        errors="strict",
     )
 
     parametros.sort(key=lambda item: item[0])
