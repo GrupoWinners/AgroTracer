@@ -3,10 +3,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from redis.asyncio import Redis
 
+from app.core.bridge_errors import (
+    ErroBridge,
+    obter_correlation_id,
+    tratar_erro_bridge,
+)
 from app.core.settings import obter_redis_url
-from app.core.bridge_errors import (ErroBridge,
-                                    tratar_erro_bridge,
-                                    obter_correlation_id)
 
 
 @asynccontextmanager
@@ -32,6 +34,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AgroTracer API",
+    description="API backend do projeto AgroTracer",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -58,6 +61,6 @@ async def adicionar_correlation_id(request: Request, call_next):
     return resposta
 
 
-@app.get("/health")
-def verificar_saude():
+@app.get("/health", tags=["Health"])
+def health():
     return {"status": "ok"}
