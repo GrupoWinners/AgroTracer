@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from app.core.bridge_dependency import exigir_autenticacao_bridge
+from app.core.bridge_dependency import exigir_usuario_wordpress
 from app.core.hmac_protocol import (
     build_canonical_string,
     gerar_assinatura,
@@ -23,12 +23,14 @@ app_teste.add_exception_handler(
 SEGREDO_TESTE = "segredo_ficticio_com_mais_de_32_caracteres"
 
 
-@app_teste.post(
-    "/rota-protegida",
-    dependencies=[Depends(exigir_autenticacao_bridge)],
-)
-async def rota_protegida():
-    return {"autenticado": True}
+@app_teste.post("/rota-protegida")
+async def rota_protegida(
+    wp_user_id: int = Depends(exigir_usuario_wordpress),
+):
+    return {
+        "autenticado": True,
+        "wp_user_id": wp_user_id,
+    }
 
 
 def test_rota_bloqueia_sem_headers(monkeypatch):
@@ -106,7 +108,10 @@ def test_rota_aceita_assinatura_valida(monkeypatch):
     )
 
     assert resposta.status_code == 200
-    assert resposta.json() == {"autenticado": True}
+    assert resposta.json() == {
+        "autenticado": True,
+        "wp_user_id": 42,
+    }
 
     redis_falso.set.assert_awaited_once()
 
@@ -259,3 +264,50 @@ def test_assinatura_invalida_nao_registra_nonce(monkeypatch):
     )
 
     redis_falso.set.assert_not_awaited()
+
+
+def test_usuario_sistema_nao_acessa_rota_usuario(monkeypatch):
+    monkeypatch.setenv(
+        "AGROTRACER_BRIDGE_SECRET",
+        SEGREDO_TESTE,
+    )
+
+    redis_falso = AsyncMock()
+    redis_falso.set.return_value = True
+    app_teste.state.redis_cliente = redis_falso
+
+    timestamp = int(time.time())
+    nonce = "abcdef0123456789abcdef0123456789"
+    corpo = b"{}"
+
+    canonical = build_canonical_string(
+        method="POST",
+        path_with_query="/rota-protegida",
+        timestamp=timestamp,
+        nonce=nonce,
+        wp_user_id=0,
+        body=corpo,
+    )
+
+    assinatura = gerar_assinatura(
+        canonical,
+        SEGREDO_TESTE.encode("ascii"),
+    )
+
+    resposta = TestClient(app_teste).post(
+        "/rota-protegida",
+        content=corpo,
+        headers={
+            "X-AgroTracer-Signature": assinatura,
+            "X-AgroTracer-Timestamp": str(timestamp),
+            "X-AgroTracer-Nonce": nonce,
+            "X-AgroTracer-User-Id": "0",
+            "X-Correlation-ID": (
+                "123e4567-e89b-42d3-a456-426614174000"
+            ),
+        },
+    )
+
+    assert resposta.status_code == 403
+    assert resposta.json()["error"]["code"] == "AUTH_USER_REQUIRED"
+    redis_falso.set.assert_awaited_once()
