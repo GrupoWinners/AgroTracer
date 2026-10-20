@@ -17,6 +17,6 @@
       Health: OK
     </span>
     <span>&verbar;</span>
-    <span>X-Correlation-ID: <code class="agro-correlation-id">8d7c3f2a-9e4b</code></span>
+    <span>X-Correlation-ID: <code class="agro-correlation-id"><?php echo esc_html(class_exists('AgroTracer_Bridge') ? AgroTracer_Bridge::resolve_correlation_id() : '123e4567-e89b-42d3-a456-426614174000'); ?></code></span>
   </div>
 </footer>
