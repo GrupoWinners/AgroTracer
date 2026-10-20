@@ -37,9 +37,9 @@ wp_enqueue_script('agrotracer-screens-js');
     </style>
 </head>
 <body <?php body_class('agrotracer-fullscreen'); ?>>
-<?php
+<?php 
     $plugin_dir = dirname(__DIR__);
-    include $plugin_dir . '/templates/page-agrotracer.php';
+    include $plugin_dir . '/templates/page-agrotracer.php'; 
 ?>
 <?php wp_footer(); ?>
 </body>
