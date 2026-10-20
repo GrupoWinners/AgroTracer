@@ -3,7 +3,7 @@
 - **Projeto:** AgroTracer
 - **Sprint:** 0
 - **Task:** S0-T06 — Protocolo HMAC, envelope de erro e correlation_id
-- **Status:** Em validação final — protocolo aprovado tecnicamente por João Vitor; aguardando atualização da evidência de QA.
+- **Status:** Aprovado tecnicamente — protocolo PHP × Python validado por João Vitor; atualização documental de QA aguardando confirmação.
 
 ## 1. Contexto
 
@@ -94,7 +94,7 @@ Para evitar essa possibilidade de reutilização, foi proposta a ampliação do 
 
 A correção foi implementada no backend Python e validada por testes automatizados.
 
-**Status do ajuste:** TTL de 660 segundos aprovado tecnicamente por João Vitor, com implementação e testes automatizados validados. Pendente de atualização da evidência de QA Gate.
+**Status do ajuste:** TTL de 660 segundos aprovado por João Vitor e implementado em PHP e Python. Compatibilidade registrada em `docs/evidencias/sprint-0/S0-T06_compatibilidade-php-python-hmac.md`. Evidência documental de QA atualizada, aguardando confirmação da responsável.
 
 ## 6. Envelope de erro
 
