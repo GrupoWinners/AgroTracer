@@ -3,7 +3,7 @@
 - **Projeto:** AgroTracer
 - **Sprint:** 0
 - **Task:** S0-T06 — Protocolo HMAC, envelope de erro e correlation_id
-- **Status:** Proposto — aguardando revisão e aprovação da equipe
+- **Status:** Em validação final — protocolo aprovado tecnicamente por João Vitor; aguardando atualização da evidência de QA.
 
 ## 1. Contexto
 
@@ -94,7 +94,7 @@ Para evitar essa possibilidade de reutilização, foi proposta a ampliação do 
 
 A correção foi implementada no backend Python e validada por testes automatizados.
 
-**Status do ajuste:** proposta aguardando aprovação da equipe e atualização definitiva do protocolo.
+**Status do ajuste:** TTL de 660 segundos aprovado tecnicamente por João Vitor, com implementação e testes automatizados validados. Pendente de atualização da evidência de QA Gate.
 
 ## 6. Envelope de erro
 
