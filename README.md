@@ -61,16 +61,45 @@ porta publicada pelo Docker Compose.
 
 Nunca envie o arquivo `.env` ao GitHub.
 
-### 3. Iniciar o PostgreSQL
+
+A aplicação também utiliza Redis para proteção anti-replay
+das requisições autenticadas pela Bridge.
+
+No arquivo `.env`, configure:
+
+- `AGROTRACER_REDIS_URL=redis://127.0.0.1:16379/0`
+- `AGROTRACER_BRIDGE_SECRET` com uma chave aleatória e segura.
+
+Para gerar uma chave HMAC de desenvolvimento:
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Copie o resultado para `AGROTRACER_BRIDGE_SECRET`
+no `.env` local.
+
+A chave HMAC nunca deve ser incluída no código-fonte,
+enviada ao navegador ou publicada no GitHub.
+
+### 3. Iniciar o PostgreSQL e o Redis
 
 Com o Docker Desktop aberto, na raiz do projeto:
 
 ```bash
-docker compose up -d db
+docker compose up -d db redis
 docker compose ps
 ```
 
-Aguarde até o contêiner apresentar o estado healthy.
+Aguarde os dois serviços apresentarem o estado healthy.
+
+Portas utilizadas no ambiente local:
+
+- PostgreSQL: 127.0.0.1:55432
+- Redis: 127.0.0.1:16379
+
+O FastAPI utiliza o Redis para controlar os nonces
+e impedir a reutilização de requisições autenticadas.
 
 ### 4. Preparar o Python
 
@@ -103,6 +132,13 @@ Todas as alterações de estrutura do banco deverão
 ser realizadas por migrations.
 
 ### 7. Iniciar a API FastAPI
+
+Antes de iniciar a API, confirme que PostgreSQL e Redis
+estão disponíveis e que as variáveis de ambiente foram
+carregadas conforme a etapa 5.
+
+O Redis deve estar acessível durante a inicialização
+do FastAPI.
 
 ```bash
 python -m uvicorn app.main:app --reload

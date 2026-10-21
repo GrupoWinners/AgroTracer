@@ -1,0 +1,82 @@
+# Relatório de QA Gate e Revisão de Código — S0-T06
+
+**Épico:** EP-S0 — Sprint 0 — Preparação, escopo e ambiente
+
+**Task:** S0-T06 — Protocolo HMAC, envelope de erro e correlation_id
+
+**Desenvolvedores:** João Vitor e Samela
+
+**Responsável pelo QA Gate:** Nadiny
+
+**Data:** Outubro de 2026
+
+**Resultado do QA:** APROVADO — 53 testes automatizados aprovados.
+
+**Status documental:** Atualizado conforme as decisões técnicas aprovadas pelo João Vitor. Correções documentais sujeitas à confirmação da responsável pelo QA.
+
+---
+
+### 1. Validação dos critérios de aceite
+
+| Critério | Evidência | Resultado |
+|---|---|---|
+| Protocolo HMAC e ADR-002 | `docs/adr/0002-autenticacao-bridge-hmac.md` | Aprovado tecnicamente |
+| Canonical string e HMAC-SHA256 | `backend/tests/test_hmac_protocol.py` | Aprovado |
+| Compatibilidade HMAC PHP × Python | `docs/evidencias/sprint-0/S0-T06_compatibilidade-php-python-hmac.md` | Assinaturas idênticas |
+| Proteção anti-replay e nonce | `backend/tests/test_nonce_store.py` | Aprovado — TTL de 660 segundos |
+| Headers e correlation ID | `backend/tests/test_bridge_headers.py` | Aprovado |
+| Autenticação e identidade WordPress | `backend/tests/test_bridge_auth.py` | Aprovado |
+| Restrição de usuários de sistema | `backend/tests/test_bridge_dependency.py` | Aprovado |
+| Rejeição de UTF-8 inválido | `backend/tests/test_hmac_protocol.py` | Aprovado |
+
+### 2. Decisões técnicas homologadas
+
+**TTL do nonce:** 660 segundos, utilizando operação atômica `SET NX EX 660`, com margem adicional de segurança em relação à janela temporal de ±300 segundos.
+
+**Identidade WordPress:** `WP_USER_ID = 0` reservado às requisições de sistema. A identidade é derivada no servidor WordPress e protegida pela assinatura HMAC.
+
+**Canonicalização:** compatibilidade PHP × Python confirmada para ordenação de parâmetros, valores repetidos, espaços e validação de UTF-8.
+
+**Catálogo de erros de autenticação:**
+
+- `AUTH_INVALID_REQUEST` — HTTP 401.
+- `AUTH_USER_REQUIRED` — HTTP 403.
+- `AUTH_SERVICE_UNAVAILABLE` — HTTP 503.
+
+### 3. Resultado dos testes automatizados
+
+- **Total de testes:** 53
+- **Aprovados:** 53
+- **Falhas:** 0
+- **Flake8:** aprovado
+- **GitHub Actions:** aprovado
+
+Evidências:
+
+`docs/evidencias/sprint-0/S0-T06-pytest.txt`
+
+`docs/evidencias/sprint-0/S0-T06-flake8.txt`
+
+A execução apresenta um aviso não bloqueante de depreciação relacionado ao Starlette TestClient.
+
+### 4. Validação entre PHP e Python
+
+O João Vitor confirmou a reprodução exata da assinatura HMAC com parâmetros fora de ordem, espaços e chaves repetidas.
+
+**Assinatura correspondente nas duas implementações:**
+
+`75ff30bfcf8c437b26ae0f3ee554319cb8e131ab19bcaffcde294190159dada6`
+
+Os ajustes do protocolo foram aprovados tecnicamente e registrados na evidência de compatibilidade.
+
+### 5. Conclusão do QA Gate
+
+A execução dos 53 testes automatizados foi aprovada pelo QA Gate.
+
+As correções documentais deste relatório refletem o TTL definitivo de 660 segundos, a compatibilidade entre PHP e Python e o catálogo de erros homologado.
+
+A realização de teste HTTP ponta a ponta entre WordPress e FastAPI deverá ser registrada na etapa de integração ou homologação, caso ainda não tenha sido executada.
+
+A integração à `develop` permanece condicionada à conclusão dos critérios de aceite e à confirmação final da equipe.
+
+**Observação:** as alterações documentais posteriores ao relatório original deverão ser conferidas pela responsável pelo QA, preservando o registro de sua validação.
