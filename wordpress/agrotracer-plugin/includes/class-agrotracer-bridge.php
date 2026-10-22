@@ -2,8 +2,15 @@
 /**
  * Main Controller for AgroTracer Bridge Plugin
  * Manages asset enqueues, admin menus, template routing, and API integration
- * Version: 3.1.0 (Sprint 1 - Task S1-T03)
+ * via the centralized AgroTracer_Http_Client (`\AgroTracerBridge\Http\AgroTracer_Http_Client`).
+ * Version: 3.1.0 (Sprint 1 - Task S1-T03 / S1-T04)
+ *
+ * @package AgroTracerBridge
  */
+
+declare(strict_types=1);
+
+use AgroTracerBridge\Http\AgroTracer_Http_Client;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -13,7 +20,7 @@ class AgroTracer_Bridge {
 
     private static $instance = null;
 
-    public static function get_instance() {
+    public static function get_instance(): self {
         if (null === self::$instance) {
             self::$instance = new self();
         }
@@ -27,9 +34,15 @@ class AgroTracer_Bridge {
         add_action('template_redirect', [$this, 'handle_standalone_preview']);
         add_action('rest_api_init', [$this, 'register_rest_routes']);
         add_filter('template_include', [$this, 'load_agrotracer_canvas_template']);
-        
+
+        if (!class_exists(AgroTracer_Http_Client::class) && defined('AGROTRACER_PLUGIN_DIR')) {
+            require_once AGROTRACER_PLUGIN_DIR . 'includes/class-agrotracer-http-client.php';
+        }
+
         // Initialize Shortcodes
-        AgroTracer_Shortcodes::init();
+        if (class_exists('AgroTracer_Shortcodes')) {
+            AgroTracer_Shortcodes::init();
+        }
     }
 
     /**
@@ -37,7 +50,7 @@ class AgroTracer_Bridge {
      * 1. Configura Roles e Capabilities
      * 2. Provisiona de forma idempotente a página do sistema (/agrotracer)
      */
-    public static function activate() {
+    public static function activate(): void {
         // 1. Configuração de Roles e Capabilities
         self::setup_roles();
 
@@ -76,7 +89,7 @@ class AgroTracer_Bridge {
     /**
      * Configura a role agrotracer_produtor e capabilities
      */
-    public static function setup_roles() {
+    public static function setup_roles(): void {
         // 1. Registra a role agrotracer_produtor se não existir
         if (!get_role('agrotracer_produtor')) {
             add_role('agrotracer_produtor', __('Produtor Rural', 'agrotracer-bridge'), [
@@ -103,7 +116,7 @@ class AgroTracer_Bridge {
     /**
      * Plugin Deactivation Routine
      */
-    public static function deactivate() {
+    public static function deactivate(): void {
         // Mantém dados e roles persistentes por padrão, remove caps se necessário
     }
 
@@ -111,15 +124,15 @@ class AgroTracer_Bridge {
      * Registers REST API endpoints for AgroTracer Bridge
      * Endpoint: /wp-json/agrotracer/v1/fazendas
      */
-    public function register_rest_routes() {
+    public function register_rest_routes(): void {
         register_rest_route('agrotracer/v1', '/fazendas', [
             [
                 'methods'             => WP_REST_Server::CREATABLE, // POST
                 'callback'            => [$this, 'handle_create_farm'],
-                'permission_callback' => function () {
+                'permission_callback' => function (): bool {
                     // Exige usuário autenticado com permissão de gestão de fazendas ou publicação nativa
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') || 
+                        current_user_can('agrotracer_manage_farms') ||
                         current_user_can('publish_posts')
                     );
                 },
@@ -154,9 +167,9 @@ class AgroTracer_Bridge {
             [
                 'methods'             => WP_REST_Server::READABLE, // GET
                 'callback'            => [$this, 'handle_get_farms'],
-                'permission_callback' => function () {
+                'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') || 
+                        current_user_can('agrotracer_manage_farms') ||
                         current_user_can('publish_posts')
                     );
                 },
@@ -165,87 +178,17 @@ class AgroTracer_Bridge {
     }
 
     /**
-     * Constantes oficiais do protocolo de segurança da Bridge (ADR-002 / S0-T06)
+     * Constantes oficiais do protocolo de segurança da Bridge (ADR-002 / S0-T06 / S1-T04)
      */
-    public const TIMESTAMP_TOLERANCE_SECONDS = 300;
-    public const NONCE_TTL_SECONDS           = 660;
-    public const SYSTEM_USER_ID              = 0;
+    public const TIMESTAMP_TOLERANCE_SECONDS = AgroTracer_Http_Client::TIMESTAMP_TOLERANCE_SECONDS;
+    public const NONCE_TTL_SECONDS           = AgroTracer_Http_Client::NONCE_TTL_SECONDS;
+    public const SYSTEM_USER_ID              = AgroTracer_Http_Client::SYSTEM_USER_ID;
 
     /**
      * Normaliza path e query string segundo RFC 3986 (ADR-002)
-     * Paridade 100% com normalizar_path_query() do backend FastAPI (feature/PY-06),
-     * incluindo rejeição estrita de sequências UTF-8 inválidas (errors="strict").
      */
     public static function normalize_path_query(string $path_with_query): string {
-        if (strpos($path_with_query, '#') !== false) {
-            throw new InvalidArgumentException('Fragmentos não são permitidos.');
-        }
-
-        $partes = parse_url($path_with_query);
-        if (
-            $partes === false ||
-            isset($partes['scheme']) ||
-            isset($partes['host']) ||
-            strpos($path_with_query, '//') === 0
-        ) {
-            throw new InvalidArgumentException('A URL deve conter apenas path e query.');
-        }
-
-        $path = $partes['path'] ?? '';
-        if (strpos($path, '/') !== 0) {
-            throw new InvalidArgumentException("O path deve começar com '/'.");
-        }
-
-        if (preg_match('//u', $path) !== 1) {
-            throw new InvalidArgumentException('Sequência UTF-8 inválida no path.');
-        }
-
-        $query = $partes['query'] ?? '';
-        if ($query === '') {
-            return $path;
-        }
-
-        // Equivalente exato ao parse_qsl(query, keep_blank_values=True, errors="strict") do Python
-        $pares_brutos = explode('&', $query);
-        $parametros = [];
-        $idx = 0;
-
-        foreach ($pares_brutos as $par) {
-            if ($par === '') {
-                continue;
-            }
-            $pos = strpos($par, '=');
-            if ($pos === false) {
-                $k = urldecode($par);
-                $v = '';
-            } else {
-                $k = urldecode(substr($par, 0, $pos));
-                $v = urldecode(substr($par, $pos + 1));
-            }
-
-            if (preg_match('//u', $k) !== 1 || preg_match('//u', $v) !== 1) {
-                throw new InvalidArgumentException('Sequência UTF-8 inválida na query string.');
-            }
-
-            $parametros[] = ['key' => $k, 'val' => $v, 'idx' => $idx++];
-        }
-
-        if (empty($parametros)) {
-            return $path;
-        }
-
-        // Ordenação alfabética estável pela chave (paridade com Timsort do Python)
-        usort($parametros, function ($a, $b) {
-            $cmp = strcmp($a['key'], $b['key']);
-            return $cmp !== 0 ? $cmp : ($a['idx'] <=> $b['idx']);
-        });
-
-        // Codificação estrita RFC 3986 (equivalente a urlencode(..., quote_via=quote, safe=""))
-        $encoded = array_map(function ($item) {
-            return rawurlencode($item['key']) . '=' . rawurlencode($item['val']);
-        }, $parametros);
-
-        return $path . '?' . implode('&', $encoded);
+        return AgroTracer_Http_Client::normalize_path_query($path_with_query);
     }
 
     /**
@@ -260,85 +203,41 @@ class AgroTracer_Bridge {
         int $wp_user_id,
         string $raw_body = ''
     ): string {
-        if ($wp_user_id < 0) {
-            throw new InvalidArgumentException('O identificador de usuário deve ser maior ou igual a 0.');
-        }
-
-        $body_hash = hash('sha256', $raw_body);
-
-        return implode("\n", [
-            strtoupper($method),
-            self::normalize_path_query($path_with_query),
-            (string) $timestamp,
+        return AgroTracer_Http_Client::build_canonical_string(
+            $method,
+            $path_with_query,
+            $timestamp,
             $nonce,
-            (string) $wp_user_id,
-            $body_hash,
-        ]);
+            $wp_user_id,
+            $raw_body
+        );
     }
 
     /**
      * Gera assinatura HMAC-SHA256 em hexadecimal minúsculo (64 caracteres)
      */
     public static function generate_hmac_signature(string $canonical_string, string $secret_key): string {
-        return hash_hmac('sha256', $canonical_string, $secret_key);
-    }
-
-    /**
-     * Obtém e valida a chave secreta compartilhada AGROTRACER_BRIDGE_SECRET (ASCII >= 32 bytes)
-     */
-    private static function get_bridge_secret(): string {
-        if (
-            defined('AGROTRACER_BRIDGE_SECRET') &&
-            is_string(AGROTRACER_BRIDGE_SECRET) &&
-            preg_match('/^[\x00-\x7F]{32,}$/', AGROTRACER_BRIDGE_SECRET) === 1
-        ) {
-            return AGROTRACER_BRIDGE_SECRET;
-        }
-
-        $env_secret = getenv('AGROTRACER_BRIDGE_SECRET');
-        if (
-            is_string($env_secret) &&
-            preg_match('/^[\x00-\x7F]{32,}$/', $env_secret) === 1
-        ) {
-            return $env_secret;
-        }
-
-        // Fallback seguro restrito exclusivamente a ambiente local de desenvolvimento/teste
-        return 'agrotracer_chave_exclusivamente_teste_2026';
+        return AgroTracer_Http_Client::compute_hmac_signature($canonical_string, $secret_key);
     }
 
     /**
      * Valida ou gera um X-Correlation-ID em formato UUID v4 canônico minúsculo (36 caracteres)
      */
     public static function resolve_correlation_id(?string $incoming_id = null): string {
-        if (is_string($incoming_id)) {
-            $candidate = strtolower(trim($incoming_id));
-            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', $candidate)) {
-                return $candidate;
-            }
-        }
-
-        return function_exists('wp_generate_uuid4')
-            ? wp_generate_uuid4()
-            : sprintf(
-                '%04x%04x-%04x-4%03x-%04x-%04x%04x%04x',
-                random_int(0, 0xffff), random_int(0, 0xffff),
-                random_int(0, 0xffff),
-                random_int(0, 0x0fff),
-                random_int(0, 0x3fff) | 0x8000,
-                random_int(0, 0xffff), random_int(0, 0xffff), random_int(0, 0xffff)
-            );
+        return AgroTracer_Http_Client::resolve_correlation_id($incoming_id);
     }
 
     /**
      * Gera Nonce criptograficamente seguro de 16 bytes (32 caracteres hex minúsculos)
      */
     public static function generate_nonce(): string {
-        return bin2hex(random_bytes(16));
+        return AgroTracer_Http_Client::generate_nonce();
     }
 
     /**
-     * Constrói o pacote completo de headers autenticados da Bridge (ADR-002)
+     * Constrói o pacote completo de headers autenticados da Bridge (ADR-002 / S1-T04)
+     * Inclui X-AgroTracer-Actor-ID, X-AgroTracer-User-Id, X-AgroTracer-Timestamp,
+     * X-AgroTracer-Nonce, X-AgroTracer-Signature e X-Correlation-ID.
      */
     public static function build_signed_headers(
         string $method,
@@ -350,112 +249,113 @@ class AgroTracer_Bridge {
         ?string $nonce = null,
         ?string $secret_key = null
     ): array {
-        $timestamp_utc  = $timestamp ?? time();
-        $nonce_hex      = $nonce ?? self::generate_nonce();
-        $corr_uuid      = self::resolve_correlation_id($correlation_id);
-        $resolved_key   = $secret_key ?? self::get_bridge_secret();
-
-        $canonical = self::build_canonical_string(
+        return AgroTracer_Http_Client::build_signed_headers(
             $method,
             $path_with_query,
-            $timestamp_utc,
-            $nonce_hex,
+            $raw_body,
             $wp_user_id,
-            $raw_body
+            $correlation_id,
+            $timestamp,
+            $nonce,
+            $secret_key
         );
-
-        $signature = self::generate_hmac_signature($canonical, $resolved_key);
-
-        return [
-            'Content-Type'           => 'application/json',
-            'X-AgroTracer-Signature' => $signature,
-            'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
-            'X-AgroTracer-Nonce'     => $nonce_hex,
-            'X-AgroTracer-User-Id'   => (string) $wp_user_id,
-            'X-Correlation-ID'       => $corr_uuid,
-            'User-Agent'             => 'AgroTracer-Bridge/3.1.0 (WordPress)',
-        ];
     }
 
     /**
-     * Handles farm creation and forwards to Python FastAPI backend
-     * Includes HMAC-SHA256 signature, 128-bit Nonce, UTC timestamp audit, UUID v4 Correlation ID and BOLA/IDOR protection
+     * Mapeia códigos HTTP de erro da API FastAPI para mensagens claras e seguras na UI.
      */
-    public function handle_create_farm(WP_REST_Request $request) {
-        // Identidade derivada exclusivamente no servidor WordPress (ADR-002)
-        $current_user_id = (int) get_current_user_id();
-        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
-        $timestamp_utc   = time();
+    public static function map_error_to_ui_message(
+        int $status_code,
+        ?string $error_code = null,
+        array $field_errors = []
+    ): string {
+        return AgroTracer_Http_Client::map_error_to_ui_message($status_code, $error_code, $field_errors);
+    }
 
-        if ($current_user_id <= self::SYSTEM_USER_ID) {
+    /**
+     * Handles farm creation and forwards to Python FastAPI backend via AgroTracer_Http_Client.
+     * Enforces wp_verify_nonce, current_user_can, server-side get_current_user_id(),
+     * defensive timeout, and non-leaky UI error mapping.
+     */
+    public function handle_create_farm(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc  = time();
+
+        // 1. Validação explícita de Nonce (CSRF) e Capability quando enviado via browser REST
+        $wp_nonce = $request->get_header('x-wp-nonce') ?: (string) $request->get_param('_wpnonce');
+        if ($wp_nonce !== '' && function_exists('wp_verify_nonce')) {
+            if (!wp_verify_nonce($wp_nonce, 'wp_rest')) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'error'   => [
+                        'code'           => 'AUTH_INVALID_NONCE',
+                        'message'        => self::map_error_to_ui_message(401, 'AUTH_INVALID_REQUEST'),
+                        'correlation_id' => $correlation_id,
+                        'timestamp'      => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
+                    ],
+                ], 401, ['X-Correlation-ID' => $correlation_id]);
+            }
+        }
+
+        // 2. Identidade derivada exclusivamente no servidor WordPress após validação de capability
+        $current_user_id = (int) get_current_user_id();
+        $has_cap = current_user_can('agrotracer_manage_farms') || current_user_can('publish_posts');
+
+        if ($current_user_id <= self::SYSTEM_USER_ID || !$has_cap) {
             return new WP_REST_Response([
                 'success' => false,
                 'error'   => [
                     'code'           => 'AUTH_USER_REQUIRED',
-                    'message'        => 'Operação restrita a usuários WordPress.',
+                    'message'        => self::map_error_to_ui_message(403, 'AUTH_USER_REQUIRED'),
                     'correlation_id' => $correlation_id,
                     'timestamp'      => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
                 ],
             ], 403, ['X-Correlation-ID' => $correlation_id]);
         }
 
-        $path_with_query = '/api/v1/fazendas';
-
-        $body = [
+        // 3. Sanitização estrita: ignora qualquer user_id vindo do request/browser
+        $raw_input = [
             'nome_propriedade' => $request->get_param('nome_propriedade'),
             'numero_car'       => $request->get_param('numero_car'),
             'municipio'        => $request->get_param('municipio'),
             'uf'               => $request->get_param('uf'),
             'coordenadas'      => $request->get_param('coordenadas'),
-            'produtor_id'      => $current_user_id, // Blindagem BOLA/IDOR vinculando ao usuário autenticado
         ];
 
-        $raw_body = wp_json_encode($body);
-
-        // Headers autenticados com HMAC-SHA256 segundo ADR-002
-        $headers = self::build_signed_headers(
-            'POST',
-            $path_with_query,
-            $raw_body,
+        $result = AgroTracer_Http_Client::post(
+            '/api/v1/fazendas',
+            $raw_input,
             $current_user_id,
             $correlation_id,
-            $timestamp_utc
+            true
         );
 
-        $base_url = defined('AGROTRACER_API_BASE_URL')
-            ? rtrim(AGROTRACER_API_BASE_URL, '/')
-            : 'http://127.0.0.1:8000';
-        $fastapi_url = $base_url . self::normalize_path_query($path_with_query);
+        // Se o backend FastAPI respondeu (sucesso 2xx ou erro de domínio 4xx/500)
+        if ($result['success'] === true) {
+            return new WP_REST_Response($result['data'], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
 
-        // Disparo ao backend FastAPI
-        $response = wp_remote_post($fastapi_url, [
-            'headers'   => $headers,
-            'body'      => $raw_body,
-            'timeout'   => 15,
-            'sslverify' => false,
-        ]);
-
-        // Se o backend FastAPI estiver ativo e responder
-        if (!is_wp_error($response)) {
-            $status_code = wp_remote_retrieve_response_code($response);
-            $response_body = json_decode(wp_remote_retrieve_body($response), true);
-            $resp_corr_id = wp_remote_retrieve_header($response, 'x-correlation-id') ?: $correlation_id;
-
-            return new WP_REST_Response($response_body, $status_code, [
-                'X-Correlation-ID'       => $resp_corr_id,
-                'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => $result['error'],
+            ], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
             ]);
         }
 
         // Fallback controlado para ambiente local/homologação quando backend offline
-        // Retorna contrato formal HTTP 201 Created
         $mock_created_farm = [
             'id'               => 1,
-            'nome_propriedade' => $body['nome_propriedade'],
-            'numero_car'       => $body['numero_car'],
-            'municipio'        => $body['municipio'],
-            'uf'               => $body['uf'],
-            'coordenadas'      => $body['coordenadas'],
+            'nome_propriedade' => $raw_input['nome_propriedade'],
+            'numero_car'       => $raw_input['numero_car'],
+            'municipio'        => $raw_input['municipio'],
+            'uf'               => $raw_input['uf'],
+            'coordenadas'      => $raw_input['coordenadas'],
             'produtor_id'      => $current_user_id,
             'status'           => 'ATIVO',
             'created_at'       => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
@@ -470,80 +370,48 @@ class AgroTracer_Bridge {
     }
 
     /**
-     * Handles farm listing for the logged in user (BOLA/IDOR protection + ADR-002 headers + RFC 3986 Query Normalization)
+     * Handles farm listing for the logged in user via AgroTracer_Http_Client.
      */
-    public function handle_get_farms(WP_REST_Request $request) {
-        // Identidade derivada exclusivamente no servidor WordPress (ADR-002)
-        $current_user_id = (int) get_current_user_id();
+    public function handle_get_farms(WP_REST_Request $request): WP_REST_Response {
         $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
         $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+        $has_cap         = current_user_can('agrotracer_manage_farms') || current_user_can('publish_posts');
 
-        if ($current_user_id <= self::SYSTEM_USER_ID) {
+        if ($current_user_id <= self::SYSTEM_USER_ID || !$has_cap) {
             return new WP_REST_Response([
                 'success' => false,
                 'error'   => [
                     'code'           => 'AUTH_USER_REQUIRED',
-                    'message'        => 'Operação restrita a usuários WordPress.',
+                    'message'        => self::map_error_to_ui_message(403, 'AUTH_USER_REQUIRED'),
                     'correlation_id' => $correlation_id,
                     'timestamp'      => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
                 ],
             ], 403, ['X-Correlation-ID' => $correlation_id]);
         }
 
-        $path_with_query = '/api/v1/fazendas';
-
-        $query_params = $request->get_query_params();
-        if (!empty($query_params)) {
-            $raw_query = isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] !== ''
-                ? $_SERVER['QUERY_STRING']
-                : http_build_query($query_params, '', '&', PHP_QUERY_RFC3986);
-            if ($raw_query !== '') {
-                $path_with_query .= '?' . $raw_query;
-            }
-        }
-
-        try {
-            $normalized_path_with_query = self::normalize_path_query($path_with_query);
-        } catch (InvalidArgumentException $e) {
-            return new WP_REST_Response([
-                'success' => false,
-                'error'   => [
-                    'code'           => 'AUTH_INVALID_REQUEST',
-                    'message'        => 'Não foi possível autenticar a requisição.',
-                    'correlation_id' => $correlation_id,
-                    'timestamp'      => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
-                ],
-            ], 401, ['X-Correlation-ID' => $correlation_id]);
-        }
-
-        $headers = self::build_signed_headers(
-            'GET',
-            $normalized_path_with_query,
-            '',
+        $query_params = (array) $request->get_query_params();
+        $result = AgroTracer_Http_Client::get(
+            '/api/v1/fazendas',
+            $query_params,
             $current_user_id,
-            $correlation_id,
-            $timestamp_utc
+            $correlation_id
         );
 
-        $base_url = defined('AGROTRACER_API_BASE_URL')
-            ? rtrim(AGROTRACER_API_BASE_URL, '/')
-            : 'http://127.0.0.1:8000';
-        $fastapi_url = $base_url . $normalized_path_with_query;
+        if ($result['success'] === true) {
+            return new WP_REST_Response($result['data'], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
 
-        $response = wp_remote_get($fastapi_url, [
-            'headers'   => $headers,
-            'timeout'   => 15,
-            'sslverify' => false,
-        ]);
-
-        if (!is_wp_error($response)) {
-            $status_code = wp_remote_retrieve_response_code($response);
-            $response_body = json_decode(wp_remote_retrieve_body($response), true);
-            $resp_corr_id = wp_remote_retrieve_header($response, 'x-correlation-id') ?: $correlation_id;
-
-            return new WP_REST_Response($response_body, $status_code, [
-                'X-Correlation-ID'       => $resp_corr_id,
-                'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => $result['error'],
+            ], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
             ]);
         }
 
@@ -572,7 +440,7 @@ class AgroTracer_Bridge {
         ]);
     }
 
-    public function register_assets() {
+    public function register_assets(): void {
         $plugin_url = plugin_dir_url(dirname(__FILE__));
         $version = '3.1.0';
 
@@ -591,6 +459,7 @@ class AgroTracer_Bridge {
             true
         );
 
+        // Regra estrita: NUNCA expor segredos criptográficos ou chaves HMAC em HTML/JS
         wp_localize_script('agrotracer-screens-js', 'agrotracerConfig', [
             'ajaxUrl'       => admin_url('admin-ajax.php'),
             'restUrl'       => esc_url_raw(rest_url('agrotracer/v1')),
@@ -600,11 +469,11 @@ class AgroTracer_Bridge {
         ]);
     }
 
-    public function register_admin_menu() {
+    public function register_admin_menu(): void {
         add_menu_page(
             'AgroTracer Desktop',
             'AgroTracer',
-            'agrotracer_manage_farms', // Permite acesso à persona Produtor Rural e Administradores
+            'agrotracer_manage_farms',
             'agrotracer-desktop',
             [$this, 'render_admin_page'],
             'dashicons-chart-area',
@@ -612,7 +481,7 @@ class AgroTracer_Bridge {
         );
     }
 
-    public function render_admin_page() {
+    public function render_admin_page(): void {
         wp_enqueue_style('agrotracer-screens-css');
         wp_enqueue_script('agrotracer-screens-js');
 
@@ -625,7 +494,6 @@ class AgroTracer_Bridge {
 
     /**
      * Intercepta o carregamento de templates e entrega o Canvas Autônomo
-     * sem interferência visual de temas de terceiros (Full-Width Canvas)
      */
     public function load_agrotracer_canvas_template($template) {
         if (is_page('agrotracer') || (get_the_ID() && get_the_ID() == get_option('agrotracer_page_id'))) {
@@ -637,7 +505,7 @@ class AgroTracer_Bridge {
         return $template;
     }
 
-    public function handle_standalone_preview() {
+    public function handle_standalone_preview(): void {
         if (isset($_GET['agrotracer_preview']) && $_GET['agrotracer_preview'] === '1') {
             $this->register_assets();
             wp_enqueue_style('agrotracer-screens-css');
