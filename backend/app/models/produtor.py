@@ -4,6 +4,7 @@ from sqlalchemy import (
     BigInteger,
     CheckConstraint,
     Identity,
+    Integer,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -29,9 +30,10 @@ class Produtor(Base):
     )
 
     id: Mapped[int] = mapped_column(
-        BigInteger,
+        BigInteger().with_variant(Integer, "sqlite"),
         Identity(),
         primary_key=True,
+        autoincrement=True,
     )
 
     wordpress_user_id: Mapped[int] = mapped_column(

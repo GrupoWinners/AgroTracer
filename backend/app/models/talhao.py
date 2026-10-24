@@ -6,6 +6,7 @@ from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
     Identity,
+    Integer,
     Numeric,
     String,
     UniqueConstraint,
@@ -38,9 +39,10 @@ class Talhao(Base):
     )
 
     id: Mapped[int] = mapped_column(
-        BigInteger,
+        BigInteger().with_variant(Integer, "sqlite"),
         Identity(),
         primary_key=True,
+        autoincrement=True,
     )
 
     fazenda_id: Mapped[int] = mapped_column(

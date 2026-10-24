@@ -1,8 +1,13 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from redis.asyncio import Redis
 
+try:
+    from redis.asyncio import Redis
+except ImportError:
+    Redis = None
+
+from app.api.v1 import api_router
 from app.core.bridge_errors import (
     ErroBridge,
     obter_correlation_id,
@@ -13,23 +18,23 @@ from app.core.settings import obter_redis_url
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    cliente = Redis.from_url(
-        obter_redis_url(),
-        socket_connect_timeout=2,
-        socket_timeout=2,
-    )
+    if Redis is not None:
+        cliente = Redis.from_url(
+            obter_redis_url(),
+            socket_connect_timeout=2,
+            socket_timeout=2,
+        )
 
-    try:
-        await cliente.ping()
-        app.state.redis_cliente = cliente
-
+        try:
+            await cliente.ping()
+            app.state.redis_cliente = cliente
+            yield
+        finally:
+            if hasattr(app.state, "redis_cliente"):
+                del app.state.redis_cliente
+            await cliente.aclose()
+    else:
         yield
-
-    finally:
-        if hasattr(app.state, "redis_cliente"):
-            del app.state.redis_cliente
-
-        await cliente.aclose()
 
 
 app = FastAPI(
@@ -59,6 +64,9 @@ async def adicionar_correlation_id(request: Request, call_next):
     resposta.headers["X-Correlation-ID"] = correlation_id
 
     return resposta
+
+
+app.include_router(api_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["Health"])

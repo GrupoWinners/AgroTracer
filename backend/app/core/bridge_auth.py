@@ -1,6 +1,11 @@
+from typing import Any
+
 from fastapi import Request
-from redis.asyncio import Redis
-from app.core.nonce_store import registrar_nonce
+
+try:
+    from redis.asyncio import Redis
+except ImportError:
+    Redis = Any
 
 from app.core.bridge_headers import (
     ler_headers_bridge,
@@ -10,12 +15,13 @@ from app.core.hmac_protocol import (
     build_canonical_string,
     validar_assinatura,
 )
+from app.core.nonce_store import registrar_nonce
 
 
 async def verificar_hmac_requisicao(
     request: Request,
     chave: bytes,
-    cliente_redis: Redis,
+    cliente_redis: Any,
     agora: int | None = None,
 ) -> bool:
     headers = ler_headers_bridge(request)

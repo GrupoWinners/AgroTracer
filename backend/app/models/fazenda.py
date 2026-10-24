@@ -5,6 +5,7 @@ from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
     Identity,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -41,9 +42,10 @@ class Fazenda(Base):
     )
 
     id: Mapped[int] = mapped_column(
-        BigInteger,
+        BigInteger().with_variant(Integer, "sqlite"),
         Identity(),
         primary_key=True,
+        autoincrement=True,
     )
 
     produtor_id: Mapped[int] = mapped_column(
