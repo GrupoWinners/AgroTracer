@@ -15,7 +15,8 @@ from app.db.database import obter_db
 from app.main import app
 from app.models import Base
 
-# Setup compatibilidade de PostgreSQL DDL com SQLite em memória
+
+# Setup compatibilidade de PostgreSQL DDL com SQLite em memoria
 @compiles(JSONB, "sqlite")
 def compile_jsonb_sqlite(type_, compiler, **kw):
     return "TEXT"
@@ -38,7 +39,11 @@ def configurar_funcoes_sqlite(dbapi_connection, connection_record):
     )
 
 
-SessionTeste = sessionmaker(autocommit=False, autoflush=False, bind=engine_teste)
+SessionTeste = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine_teste,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -67,7 +72,7 @@ def cliente():
 
 
 # ----------------------------------------------------------------------
-# 1. MATRIZ DE CRUD (Produtor -> Fazenda -> Talhão) & BOLA
+# 1. MATRIZ DE CRUD (Produtor -> Fazenda -> Talhao) & BOLA
 # ----------------------------------------------------------------------
 
 def test_crud_fazenda_e_talhao_sucesso(cliente):
@@ -94,18 +99,19 @@ def test_crud_fazenda_e_talhao_sucesso(cliente):
     assert len(lista) == 1
     assert lista[0]["id"] == fazenda_id
 
-    # 3. Criar talhão na fazenda
+    # 3. Criar talhao na fazenda
     payload_talhao = {
         "identificador": "Piquete 01",
         "area_hectares": "25.5000",
     }
-    resp = cliente.post(f"/api/v1/fazendas/{fazenda_id}/talhoes", json=payload_talhao)
+    url_talhao = f"/api/v1/fazendas/{fazenda_id}/talhoes"
+    resp = cliente.post(url_talhao, json=payload_talhao)
     assert resp.status_code == 201
     talhao_data = resp.json()
     assert talhao_data["identificador"] == "Piquete 01"
     assert Decimal(str(talhao_data["area_hectares"])) == Decimal("25.5000")
 
-    # 4. Listar talhões da fazenda
+    # 4. Listar talhoes da fazenda
     resp = cliente.get(f"/api/v1/fazendas/{fazenda_id}/talhoes")
     assert resp.status_code == 200
     talhoes = resp.json()
@@ -127,17 +133,17 @@ def test_rejeita_car_duplicado_rn02(cliente):
 
     payload_duplicado = {
         "nome": "Fazenda B",
-        "municipio": "Corumbá",
+        "municipio": "Corumba",
         "uf": "MS",
         "numero_car_informado": "CAR-UNICO-12345",
     }
     resp_dup = cliente.post("/api/v1/fazendas", json=payload_duplicado)
     assert resp_dup.status_code == 409
-    assert "já está cadastrado" in resp_dup.json()["detail"]
+    assert "cadastrado" in resp_dup.json()["detail"]
 
 
 def test_autorizacao_por_objeto_bola(cliente):
-    """Produtor B não pode visualizar nem criar talhão em fazenda do Produtor A."""
+    """Produtor B nao pode ver nem criar talhao na fazenda de A."""
     app.dependency_overrides[exigir_usuario_wordpress] = lambda: 100
     resp = cliente.post("/api/v1/fazendas", json={
         "nome": "Fazenda do Produtor 100",
@@ -151,37 +157,44 @@ def test_autorizacao_por_objeto_bola(cliente):
     resp_bola = cliente.get(f"/api/v1/fazendas/{fazenda_id}")
     assert resp_bola.status_code == 404
 
-    resp_bola_post = cliente.post(f"/api/v1/fazendas/{fazenda_id}/talhoes", json={
-        "identificador": "Invasão",
+    url_talhao = f"/api/v1/fazendas/{fazenda_id}/talhoes"
+    resp_bola_post = cliente.post(url_talhao, json={
+        "identificador": "Invasao",
         "area_hectares": "10.0",
     })
     assert resp_bola_post.status_code == 404
 
 
 # ----------------------------------------------------------------------
-# 2. TESTES DE SEGURANÇA DA BRIDGE (SEC-01 a SEC-04)
+# 2. TESTES DE SEGURANCA DA BRIDGE (SEC-01 a SEC-04)
 # ----------------------------------------------------------------------
 
 def test_sec_01_hmac_tampering(cliente):
-    """SEC-01: Rejeição 401 quando assinatura HMAC for adulterada."""
+    """SEC-01: Rejeicao 401 quando assinatura HMAC for adulterada."""
     headers = {
         "X-AgroTracer-Key-Id": "wp-bridge-2026-01",
         "X-AgroTracer-Timestamp": str(int(time.time())),
         "X-AgroTracer-Nonce": "nonce-sec01-tampering",
         "X-AgroTracer-User-Id": "42",
-        "X-AgroTracer-Signature": "assinatura_adulterada_invalida_1234567890abcdef",
+        "X-AgroTracer-Signature": "sig_invalida_1234567890abcdef",
     }
     app.dependency_overrides.pop(exigir_usuario_wordpress, None)
 
-    with patch("app.core.bridge_dependency.obter_chave_bridge", return_value=b"chave_secreta_segura_32_bytes_ok"), \
-         patch("app.core.nonce_store.registrar_nonce", new_callable=AsyncMock) as mock_nonce:
+    chave_mock = b"chave_secreta_segura_32_bytes_ok"
+    with patch(
+        "app.core.bridge_dependency.obter_chave_bridge",
+        return_value=chave_mock,
+    ), patch(
+        "app.core.nonce_store.registrar_nonce",
+        new_callable=AsyncMock,
+    ) as mock_nonce:
         mock_nonce.return_value = True
         resp = cliente.get("/api/v1/fazendas", headers=headers)
         assert resp.status_code == 401
 
 
 def test_sec_02_timestamp_fora_da_janela(cliente):
-    """SEC-02: Rejeição 401 quando timestamp estiver fora de +-300s."""
+    """SEC-02: Rejeicao 401 quando timestamp estiver fora de +-300s."""
     app.dependency_overrides.pop(exigir_usuario_wordpress, None)
     timestamp_expirado = str(int(time.time()) - 600)
 
@@ -192,13 +205,17 @@ def test_sec_02_timestamp_fora_da_janela(cliente):
         "X-AgroTracer-User-Id": "42",
         "X-AgroTracer-Signature": "dummy",
     }
-    with patch("app.core.bridge_dependency.obter_chave_bridge", return_value=b"chave_secreta_segura_32_bytes_ok"):
+    chave_mock = b"chave_secreta_segura_32_bytes_ok"
+    with patch(
+        "app.core.bridge_dependency.obter_chave_bridge",
+        return_value=chave_mock,
+    ):
         resp = cliente.get("/api/v1/fazendas", headers=headers)
         assert resp.status_code == 401
 
 
 def test_sec_03_anti_replay_nonce_duplicado(cliente):
-    """SEC-03: Rejeição 401 quando nonce já tiver sido utilizado."""
+    """SEC-03: Rejeicao 401 quando nonce ja tiver sido utilizado."""
     app.dependency_overrides.pop(exigir_usuario_wordpress, None)
     timestamp = str(int(time.time()))
 
@@ -209,15 +226,21 @@ def test_sec_03_anti_replay_nonce_duplicado(cliente):
         "X-AgroTracer-User-Id": "42",
         "X-AgroTracer-Signature": "dummy",
     }
-    with patch("app.core.bridge_dependency.obter_chave_bridge", return_value=b"chave_secreta_segura_32_bytes_ok"), \
-         patch("app.core.nonce_store.registrar_nonce", new_callable=AsyncMock) as mock_nonce:
+    chave_mock = b"chave_secreta_segura_32_bytes_ok"
+    with patch(
+        "app.core.bridge_dependency.obter_chave_bridge",
+        return_value=chave_mock,
+    ), patch(
+        "app.core.nonce_store.registrar_nonce",
+        new_callable=AsyncMock,
+    ) as mock_nonce:
         mock_nonce.return_value = False
         resp = cliente.get("/api/v1/fazendas", headers=headers)
         assert resp.status_code == 401
 
 
 def test_sec_04_user_id_zero_restricao_sistema(cliente):
-    """SEC-04: Rejeição 403 quando wp_user_id for 0 (sistema tentando rota de usuário)."""
+    """SEC-04: Rejeicao 403 para wp_user_id zero em rota de usuario."""
     headers = {
         "X-AgroTracer-Key-Id": "wp-bridge-2026-01",
         "X-AgroTracer-Timestamp": str(int(time.time())),
@@ -227,9 +250,16 @@ def test_sec_04_user_id_zero_restricao_sistema(cliente):
     }
     app.dependency_overrides.pop(exigir_usuario_wordpress, None)
 
-    with patch("app.core.bridge_dependency.obter_chave_bridge", return_value=b"chave_secreta_segura_32_bytes_ok"), \
-         patch("app.core.bridge_dependency.verificar_hmac_requisicao", new_callable=AsyncMock) as mock_verificar:
+    chave_mock = b"chave_secreta_segura_32_bytes_ok"
+    with patch(
+        "app.core.bridge_dependency.obter_chave_bridge",
+        return_value=chave_mock,
+    ), patch(
+        "app.core.bridge_dependency.verificar_hmac_requisicao",
+        new_callable=AsyncMock,
+    ) as mock_verificar:
         mock_verificar.return_value = True
         resp = cliente.get("/api/v1/fazendas", headers=headers)
         assert resp.status_code == 403
-        assert resp.json()["error"]["code"] == "AUTH_USER_REQUIRED"
+        dados_erro = resp.json()["error"]
+        assert dados_erro["code"] == "AUTH_USER_REQUIRED"
