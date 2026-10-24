@@ -67,8 +67,7 @@ app.dependency_overrides[obter_db] = override_obter_db
 
 @pytest.fixture
 def cliente():
-    with TestClient(app) as c:
-        yield c
+    return TestClient(app)
 
 
 # ----------------------------------------------------------------------
