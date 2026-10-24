@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
 
-from app.models import AuditoriaEvento, Base, Fazenda, Produtor, Talhao
+from app.models import Base
 
 
 def test_modelos_metadata_estrutura():
