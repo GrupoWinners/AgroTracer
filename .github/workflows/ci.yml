@@ -2,9 +2,9 @@ name: AgroTracer CI
 
 on:
   pull_request:
-    branches: [develop, main]
+    branches: [main]
   push:
-    branches: [develop, main]
+    branches: [main]
 
 permissions:
   contents: read
