@@ -6,6 +6,7 @@ from sqlalchemy import (
     ForeignKey,
     Identity,
     Numeric,
+    String,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -35,6 +36,11 @@ class Talhao(Base):
             name="fk_talhoes_fazenda_id",
             ondelete="RESTRICT",
         ),
+        nullable=False,
+    )
+
+    identificador: Mapped[str] = mapped_column(
+        String(50),
         nullable=False,
     )
 

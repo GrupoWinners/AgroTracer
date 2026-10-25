@@ -63,3 +63,60 @@ A conversão para códigos e mensagens da API pertence
 - Validar o esquema com a equipe antes do merge.
 - QA Gate e code review dependem de aprovação formal.
 - CRUD protegido ponta a ponta pertence às tasks seguintes.
+
+## Ajustes solicitados no Code Review
+
+Foram realizados os seguintes ajustes:
+
+- Adicionados nome, municipio e uf à tabela fazendas.
+- Adicionada unicidade de numero_car_informado (RN-02).
+- Adicionado identificador obrigatório à tabela talhoes.
+- Criada migration incremental s1t01_campos.
+- Atualizados os testes de integridade do PostgreSQL.
+
+## Validações realizadas
+
+Ambiente: PostgreSQL 16.
+
+- Pytest: 54 testes aprovados.
+- Flake8: aprovado sem erros.
+- Migration inicial: aprovada.
+- Migration incremental: aprovada em banco vazio.
+- Downgrade e novo upgrade: aprovados.
+- FKs com ON DELETE RESTRICT: confirmadas.
+- Unicidade do CAR: validada.
+- Campos obrigatórios: validados.
+- Área positiva dos talhões: validada.
+
+## Proteção de dados existentes
+
+A migration incremental foi testada em um banco contendo:
+
+- 1 produtor.
+- 1 fazenda.
+- 1 talhão.
+- 1 evento de auditoria.
+
+A execução foi interrompida intencionalmente porque existem
+registros que ainda não possuem os novos campos obrigatórios.
+
+Após a tentativa:
+
+- Os quatro registros permaneceram preservados.
+- A revisão continuou em s1t01_modelos.
+- Nenhuma alteração parcial de estrutura foi identificada.
+
+## Pendência de migração de dados legados
+
+A migration atual não realiza preenchimento automático de
+nome, municipio, uf ou identificador.
+
+Para atualizar bancos já populados, será necessário obter
+os valores reais desses campos e definir um procedimento de
+migração de dados com a equipe.
+
+Esta validação comprova a interrupção segura, mas não
+comprova a conclusão da migração de um banco populado.
+
+A estratégia de preenchimento deverá ser aprovada antes
+do merge ou formalmente tratada como pré-condição de implantação.
