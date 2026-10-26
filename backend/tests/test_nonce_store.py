@@ -57,6 +57,13 @@ def test_redis_indisponivel():
         )
 
 
+def test_nonce_cliente_none():
+    with pytest.raises(RedisIndisponivel):
+        asyncio.run(
+            registrar_nonce(None, NONCE_TESTE)
+        )
+
+
 def test_ttl_nonce_cobre_janela_timestamp():
     primeiro_recebimento = 1800000000
 

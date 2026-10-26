@@ -1,4 +1,4 @@
-"""Cria produtores, fazendas, talhoes e auditoria_eventos com regras de negocio S1-T01.
+"""Cria produtores, fazendas, talhoes e auditoria_eventos.
 
 Revision ID: s1t01_modelos
 """
@@ -49,18 +49,6 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
-            "nome", sa.String(120),
-            nullable=False,
-        ),
-        sa.Column(
-            "municipio", sa.String(80),
-            nullable=False,
-        ),
-        sa.Column(
-            "uf", sa.String(2),
-            nullable=False,
-        ),
-        sa.Column(
             "numero_car_informado", sa.Text(),
             nullable=True,
         ),
@@ -70,22 +58,6 @@ def upgrade() -> None:
             ["produtores.id"],
             name="fk_fazendas_produtor_id",
             ondelete="RESTRICT",
-        ),
-        sa.UniqueConstraint(
-            "numero_car_informado",
-            name="uq_fazendas_numero_car_informado",
-        ),
-        sa.CheckConstraint(
-            "btrim(nome) <> ''",
-            name="ck_fazendas_nome_obrigatorio",
-        ),
-        sa.CheckConstraint(
-            "btrim(municipio) <> ''",
-            name="ck_fazendas_municipio_obrigatorio",
-        ),
-        sa.CheckConstraint(
-            "char_length(uf) = 2",
-            name="ck_fazendas_uf_tamanho",
         ),
     )
 
@@ -100,10 +72,6 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
-            "identificador", sa.String(50),
-            nullable=False,
-        ),
-        sa.Column(
             "area_hectares", sa.Numeric(12, 4),
             nullable=False,
         ),
@@ -114,18 +82,9 @@ def upgrade() -> None:
             name="fk_talhoes_fazenda_id",
             ondelete="RESTRICT",
         ),
-        sa.UniqueConstraint(
-            "fazenda_id",
-            "identificador",
-            name="uq_talhoes_fazenda_identificador",
-        ),
         sa.CheckConstraint(
             "area_hectares > 0",
             name="ck_talhoes_area_hectares_positiva",
-        ),
-        sa.CheckConstraint(
-            "btrim(identificador) <> ''",
-            name="ck_talhoes_identificador_obrigatorio",
         ),
     )
 

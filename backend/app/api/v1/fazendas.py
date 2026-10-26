@@ -94,8 +94,7 @@ def criar_fazenda(
         numero_car_informado=dados.numero_car_informado,
     )
     db.add(fazenda)
-    db.commit()
-    db.refresh(fazenda)
+    db.flush()
 
     correlation_id = getattr(request.state, "correlation_id", None)
     registrar_auditoria(
@@ -106,7 +105,11 @@ def criar_fazenda(
         wordpress_user_id=wp_user_id,
         correlation_id=correlation_id,
         detalhes={"nome": fazenda.nome, "municipio": fazenda.municipio},
+        commit=False,
     )
+
+    db.commit()
+    db.refresh(fazenda)
 
     return fazenda
 
@@ -155,8 +158,7 @@ def editar_fazenda(
     if dados.numero_car_informado is not None:
         fazenda.numero_car_informado = dados.numero_car_informado
 
-    db.commit()
-    db.refresh(fazenda)
+    db.flush()
 
     correlation_id = getattr(request.state, "correlation_id", None)
     registrar_auditoria(
@@ -167,7 +169,11 @@ def editar_fazenda(
         wordpress_user_id=wp_user_id,
         correlation_id=correlation_id,
         detalhes={"nome": fazenda.nome},
+        commit=False,
     )
+
+    db.commit()
+    db.refresh(fazenda)
 
     return fazenda
 
@@ -224,8 +230,7 @@ def criar_talhao(
         area_hectares=dados.area_hectares,
     )
     db.add(talhao)
-    db.commit()
-    db.refresh(talhao)
+    db.flush()
 
     correlation_id = getattr(request.state, "correlation_id", None)
     registrar_auditoria(
@@ -239,6 +244,10 @@ def criar_talhao(
             "fazenda_id": fazenda.id,
             "identificador": talhao.identificador,
         },
+        commit=False,
     )
+
+    db.commit()
+    db.refresh(talhao)
 
     return talhao

@@ -314,12 +314,16 @@ class AgroTracer_Bridge {
         }
 
         // 3. Sanitização estrita: ignora qualquer user_id vindo do request/browser
+        $nome_val = $request->get_param('nome') ?: $request->get_param('nome_propriedade');
+        $car_val  = $request->get_param('numero_car_informado') ?: $request->get_param('numero_car');
         $raw_input = [
-            'nome_propriedade' => $request->get_param('nome_propriedade'),
-            'numero_car'       => $request->get_param('numero_car'),
-            'municipio'        => $request->get_param('municipio'),
-            'uf'               => $request->get_param('uf'),
-            'coordenadas'      => $request->get_param('coordenadas'),
+            'nome'                 => $nome_val,
+            'nome_propriedade'     => $nome_val,
+            'numero_car'           => $car_val,
+            'numero_car_informado' => $car_val,
+            'municipio'            => $request->get_param('municipio'),
+            'uf'                   => $request->get_param('uf'),
+            'coordenadas'          => $request->get_param('coordenadas'),
         ];
 
         $result = AgroTracer_Http_Client::post(

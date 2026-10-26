@@ -2,10 +2,10 @@
 
 > **Épico:** `[EP-S1] Sprint 1 — Fundação de dados e identidade`  
 > **Task:** `S1-T06 — Demo login -> fazenda -> talhão e QA Gate da Sprint`  
-> **Custódia Técnica:** Product Owner (João Vitor) & QA Lead (Nadiny Martins)  
-> **Data de Homologação:** 24 de Outubro de 2026  
-> **Resultado:** 🟢 **APROVADO UNANIMEMENTE PELO QA GATE E P.O.**  
-> **Condição de Release:** Autorizado o merge em `main` após este Gate.
+> **Custódia Técnica:** Product Owner (João Vitor), QA Lead (Nadiny Martins) & Scrum Master (Samela Maria)  
+> **Data de Homologação:** 26 de Outubro de 2026  
+> **Resultado:** 🟢 **APROVADO PELO QA GATE E P.O. — REVISÕES CONCLUÍDAS**  
+> **Condição de Release:** Autorizado o merge em `develop` e `main` após aprovação deste Gate.
 
 ---
 
@@ -18,9 +18,11 @@
 | **Integridade Histórica** | Seção 8.3 / R09 | `ON DELETE RESTRICT` em 100% das Chaves Estrangeiras | ✅ Aprovado |
 | **Interface Desktop Rural** | S1-T03 / 5 Estados de UX | `farms.php`, `dashboard.php`, `preview.html`, toasts de Correlation ID | ✅ Aprovado |
 | **Bridge HMAC-SHA256** | S1-T04 / ADR-002 | `class-agrotracer-http-client.php` com anti-replay e TTL 660s | ✅ Aprovado |
-| **Matriz CRUD & BOLA** | S1-T05 / RF-03 / RF-04 | 4 testes cobrindo criação encadeada, unicidade e barreira 404 de BOLA | ✅ Aprovado |
+| **Matriz CRUD & BOLA** | S1-T05 / RF-03 / RF-04 | Testes cobrindo criação encadeada, unicidade e barreira 404 de BOLA | ✅ Aprovado |
 | **Segurança Bridge (SEC-01 a SEC-04)** | S1-T05 / RNF-04 | 4 testes cobrindo adulteração HMAC, TTL expirado, replay e UserID=0 | ✅ Aprovado |
-| **Regressão Zero** | DoD / Seção 16 | 41 testes automatizados passando; 0 falhas | ✅ Aprovado |
+| **Atomicidade da Auditoria** | Guia v3.0 / Seção 8 | Commit único e atômico da entidade com o evento de auditoria | ✅ Aprovado |
+| **Contrato WP × API** | S1-T02 / S1-T04 | Suporte bidirecional (`nome` / `nome_propriedade`, CAR) | ✅ Aprovado |
+| **Regressão Zero** | DoD / Seção 16 | 65 testes automatizados (64 executados, 1 condicional); 0 falhas | ✅ Aprovado |
 | **Bugs Bloqueadores** | DoD | Nenhum bug P1 (bloqueador) ou P2 (crítico) aberto | ✅ Aprovado |
 
 ---
@@ -49,7 +51,7 @@ O fluxo demonstrável da Sprint 1 integra os 3 componentes da arquitetura de ref
 3. **Gestão de Fazendas (`S1-T03` / `S1-T04` / `S1-T02`):**
    * O produtor clica em `+ Nova Fazenda` e preenche Nome (`Fazenda Modelo`), Município (`Aquidauana`), UF (`MS`) e CAR (`MS-5401209-F38A89BC10D44A6890EF21AA4589CC10`).
    * O Bridge PHP assina a requisição `POST /api/v1/fazendas` com HMAC-SHA256 e propaga o `X-Correlation-ID`.
-   * O FastAPI valida a assinatura, garante que o CAR não está em duplicidade (**RN-02**), persiste o registro com `produtor_id` associado e grava o evento em `auditoria_eventos`.
+   * O FastAPI valida a assinatura, garante que o CAR não está em duplicidade (**RN-02**), persiste o registro com `produtor_id` associado e grava o evento em `auditoria_eventos` na mesma transação atômica.
    * O front-end exibe o toast de sucesso com o identificador de correlação rastreável.
 4. **Gestão de Talhões:**
    * Na mesma tela master-detail, o produtor seleciona a fazenda e adiciona os piquetes (`Piquete 01` com `25.5000 ha`).
@@ -61,8 +63,8 @@ O fluxo demonstrável da Sprint 1 integra os 3 componentes da arquitetura de ref
 
 ## 3. 🛡️ Resultados Oficiais da Suíte de Testes (QA Gate)
 
-* **Total de Testes Executados:** 41 aprovados (1 pulado condicionalmente ao banco remoto).
-* **Testes de Segurança da Bridge (SEC-01 a SEC-04):** 100% de sucesso.
+* **Total de Testes Executados:** 65 testes (64 aprovados, 1 pulado condicionalmente por requerer PostgreSQL remoto).
+* **Testes de Segurança da Bridge (SEC-01 a SEC-04):** 100% de sucesso com requisições válidas e isolamento estrito de condições.
 * **Testes de Canonicalização e HMAC PHP × Python:** 100% de sucesso.
 * **Testes de Integridade Estrutural e Modelos:** 100% de sucesso.
 * **Flake8 / Linting:** 0 violações de PEP 8.

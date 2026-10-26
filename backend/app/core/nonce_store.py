@@ -17,7 +17,10 @@ class RedisIndisponivel(RuntimeError):
 
 async def registrar_nonce(cliente, nonce: str) -> bool:
     if cliente is None:
-        return True
+        raise RedisIndisponivel(
+            "Cliente Redis indisponível. "
+            "Proteção contra replay requer serviço ativo."
+        )
 
     try:
         registrado = await cliente.set(

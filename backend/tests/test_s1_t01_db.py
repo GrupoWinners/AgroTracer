@@ -4,7 +4,7 @@ import uuid
 import pytest
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import make_url
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DataError, IntegrityError
 
 from app.models import Base
 
@@ -63,7 +63,11 @@ def test_s1_t01_postgresql():
     if not url:
         pytest.skip("Banco de teste S1-T01 nao configurado")
 
-    if make_url(url).database != "agrotracer_s1_t01_teste":
+    bancos_permitidos = (
+        "agrotracer_s1_t01_teste",
+        "agrotracer_s1_t01_migracao_teste",
+    )
+    if make_url(url).database not in bancos_permitidos:
         pytest.fail("Use apenas o banco descartavel da S1-T01")
 
     engine = create_engine(url)
@@ -157,8 +161,8 @@ def test_s1_t01_postgresql():
             produtor_id, fazenda_id, talhao_id, auditoria_id,
         ])
 
-        def deve_rejeitar(sql, parametros, codigo):
-            with pytest.raises(IntegrityError) as erro:
+        def deve_rejeitar(sql, parametros, codigo, tipo_erro=IntegrityError):
+            with pytest.raises(tipo_erro) as erro:
                 with engine.begin() as conn:
                     conn.execute(text(sql), parametros)
 
@@ -186,10 +190,19 @@ def test_s1_t01_postgresql():
             "23514",
         )
 
-        # Fazenda com UF invalida
+        # Fazenda com UF acima de 2 chars (truncamento tipo VARCHAR(2))
         deve_rejeitar(
             "INSERT INTO fazendas (produtor_id, nome, municipio, uf) "
             "VALUES (:produtor, 'Fazenda Teste', 'Aquidauana', 'MSX')",
+            {"produtor": produtor_id},
+            "22001",
+            tipo_erro=DataError,
+        )
+
+        # Fazenda com UF abaixo de 2 chars (CHECK ck_fazendas_uf_tamanho)
+        deve_rejeitar(
+            "INSERT INTO fazendas (produtor_id, nome, municipio, uf) "
+            "VALUES (:produtor, 'Fazenda Teste', 'Aquidauana', 'M')",
             {"produtor": produtor_id},
             "23514",
         )

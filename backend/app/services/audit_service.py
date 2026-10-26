@@ -11,6 +11,7 @@ def registrar_auditoria(
     wordpress_user_id: int | None = None,
     correlation_id: str | None = None,
     detalhes: dict | None = None,
+    commit: bool = False,
 ) -> AuditoriaEvento:
     evento = AuditoriaEvento(
         entidade=entidade,
@@ -21,6 +22,9 @@ def registrar_auditoria(
         detalhes=detalhes,
     )
     db.add(evento)
-    db.commit()
-    db.refresh(evento)
+    if commit:
+        db.commit()
+        db.refresh(evento)
+    else:
+        db.flush()
     return evento
