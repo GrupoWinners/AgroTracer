@@ -5,6 +5,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     Identity,
+    Integer,
     String,
     func,
 )
@@ -29,9 +30,10 @@ class AuditoriaEvento(Base):
     )
 
     id: Mapped[int] = mapped_column(
-        BigInteger,
+        BigInteger().with_variant(Integer, "sqlite"),
         Identity(),
         primary_key=True,
+        autoincrement=True,
     )
 
     entidade: Mapped[str] = mapped_column(

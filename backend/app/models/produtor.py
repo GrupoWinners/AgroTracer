@@ -1,12 +1,18 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
     Identity,
+    Integer,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.fazenda import Fazenda
 
 
 class Produtor(Base):
@@ -24,12 +30,18 @@ class Produtor(Base):
     )
 
     id: Mapped[int] = mapped_column(
-        BigInteger,
+        BigInteger().with_variant(Integer, "sqlite"),
         Identity(),
         primary_key=True,
+        autoincrement=True,
     )
 
     wordpress_user_id: Mapped[int] = mapped_column(
         BigInteger,
         nullable=False,
+    )
+
+    fazendas: Mapped[list["Fazenda"]] = relationship(
+        "Fazenda",
+        back_populates="produtor",
     )
