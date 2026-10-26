@@ -1,10 +1,10 @@
 import os
-import app.models  # noqa: F401
 from logging.config import fileConfig
 
 from alembic import context
 
 from app.db.database import criar_engine
+import app.models  # noqa: F401
 from app.models.base import Base
 
 
