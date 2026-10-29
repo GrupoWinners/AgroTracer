@@ -3,6 +3,9 @@ from app.models.produtor import Produtor
 from app.models.fazenda import Fazenda
 from app.models.talhao import Talhao
 from app.models.auditoria_evento import AuditoriaEvento
+from app.models.lote import Lote
+from app.models.animal import Animal
+from app.models.lote_animal import LoteAnimal
 
 __all__ = [
     "Base",
@@ -10,4 +13,7 @@ __all__ = [
     "Fazenda",
     "Talhao",
     "AuditoriaEvento",
+    "Lote",
+    "Animal",
+    "LoteAnimal",
 ]

@@ -17,7 +17,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # 1. Fazendas: adiciona colunas como nullable para permitir backfill seguro em bancos populados
     op.add_column(
         "fazendas",
         sa.Column("nome", sa.String(120), nullable=True),

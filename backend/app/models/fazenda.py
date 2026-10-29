@@ -17,6 +17,7 @@ from app.models.base import Base
 if TYPE_CHECKING:
     from app.models.produtor import Produtor
     from app.models.talhao import Talhao
+    from app.models.lote import Lote
 
 
 class Fazenda(Base):
@@ -39,6 +40,10 @@ class Fazenda(Base):
             "char_length(uf) = 2",
             name="ck_fazendas_uf_tamanho",
         ),
+    )
+    lotes: Mapped[list["Lote"]] = relationship(
+        "Lote",
+        back_populates="fazenda",
     )
 
     id: Mapped[int] = mapped_column(
