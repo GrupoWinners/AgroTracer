@@ -1,14 +1,13 @@
 """habilita extensao btree_gist
 
 Revision ID: 4b5cbbc1616c
-Revises: 
+Revises:
 Create Date: 2026-10-19 16:13:27.723870
 
 """
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
@@ -26,4 +25,3 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     pass
-

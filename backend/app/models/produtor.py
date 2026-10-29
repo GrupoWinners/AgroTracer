@@ -13,6 +13,7 @@ from app.models.base import Base
 
 if TYPE_CHECKING:
     from app.models.fazenda import Fazenda
+    from app.models.animal import Animal
 
 
 class Produtor(Base):
@@ -43,5 +44,10 @@ class Produtor(Base):
 
     fazendas: Mapped[list["Fazenda"]] = relationship(
         "Fazenda",
+        back_populates="produtor",
+    )
+
+    animais: Mapped[list["Animal"]] = relationship(
+        "Animal",
         back_populates="produtor",
     )
