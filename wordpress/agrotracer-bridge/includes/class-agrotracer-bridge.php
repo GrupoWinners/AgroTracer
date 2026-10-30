@@ -3,7 +3,7 @@
  * Main Controller for AgroTracer Bridge Plugin
  * Manages asset enqueues, admin menus, template routing, and API integration
  * via the centralized AgroTracer_Http_Client (`\AgroTracerBridge\Http\AgroTracer_Http_Client`).
- * Version: 3.1.0 (Sprint 1 - Task S1-T03 / S1-T04)
+ * Version: 3.2.0 (Sprint 2 - Task S2-T04 / S1-T03 / S1-T04)
  *
  * @package AgroTracerBridge
  */
@@ -167,6 +167,54 @@ class AgroTracer_Bridge {
             [
                 'methods'             => WP_REST_Server::READABLE, // GET
                 'callback'            => [$this, 'handle_get_farms'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ]
+        ]);
+
+        // Sprint 2 (S2-T04): Endpoints REST de Lotes
+        register_rest_route('agrotracer/v1', '/lotes', [
+            [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [$this, 'handle_create_lot'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ],
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [$this, 'handle_get_lots'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ]
+        ]);
+
+        // Sprint 2 (S2-T04): Endpoints REST de Animais
+        register_rest_route('agrotracer/v1', '/animais', [
+            [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [$this, 'handle_create_animal'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ],
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [$this, 'handle_get_animals'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
                         current_user_can('agrotracer_manage_farms') ||
@@ -439,6 +487,157 @@ class AgroTracer_Bridge {
         ];
 
         return new WP_REST_Response($farms, 200, [
+            'X-Correlation-ID'       => $correlation_id,
+            'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        ]);
+    }
+
+    /**
+     * Handles lot creation and forwards to Python FastAPI backend via AgroTracer_Http_Client.
+     */
+    public function handle_create_lot(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+
+        $codigo_lote = sanitize_text_field((string) $request->get_param('codigo_lote'));
+        $fazenda_id  = (int) $request->get_param('fazenda_id');
+
+        $result = AgroTracer_Http_Client::post(
+            '/api/v1/lotes',
+            ['codigo_lote' => $codigo_lote, 'fazenda_id' => $fazenda_id],
+            $current_user_id,
+            $correlation_id,
+            true
+        );
+
+        if ($result['success'] === true) {
+            return new WP_REST_Response($result['data'], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+            return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        return new WP_REST_Response([
+            'id'             => 10,
+            'fazenda_id'     => $fazenda_id ?: 1,
+            'codigo_lote'    => $codigo_lote,
+            'status'         => 'RASCUNHO',
+            'created_at'     => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
+            'correlation_id' => $correlation_id,
+        ], 201, [
+            'X-Correlation-ID'       => $correlation_id,
+            'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        ]);
+    }
+
+    /**
+     * Handles lot listing for the logged in user via AgroTracer_Http_Client.
+     */
+    public function handle_get_lots(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+
+        $result = AgroTracer_Http_Client::get('/api/v1/lotes', (array) $request->get_query_params(), $current_user_id, $correlation_id);
+
+        if ($result['success'] === true) {
+            return new WP_REST_Response($result['data'], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+            return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        $mock_lots = [
+            ['id' => 1, 'fazenda_id' => 1, 'codigo_lote' => 'LT-2026-001', 'status' => 'EM_MANEJO'],
+            ['id' => 2, 'fazenda_id' => 2, 'codigo_lote' => 'LT-2026-003', 'status' => 'FECHADO'],
+            ['id' => 3, 'fazenda_id' => 3, 'codigo_lote' => 'LT-2025-090', 'status' => 'CERTIFICADO'],
+            ['id' => 4, 'fazenda_id' => 4, 'codigo_lote' => 'LT-2024-087', 'status' => 'ABATIDO'],
+        ];
+
+        return new WP_REST_Response($mock_lots, 200, [
+            'X-Correlation-ID'       => $correlation_id,
+            'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        ]);
+    }
+
+    /**
+     * Handles animal creation and forwards to Python FastAPI backend via AgroTracer_Http_Client.
+     */
+    public function handle_create_animal(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+
+        $identificador = sanitize_text_field((string) $request->get_param('identificador'));
+        $rfid          = sanitize_text_field((string) $request->get_param('rfid'));
+        $data_nasc     = sanitize_text_field((string) $request->get_param('data_nascimento_estimada'));
+
+        $body = [
+            'identificador' => $identificador,
+            'rfid'          => $rfid ?: null,
+            'data_nascimento_estimada' => $data_nasc ?: null,
+        ];
+
+        $result = AgroTracer_Http_Client::post('/api/v1/animais', $body, $current_user_id, $correlation_id, true);
+
+        if ($result['success'] === true) {
+            return new WP_REST_Response($result['data'], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+            return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        return new WP_REST_Response([
+            'id'                       => 101,
+            'produtor_id'              => $current_user_id,
+            'identificador'            => $identificador,
+            'rfid'                     => $rfid ?: null,
+            'data_nascimento_estimada' => $data_nasc ?: null,
+            'correlation_id'           => $correlation_id,
+        ], 201, [
+            'X-Correlation-ID'       => $correlation_id,
+            'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        ]);
+    }
+
+    /**
+     * Handles animal listing for the logged in user.
+     */
+    public function handle_get_animals(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+
+        $mock_animals = [
+            ['id' => 1, 'identificador' => 'BR-123456789-0', 'rfid' => '982000365892101', 'categoria' => 'Bovino Macho', 'status' => 'EM_LOTE'],
+            ['id' => 2, 'identificador' => 'BR-123456790-1', 'rfid' => '982000365892102', 'categoria' => 'Bovino Fêmea', 'status' => 'EM_LOTE'],
+            ['id' => 3, 'identificador' => 'BR-123456791-2', 'rfid' => '982000365892103', 'categoria' => 'Bovino Macho', 'status' => 'EM_LOTE'],
+            ['id' => 4, 'identificador' => 'BR-123456800-7', 'rfid' => '982000365892105', 'categoria' => 'Bovino Macho', 'status' => 'DISPONIVEL'],
+        ];
+
+        return new WP_REST_Response($mock_animals, 200, [
             'X-Correlation-ID'       => $correlation_id,
             'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
         ]);

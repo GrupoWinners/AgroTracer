@@ -1745,3 +1745,274 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ==========================================================================
+   SPRINT 2 (TASK S2-T04) - LOTES & ANIMAIS: DESIGN SYSTEM & ZERO HOVER DEPENDENCY
+   ========================================================================== */
+
+/* Sub-navegação em Abas (Lotes vs Inventário Geral) */
+.agro-subnav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--agro-surface);
+  border: 1px solid var(--agro-border);
+  border-radius: var(--agro-radius-lg);
+  padding: 6px;
+  margin-bottom: 20px;
+  box-shadow: var(--agro-shadow-sm);
+}
+
+.agro-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--agro-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--agro-radius-md);
+  cursor: pointer;
+  transition: all 0.18s ease-in-out;
+}
+
+.agro-tab-btn svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 2;
+  color: var(--agro-text-muted);
+}
+
+.agro-tab-btn:hover {
+  background-color: var(--agro-bg-subtle);
+  color: var(--agro-text-primary);
+}
+
+.agro-tab-btn.active {
+  background-color: var(--agro-primary);
+  color: var(--agro-white);
+  box-shadow: 0 1px 3px rgba(5, 74, 41, 0.25);
+}
+
+.agro-tab-btn.active svg {
+  color: var(--agro-white);
+}
+
+.agro-tab-counter {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--agro-radius-full);
+  background-color: var(--agro-bg-subtle);
+  color: var(--agro-text-secondary);
+}
+
+.agro-tab-btn.active .agro-tab-counter {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: var(--agro-white);
+}
+
+/* Faixa de Métricas Rápidas / KPIs do Rebanho */
+.agro-metrics-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.agro-metric-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background-color: var(--agro-surface);
+  border: 1px solid var(--agro-border);
+  border-radius: var(--agro-radius-md);
+  font-size: 12.5px;
+  color: var(--agro-text-secondary);
+  box-shadow: var(--agro-shadow-sm);
+}
+
+.agro-metric-pill strong {
+  color: var(--agro-text-primary);
+  font-size: 14px;
+}
+
+/* Barra de Filtros Multifatoriais (Lotes & Animais) */
+.agro-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #fafbfc;
+  border: 1px solid var(--agro-border);
+  border-radius: var(--agro-radius-md);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.agro-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agro-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--agro-text-secondary);
+  white-space: nowrap;
+}
+
+.agro-filter-select,
+.agro-filter-input {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--agro-border-strong);
+  border-radius: var(--agro-radius-sm);
+  background-color: var(--agro-surface);
+  color: var(--agro-text-primary);
+  min-width: 140px;
+}
+
+.agro-filter-select:focus,
+.agro-filter-input:focus {
+  outline: none;
+  border-color: var(--agro-primary);
+  box-shadow: 0 0 0 2px rgba(5, 74, 41, 0.15);
+}
+
+.agro-filter-search-box {
+  flex: 1;
+  min-width: 220px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.agro-filter-search-box svg {
+  position: absolute;
+  left: 10px;
+  width: 15px;
+  height: 15px;
+  color: var(--agro-text-muted);
+  pointer-events: none;
+}
+
+.agro-filter-search-box input {
+  width: 100%;
+  padding-left: 32px;
+  font-family: inherit;
+  font-size: 13px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  border: 1px solid var(--agro-border-strong);
+  border-radius: var(--agro-radius-sm);
+  background-color: var(--agro-surface);
+  color: var(--agro-text-primary);
+}
+
+/* ENGENHARIA DE ACESSIBILIDADE: ZERO DEPENDÊNCIA DE HOVER PARA AÇÕES IMPORTANTES */
+.agro-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  /* Visibilidade e opacidade garantidas sem necessidade de hover */
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.agro-table td .agro-table-actions .agro-btn,
+.agro-table td .agro-btn-sm {
+  /* Botões de ação sempre renderizados com texto claro e legível */
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Linha do Tempo / Timeline de Histórico do Animal */
+.agro-timeline {
+  position: relative;
+  padding-left: 24px;
+  margin: 16px 0;
+}
+
+.agro-timeline::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 7px;
+  width: 2px;
+  background-color: var(--agro-border);
+}
+
+.agro-timeline-item {
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.agro-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.agro-timeline-dot {
+  position: absolute;
+  left: -24px;
+  top: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--agro-surface);
+  border: 3px solid var(--agro-primary);
+  box-shadow: 0 0 0 2px rgba(5, 74, 41, 0.15);
+}
+
+.agro-timeline-dot.active {
+  border-color: #10b981;
+  background-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+}
+
+.agro-timeline-dot.closed {
+  border-color: #94a3b8;
+  background-color: #f1f5f9;
+}
+
+.agro-timeline-content {
+  background-color: #fafbfc;
+  border: 1px solid var(--agro-border);
+  border-radius: var(--agro-radius-md);
+  padding: 12px 16px;
+}
+
+.agro-timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.agro-timeline-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--agro-text-primary);
+}
+
+.agro-timeline-date {
+  font-size: 11.5px;
+  color: var(--agro-text-muted);
+}
+
+.agro-timeline-meta {
+  font-size: 12.5px;
+  color: var(--agro-text-secondary);
+  line-height: 1.4;
+}
