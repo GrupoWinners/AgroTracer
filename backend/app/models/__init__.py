@@ -6,6 +6,7 @@ from app.models.auditoria_evento import AuditoriaEvento
 from app.models.lote import Lote
 from app.models.animal import Animal
 from app.models.lote_animal import LoteAnimal
+from app.models.movimentacao import Movimentacao
 
 __all__ = [
     "Base",
@@ -16,4 +17,5 @@ __all__ = [
     "Lote",
     "Animal",
     "LoteAnimal",
+    "Movimentacao",
 ]
