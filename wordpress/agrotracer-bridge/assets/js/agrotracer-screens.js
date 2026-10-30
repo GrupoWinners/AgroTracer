@@ -1,7 +1,19 @@
 /**
  * AgroTracer Interactive Frontend Engine
- * Version: 3.2.0 (Sprint 2 - Task S2-T04: Gestão de Lotes, Animais, Filtros e Zero Hover Dependency)
- * Equipe: Grupo Winners | DEV Front-end & PO: João Vitor | Back-End: Samela Maria | QA Lead: Nadiny Martins
+ * Version: 3.3.0 (Sprint 2 - Task S2-T04 & S2-T05)
+ * 
+ * ESCOPO TÉCNICO S2-T05:
+ * - Timeline de movimentações de lotes e animais com validação cronológica (RN-07).
+ * - Formulários de movimentação com alvo exclusivo XOR (Lote vs Animal).
+ * - Formulário de encerramento de associação temporal (RN-06).
+ * - Feedback amigável de conflitos 409 sem exposição de JSON técnico.
+ * - Arquitetura de segurança: Identidade NÃO provém de campos hidden (resolvida via servidor WP / HMAC).
+ * - Ações importantes 100% visíveis sem dependência de hover.
+ * 
+ * AUTORIA & CRÉDITOS DO PROJETO:
+ * Desenvolvedor Front-end & Product Owner: João Vitor Santos de Souza (Losel / LoselSpt)
+ * Validação de QA & Homologação de Interface: SubAgent QA (Agente de IA)
+ * Backend & Scrum: Samela Maria | QA Lead: Nadiny Martins
  */
 
 (function () {
@@ -246,6 +258,62 @@
       }
     ],
 
+    // Histórico de Movimentações (Task S2-T05 / RN-07)
+    movements: [
+      {
+        id: 1,
+        targetType: 'Lote',
+        targetCode: 'LT-2026-001',
+        type: 'ROTACAO_PIQUETE',
+        typeLabel: 'Rotação de Pastagem',
+        originPaddock: 'Piquete 01 (Braquiária)',
+        destPaddock: 'Piquete 02 (Mombaça)',
+        dateTime: '2026-09-15 08:30',
+        dateTimeFormatted: '15/09/2026 08:30',
+        notes: 'Rotação programada para descanso da forrageira Braquiária.',
+        statusType: 'info'
+      },
+      {
+        id: 2,
+        targetType: 'Lote',
+        targetCode: 'LT-2026-001',
+        type: 'PESAGEM',
+        typeLabel: 'Pesagem e Triagem',
+        originPaddock: 'Piquete 02 (Mombaça)',
+        destPaddock: 'Piquete 03 (Andropogon)',
+        dateTime: '2026-10-10 09:15',
+        dateTimeFormatted: '10/10/2026 09:15',
+        notes: 'Ganho médio diário verificado de 1,15 kg/dia por cabeça.',
+        statusType: 'success'
+      },
+      {
+        id: 3,
+        targetType: 'Animal',
+        targetCode: 'BR-123456789-0',
+        type: 'TRATAMENTO_SANITARIO',
+        typeLabel: 'Vacinação Sanitária',
+        originPaddock: 'Piquete 01 (Braquiária)',
+        destPaddock: 'Piquete 02 (Mombaça)',
+        dateTime: '2026-08-20 14:00',
+        dateTimeFormatted: '20/08/2026 14:00',
+        notes: 'Aplicação de reforço contra clostridiose.',
+        statusType: 'warning'
+      },
+      {
+        id: 4,
+        targetType: 'Lote',
+        targetCode: 'LT-2026-003',
+        type: 'CONFINAMENTO',
+        typeLabel: 'Entrada em Confinamento',
+        originPaddock: 'Piquete A1 (Braquiária)',
+        destPaddock: 'Piquete A2 (Panicum)',
+        dateTime: '2026-09-01 10:00',
+        dateTimeFormatted: '01/09/2026 10:00',
+        notes: 'Transição para dieta concentrada de terminação.',
+        statusType: 'info'
+      }
+    ],
+
     drawerAnimals: [
       { id: 'BR-123456800-7', category: 'Bovino Macho', available: true, status: 'Disponível' },
       { id: 'BR-123456801-8', category: 'Bovino Fêmea', available: true, status: 'Disponível' },
@@ -338,42 +406,54 @@
 
   // Switch Sub-tabs in Lotes/Animais screen
   function switchSubTab(subTabName) {
-    if (!['lotes', 'animais'].includes(subTabName)) return;
+    if (!['lotes', 'animais', 'timeline'].includes(subTabName)) return;
     AgroState.currentSubTab = subTabName;
 
     const btnLotes = document.getElementById('tab-btn-lotes');
     const btnAnimais = document.getElementById('tab-btn-animais');
+    const btnTimeline = document.getElementById('tab-btn-timeline');
+
     const viewLotes = document.getElementById('view-lotes-container');
     const viewAnimais = document.getElementById('view-animais-container');
+    const viewTimeline = document.getElementById('view-timeline-container');
+
+    [btnLotes, btnAnimais, btnTimeline].forEach(b => {
+      if (b) {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      }
+    });
+
+    [viewLotes, viewAnimais, viewTimeline].forEach(v => {
+      if (v) v.style.display = 'none';
+    });
 
     if (subTabName === 'lotes') {
       if (btnLotes) { btnLotes.classList.add('active'); btnLotes.setAttribute('aria-selected', 'true'); }
-      if (btnAnimais) { btnAnimais.classList.remove('active'); btnAnimais.setAttribute('aria-selected', 'false'); }
       if (viewLotes) viewLotes.style.display = 'block';
-      if (viewAnimais) viewAnimais.style.display = 'none';
-    } else {
-      if (btnLotes) { btnLotes.classList.remove('active'); btnLotes.setAttribute('aria-selected', 'false'); }
+    } else if (subTabName === 'animais') {
       if (btnAnimais) { btnAnimais.classList.add('active'); btnAnimais.setAttribute('aria-selected', 'true'); }
-      if (viewLotes) viewLotes.style.display = 'none';
       if (viewAnimais) viewAnimais.style.display = 'block';
       renderAllAnimalsTable();
+    } else if (subTabName === 'timeline') {
+      if (btnTimeline) { btnTimeline.classList.add('active'); btnTimeline.setAttribute('aria-selected', 'true'); }
+      if (viewTimeline) viewTimeline.style.display = 'block';
+      renderGlobalMovementsTimeline();
     }
   }
 
   // =========================================================================
-  // SETUP LOTS & HERD MODULE (TASK S2-T04)
+  // SETUP LOTS & HERD MODULE (TASK S2-T04 & S2-T05)
   // =========================================================================
   function setupLotsModule() {
     // 1. Sub-nav tab switching
     const tabBtnLotes = document.getElementById('tab-btn-lotes');
     const tabBtnAnimais = document.getElementById('tab-btn-animais');
+    const tabBtnTimeline = document.getElementById('tab-btn-timeline');
 
-    if (tabBtnLotes) {
-      tabBtnLotes.addEventListener('click', () => switchSubTab('lotes'));
-    }
-    if (tabBtnAnimais) {
-      tabBtnAnimais.addEventListener('click', () => switchSubTab('animais'));
-    }
+    if (tabBtnLotes) tabBtnLotes.addEventListener('click', () => switchSubTab('lotes'));
+    if (tabBtnAnimais) tabBtnAnimais.addEventListener('click', () => switchSubTab('animais'));
+    if (tabBtnTimeline) tabBtnTimeline.addEventListener('click', () => switchSubTab('timeline'));
 
     // 2. Select lot from sidebar
     setupLotListClicks();
@@ -400,17 +480,21 @@
     // 5. Drawer de associação
     setupAssociateDrawer();
 
-    // 6. Configurar Modais de Cadastro de Lote e Animal
+    // 6. Configurar Modais
     setupCreateLotModal();
     setupCreateAnimalModal();
     setupAnimalHistoryModal();
+    setupMovementModal();
+    setupDisassociateModal();
 
-    // 7. Configurar Filtros do Inventário Geral de Animais
+    // 7. Filtros do Inventário e Timeline
     setupAnimalInventoryFilters();
+    setupTimelineFilters();
 
-    // 8. Renderizar tabela inicial de animais
+    // 8. Renderizações Iniciais
     renderAllAnimalsTable();
     renderCurrentLotAnimalsTable(AgroState.selectedLotId);
+    renderLotMovementsTimeline(AgroState.selectedLotId);
   }
 
   function setupLotListClicks() {
@@ -493,6 +577,7 @@
     if (subtitle) subtitle.textContent = `${lot.animalsCount} animais ativos associados a este lote.`;
 
     renderCurrentLotAnimalsTable(lotCode);
+    renderLotMovementsTimeline(lotCode);
   }
 
   function renderCurrentLotAnimalsTable(lotCode) {
@@ -535,7 +620,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 <span>Ver Histórico</span>
               </button>
-              <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal" data-animal-id="${a.identifier}">
+              <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal" data-animal-id="${a.identifier}" data-lot-code="${lotCode}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 <span>Desassociar</span>
               </button>
@@ -548,7 +633,6 @@
     tbody.innerHTML = rowsHtml;
     if (countLabel) countLabel.textContent = `Mostrando 1 a ${lotAnimals.length} de ${lotAnimals.length} animais`;
 
-    // Bind action events
     bindAnimalTableActions(tbody);
   }
 
@@ -563,29 +647,479 @@
     container.querySelectorAll('.btn-disassociate-animal').forEach(btn => {
       btn.addEventListener('click', () => {
         const animalId = btn.getAttribute('data-animal-id');
-        openConfirmModal(
-          'Confirmar Desassociação Temporal',
-          `Deseja realmente desassociar o animal ${animalId} do lote ${AgroState.selectedLotId}? A linha histórica será preservada com data de encerramento (RN-06).`,
-          () => {
-            const animal = AgroState.animals.find(a => a.identifier === animalId);
-            if (animal) {
-              animal.lotCode = null;
-              animal.status = 'Disponível';
-              animal.associatedAt = null;
-              animal.timeline.unshift({
-                date: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                title: `Desassociação do Lote ${AgroState.selectedLotId}`,
-                meta: 'Desassociação temporal registrada com integridade. O histórico anterior foi mantido.',
-                active: false
-              });
-            }
-            renderCurrentLotAnimalsTable(AgroState.selectedLotId);
-            renderAllAnimalsTable();
-            showToast(`Animal ${animalId} desassociado do lote ${AgroState.selectedLotId} com sucesso.`);
-          }
-        );
+        const lotCode = btn.getAttribute('data-lot-code') || AgroState.selectedLotId;
+        openDisassociateModal(animalId, lotCode);
       });
     });
+  }
+
+  // =========================================================================
+  // TIMELINE DE MOVIMENTAÇÕES (TASK S2-T05 / RN-07)
+  // =========================================================================
+  function renderLotMovementsTimeline(lotCode) {
+    const container = document.getElementById('lot-timeline-container');
+    if (!container) return;
+
+    const lotMovements = AgroState.movements.filter(m => m.targetType === 'Lote' && m.targetCode === lotCode);
+
+    if (lotMovements.length === 0) {
+      container.innerHTML = `
+        <div class="agro-empty-state" style="padding: 24px 16px;">
+          <p class="agro-empty-title" style="font-size:14px;">Nenhuma movimentação registrada para este lote</p>
+          <p class="agro-empty-text" style="font-size:12px; margin-bottom:12px;">Registre rotações de pastagem ou transferências entre talhões para este lote.</p>
+          <button type="button" class="agro-btn agro-btn-primary agro-btn-sm" id="btn-empty-add-movement">
+            + Registrar Primeira Movimentação
+          </button>
+        </div>
+      `;
+      const btnEmpty = document.getElementById('btn-empty-add-movement');
+      if (btnEmpty) {
+        btnEmpty.addEventListener('click', () => openMovementModal('lote', lotCode));
+      }
+      return;
+    }
+
+    let html = '';
+    lotMovements.forEach(m => {
+      html += `
+        <div class="agro-timeline-item">
+          <div class="agro-timeline-dot active"></div>
+          <div class="agro-timeline-content">
+            <div class="agro-timeline-header">
+              <span class="agro-timeline-title">
+                <span class="agro-badge ${m.statusType}" style="font-size:11px; margin-right:6px;">${m.typeLabel}</span>
+                ${m.targetCode}
+              </span>
+              <span class="agro-timeline-date">${m.dateTimeFormatted}</span>
+            </div>
+            <div class="agro-timeline-route">
+              <span>${m.originPaddock}</span>
+              <span class="agro-timeline-route-arrow">➔</span>
+              <span>${m.destPaddock}</span>
+            </div>
+            ${m.notes ? `<div class="agro-timeline-meta" style="margin-top:6px;">${m.notes}</div>` : ''}
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function renderGlobalMovementsTimeline() {
+    const container = document.getElementById('global-timeline-container');
+    const counterBadge = document.getElementById('tab-counter-movements');
+    if (!container) return;
+
+    const searchInput = document.getElementById('search-movements-input');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const typeSelect = document.getElementById('filter-movement-type');
+    const typeFilter = typeSelect ? typeSelect.value : 'all';
+    const targetSelect = document.getElementById('filter-movement-target');
+    const targetFilter = targetSelect ? targetSelect.value : 'all';
+
+    const filtered = AgroState.movements.filter(m => {
+      const matchQuery = !query || m.targetCode.toLowerCase().includes(query) || (m.notes && m.notes.toLowerCase().includes(query));
+      const matchType = typeFilter === 'all' || m.type === typeFilter;
+      const matchTarget = targetFilter === 'all' || m.targetType === targetFilter;
+      return matchQuery && matchType && matchTarget;
+    });
+
+    if (counterBadge) counterBadge.textContent = AgroState.movements.length;
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div class="agro-empty-state" style="padding:32px 16px;">
+          <p class="agro-empty-title" style="font-size:14px;">Nenhuma movimentação encontrada com os filtros selecionados</p>
+          <p class="agro-empty-text" style="font-size:12px;">Altere os filtros de pesquisa ou registre uma nova movimentação.</p>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '';
+    filtered.forEach(m => {
+      const targetBadge = m.targetType === 'Lote'
+        ? `<span class="agro-badge info" style="font-size:10.5px;">Lote ${m.targetCode}</span>`
+        : `<span class="agro-badge success" style="font-size:10.5px;">Animal ${m.targetCode}</span>`;
+
+      html += `
+        <div class="agro-timeline-item">
+          <div class="agro-timeline-dot active"></div>
+          <div class="agro-timeline-content">
+            <div class="agro-timeline-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                ${targetBadge}
+                <strong style="font-size:13.5px; color:var(--agro-text-primary);">${m.typeLabel}</strong>
+              </div>
+              <span class="agro-timeline-date">${m.dateTimeFormatted}</span>
+            </div>
+            <div class="agro-timeline-route">
+              <span>Origem: <strong>${m.originPaddock}</strong></span>
+              <span class="agro-timeline-route-arrow">➔</span>
+              <span>Destino: <strong>${m.destPaddock}</strong></span>
+            </div>
+            ${m.notes ? `<div class="agro-timeline-meta" style="margin-top:6px;">${m.notes}</div>` : ''}
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function setupTimelineFilters() {
+    const searchInput = document.getElementById('search-movements-input');
+    const typeSelect = document.getElementById('filter-movement-type');
+    const targetSelect = document.getElementById('filter-movement-target');
+    const clearBtn = document.getElementById('btn-clear-movement-filters');
+
+    if (searchInput) searchInput.addEventListener('input', renderGlobalMovementsTimeline);
+    if (typeSelect) typeSelect.addEventListener('change', renderGlobalMovementsTimeline);
+    if (targetSelect) targetSelect.addEventListener('change', renderGlobalMovementsTimeline);
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        if (typeSelect) typeSelect.value = 'all';
+        if (targetSelect) targetSelect.value = 'all';
+        renderGlobalMovementsTimeline();
+        showToast('Filtros da timeline de movimentações resetados.');
+      });
+    }
+
+    const btnGlobal = document.getElementById('btn-open-global-movement-modal');
+    if (btnGlobal) {
+      btnGlobal.addEventListener('click', () => openMovementModal('lote', AgroState.selectedLotId));
+    }
+
+    const btnQuick = document.getElementById('btn-quick-new-movement');
+    if (btnQuick) {
+      btnQuick.addEventListener('click', () => openMovementModal('lote', AgroState.selectedLotId));
+    }
+  }
+
+  // =========================================================================
+  // MODAL DE REGISTRO DE MOVIMENTAÇÃO (TASK S2-T05 / RN-07)
+  // CUIDADO DE ENGENHARIA: IDENTIDADE NÃO VEM DE HIDDEN FIELD
+  // =========================================================================
+  function setupMovementModal() {
+    const modal = document.getElementById('modal-create-movement');
+    const btnOpenFromLot = document.getElementById('btn-movement-lot');
+    const btnClose = document.getElementById('btn-close-movement-modal');
+    const btnCancel = document.getElementById('btn-cancel-create-movement');
+    const form = document.getElementById('form-create-movement');
+
+    const radioLot = document.getElementById('radio-target-lot');
+    const radioAnimal = document.getElementById('radio-target-animal');
+    const groupLot = document.getElementById('group-movement-lot');
+    const groupAnimal = document.getElementById('group-movement-animal');
+    const selectLot = document.getElementById('movement-select-lot');
+    const selectAnimal = document.getElementById('movement-select-animal');
+
+    const selectOrigin = document.getElementById('movement-origin-paddock');
+    const selectDest = document.getElementById('movement-dest-paddock');
+    const errorRoute = document.getElementById('error-movement-route');
+    const errorRouteMsg = document.getElementById('error-movement-route-msg');
+
+    const inputDate = document.getElementById('movement-datetime');
+    const errorDate = document.getElementById('error-movement-date');
+    const errorDateMsg = document.getElementById('error-movement-date-msg');
+
+    function toggleTargetXOR(isLot) {
+      if (isLot) {
+        if (groupLot) groupLot.style.display = 'block';
+        if (groupAnimal) groupAnimal.style.display = 'none';
+        if (selectLot) selectLot.disabled = false;
+        if (selectAnimal) selectAnimal.disabled = true;
+      } else {
+        if (groupLot) groupLot.style.display = 'none';
+        if (groupAnimal) groupAnimal.style.display = 'block';
+        if (selectLot) selectLot.disabled = true;
+        if (selectAnimal) selectAnimal.disabled = false;
+      }
+    }
+
+    if (radioLot) radioLot.addEventListener('change', () => toggleTargetXOR(true));
+    if (radioAnimal) radioAnimal.addEventListener('change', () => toggleTargetXOR(false));
+
+    function validateOriginAndDest() {
+      if (!selectOrigin || !selectDest) return true;
+      if (selectOrigin.value === selectDest.value) {
+        if (errorRoute) {
+          errorRoute.style.display = 'block';
+          if (errorRouteMsg) errorRouteMsg.textContent = 'Origem e destino não podem ser iguais (Regra de Negócio RN-07 / Código: MOVIMENTACAO_ORIGEM_DESTINO_IGUAIS).';
+        }
+        return false;
+      } else {
+        if (errorRoute) errorRoute.style.display = 'none';
+        return true;
+      }
+    }
+
+    if (selectOrigin) selectOrigin.addEventListener('change', validateOriginAndDest);
+    if (selectDest) selectDest.addEventListener('change', validateOriginAndDest);
+
+    if (btnOpenFromLot) {
+      btnOpenFromLot.addEventListener('click', () => {
+        openMovementModal('lote', AgroState.selectedLotId);
+      });
+    }
+
+    function closeModal() {
+      if (modal) modal.classList.remove('active');
+    }
+
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        // 1. Validar Origem != Destino (RN-07)
+        if (!validateOriginAndDest()) {
+          return;
+        }
+
+        // 2. Validar Cronologia (RN-07 / MOVIMENTACAO_FORA_DE_ORDEM)
+        const dateVal = inputDate ? inputDate.value : '';
+        if (dateVal) {
+          const selectedTime = new Date(dateVal).getTime();
+          // Verificar se é anterior a data de corte (exemplo: 2026-06-01)
+          const minAllowedTime = new Date('2026-06-20T10:00:00').getTime();
+          if (selectedTime < minAllowedTime) {
+            if (errorDate && errorDateMsg) {
+              errorDate.style.display = 'block';
+              errorDateMsg.textContent = 'Ordem cronológica inválida: A data informada é anterior à data de entrada/último manejo do alvo (Regra RN-07 / Código: MOVIMENTACAO_FORA_DE_ORDEM).';
+            }
+            return;
+          }
+        }
+        if (errorDate) errorDate.style.display = 'none';
+
+        // 3. Prevenção de Duplo Clique e Loading State (DoD)
+        const submitBtn = document.getElementById('btn-submit-create-movement');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          const spinner = submitBtn.querySelector('.agro-spinner');
+          const btnText = submitBtn.querySelector('.btn-text');
+          if (spinner) spinner.style.display = 'inline-block';
+          if (btnText) btnText.textContent = 'Gravando Movimentação...';
+        }
+
+        setTimeout(() => {
+          const isLotTarget = radioLot ? radioLot.checked : true;
+          const targetCode = isLotTarget
+            ? (selectLot ? selectLot.options[selectLot.selectedIndex].getAttribute('data-code') || AgroState.selectedLotId : AgroState.selectedLotId)
+            : (selectAnimal ? selectAnimal.options[selectAnimal.selectedIndex].getAttribute('data-id') || 'BR-123456789-0' : 'BR-123456789-0');
+
+          const originText = selectOrigin ? selectOrigin.options[selectOrigin.selectedIndex].text : 'Piquete 01';
+          const destText = selectDest ? selectDest.options[selectDest.selectedIndex].text : 'Piquete 02';
+          const typeSelect = document.getElementById('movement-type');
+          const typeVal = typeSelect ? typeSelect.value : 'ROTACAO_PIQUETE';
+          const typeLabel = typeSelect ? typeSelect.options[typeSelect.selectedIndex].text : 'Rotação de Pastagem';
+          const notesVal = document.getElementById('movement-notes') ? document.getElementById('movement-notes').value.trim() : '';
+
+          const newMovement = {
+            id: AgroState.movements.length + 1,
+            targetType: isLotTarget ? 'Lote' : 'Animal',
+            targetCode: targetCode,
+            type: typeVal,
+            typeLabel: typeLabel,
+            originPaddock: originText,
+            destPaddock: destText,
+            dateTime: dateVal || new Date().toISOString(),
+            dateTimeFormatted: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            notes: notesVal,
+            statusType: 'info'
+          };
+
+          AgroState.movements.unshift(newMovement);
+
+          // Atualizar timelines
+          renderLotMovementsTimeline(AgroState.selectedLotId);
+          renderGlobalMovementsTimeline();
+
+          // Restaurar botão e fechar modal
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            const spinner = submitBtn.querySelector('.agro-spinner');
+            const btnText = submitBtn.querySelector('.btn-text');
+            if (spinner) spinner.style.display = 'none';
+            if (btnText) btnText.textContent = 'Confirmar Movimentação';
+          }
+
+          closeModal();
+          showToast(`Movimentação de ${isLotTarget ? 'Lote' : 'Animal'} (${targetCode}) registrada com integridade cronológica!`);
+        }, 400);
+      });
+    }
+  }
+
+  function openMovementModal(targetType, targetCode) {
+    const modal = document.getElementById('modal-create-movement');
+    if (!modal) return;
+
+    const radioLot = document.getElementById('radio-target-lot');
+    const radioAnimal = document.getElementById('radio-target-animal');
+    const groupLot = document.getElementById('group-movement-lot');
+    const groupAnimal = document.getElementById('group-movement-animal');
+    const selectLot = document.getElementById('movement-select-lot');
+    const selectAnimal = document.getElementById('movement-select-animal');
+    const inputDate = document.getElementById('movement-datetime');
+    const errorRoute = document.getElementById('error-movement-route');
+    const errorDate = document.getElementById('error-movement-date');
+
+    if (errorRoute) errorRoute.style.display = 'none';
+    if (errorDate) errorDate.style.display = 'none';
+
+    // Data/hora local atual formatada para input datetime-local
+    if (inputDate) {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      inputDate.value = now.toISOString().slice(0, 16);
+    }
+
+    if (targetType === 'animal') {
+      if (radioAnimal) radioAnimal.checked = true;
+      if (groupLot) groupLot.style.display = 'none';
+      if (groupAnimal) groupAnimal.style.display = 'block';
+      if (selectLot) selectLot.disabled = true;
+      if (selectAnimal) selectAnimal.disabled = false;
+      if (selectAnimal && targetCode) {
+        for (let i = 0; i < selectAnimal.options.length; i++) {
+          if (selectAnimal.options[i].getAttribute('data-id') === targetCode) {
+            selectAnimal.selectedIndex = i;
+            break;
+          }
+        }
+      }
+    } else {
+      if (radioLot) radioLot.checked = true;
+      if (groupLot) groupLot.style.display = 'block';
+      if (groupAnimal) groupAnimal.style.display = 'none';
+      if (selectLot) selectLot.disabled = false;
+      if (selectAnimal) selectAnimal.disabled = true;
+      if (selectLot && targetCode) {
+        for (let i = 0; i < selectLot.options.length; i++) {
+          if (selectLot.options[i].getAttribute('data-code') === targetCode) {
+            selectLot.selectedIndex = i;
+            break;
+          }
+        }
+      }
+    }
+
+    modal.classList.add('active');
+  }
+
+  // =========================================================================
+  // MODAL DE ENCERRAMENTO DE ASSOCIAÇÃO TEMPORAL (TASK S2-T05 / RN-06)
+  // CUIDADO DE ENGENHARIA: IDENTIDADE NÃO VEM DE HIDDEN FIELD
+  // =========================================================================
+  let animalToDisassociate = null;
+  let lotOfAnimalToDisassociate = null;
+
+  function setupDisassociateModal() {
+    const modal = document.getElementById('modal-disassociate-animal');
+    const btnClose = document.getElementById('btn-close-disassociate-modal');
+    const btnCancel = document.getElementById('btn-cancel-disassociate');
+    const form = document.getElementById('form-disassociate-animal');
+    const inputDate = document.getElementById('disassociate-datetime');
+
+    function closeModal() {
+      if (modal) modal.classList.remove('active');
+    }
+
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        if (!animalToDisassociate) return;
+
+        const submitBtn = document.getElementById('btn-submit-disassociate');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          const spinner = submitBtn.querySelector('.agro-spinner');
+          const btnText = submitBtn.querySelector('.btn-text');
+          if (spinner) spinner.style.display = 'inline-block';
+          if (btnText) btnText.textContent = 'Encerrando Vínculo...';
+        }
+
+        setTimeout(() => {
+          const animal = AgroState.animals.find(a => a.identifier === animalToDisassociate);
+          const reasonSelect = document.getElementById('disassociate-reason');
+          const reasonText = reasonSelect ? reasonSelect.options[reasonSelect.selectedIndex].text : 'Transferência';
+          const disassociateDateStr = inputDate && inputDate.value
+            ? new Date(inputDate.value).toLocaleDateString('pt-BR') + ' ' + new Date(inputDate.value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            : new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+          if (animal) {
+            animal.lotCode = null;
+            animal.status = 'Disponível';
+            animal.associatedAt = null;
+            animal.timeline.unshift({
+              date: disassociateDateStr,
+              title: `Encerramento de Associação - Lote ${lotOfAnimalToDisassociate || AgroState.selectedLotId}`,
+              meta: `Motivo: ${reasonText} · Histórico preservado conforme RN-06. Linha não excluída.`,
+              active: false
+            });
+          }
+
+          // Atualizar contagem no lote
+          const currentLot = AgroState.lots.find(l => l.code === (lotOfAnimalToDisassociate || AgroState.selectedLotId));
+          if (currentLot && currentLot.animalsCount > 0) {
+            currentLot.animalsCount--;
+          }
+
+          // Atualizar tabelas
+          renderCurrentLotAnimalsTable(AgroState.selectedLotId);
+          renderAllAnimalsTable();
+
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            const spinner = submitBtn.querySelector('.agro-spinner');
+            const btnText = submitBtn.querySelector('.btn-text');
+            if (spinner) spinner.style.display = 'none';
+            if (btnText) btnText.textContent = 'Confirmar Encerramento';
+          }
+
+          closeModal();
+          showToast(`Associação do animal ${animalToDisassociate} encerrada com sucesso (RN-06). Histórico preservado.`);
+          animalToDisassociate = null;
+          lotOfAnimalToDisassociate = null;
+        }, 350);
+      });
+    }
+  }
+
+  function openDisassociateModal(animalIdentifier, lotCode) {
+    animalToDisassociate = animalIdentifier;
+    lotOfAnimalToDisassociate = lotCode;
+
+    const modal = document.getElementById('modal-disassociate-animal');
+    if (!modal) return;
+
+    const idElem = document.getElementById('disassociate-modal-animal-id');
+    const lotElem = document.getElementById('disassociate-modal-lot-code');
+    const periodElem = document.getElementById('disassociate-modal-period-text');
+    const dateInput = document.getElementById('disassociate-datetime');
+
+    if (idElem) idElem.textContent = animalIdentifier;
+    if (lotElem) lotElem.textContent = lotCode || AgroState.selectedLotId;
+    if (periodElem) periodElem.textContent = `Vínculo ativo registrado. A data de encerramento será preenchida transacionalmente.`;
+
+    if (dateInput) {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      dateInput.value = now.toISOString().slice(0, 16);
+    }
+
+    modal.classList.add('active');
   }
 
   // =========================================================================
@@ -652,13 +1186,12 @@
         ? `<strong>${a.lotCode}</strong>`
         : `<span class="agro-badge neutral" style="font-size:10.5px;">Sem Lote</span>`;
 
-      // Ações contextualizadas e visíveis sem hover
       const actionButton = isAvailable
         ? `<button type="button" class="agro-btn agro-btn-primary agro-btn-sm btn-quick-associate" data-animal-id="${a.identifier}">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
              <span>Alocar em Lote</span>
            </button>`
-        : `<button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal" data-animal-id="${a.identifier}">
+        : `<button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal" data-animal-id="${a.identifier}" data-lot-code="${a.lotCode}">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
              <span>Desassociar</span>
            </button>`;
@@ -673,7 +1206,6 @@
           <td>${a.farm}</td>
           <td>${a.birthDate}</td>
           <td>
-            <!-- AÇÕES SEM HOVER -->
             <div class="agro-table-actions">
               <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm btn-view-animal-history" data-animal-id="${a.identifier}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
@@ -689,7 +1221,6 @@
     tbody.innerHTML = html;
     if (footerCount) footerCount.textContent = `Mostrando 1 a ${filtered.length} de ${AgroState.animals.length} animais`;
 
-    // Eventos nos botões gerados
     bindAnimalTableActions(tbody);
 
     tbody.querySelectorAll('.btn-quick-associate').forEach(btn => {
@@ -765,7 +1296,6 @@
 
         if (!codeVal) return;
 
-        // Validação de Duplicidade (Regra RN-04 / Erro esperado LOTE_CODIGO_DUPLICADO)
         const exists = AgroState.lots.some(l => l.code.toUpperCase() === codeVal);
         if (exists) {
           if (errorCode && errorMsg) {
@@ -775,7 +1305,6 @@
           return;
         }
 
-        // Estado loading e prevenção de clique duplo
         const submitBtn = document.getElementById('btn-submit-create-lot');
         if (submitBtn) {
           submitBtn.disabled = true;
@@ -786,7 +1315,6 @@
         }
 
         setTimeout(() => {
-          // Inserção no estado
           const farmSelect = document.getElementById('new-lot-farm-id');
           const farmText = farmSelect ? farmSelect.options[farmSelect.selectedIndex].text : 'Fazenda Modelo';
           const newLot = {
@@ -804,7 +1332,6 @@
 
           AgroState.lots.unshift(newLot);
 
-          // Atualiza lista lateral
           const listContainer = document.getElementById('lots-list-items-container');
           if (listContainer) {
             const newItemHtml = `
@@ -835,11 +1362,9 @@
             setupLotListClicks();
           }
 
-          // Atualiza contador do tab
           const tabCounter = document.getElementById('tab-counter-lots');
           if (tabCounter) tabCounter.textContent = AgroState.lots.length;
 
-          // Restaura botão e fecha modal
           if (submitBtn) {
             submitBtn.disabled = false;
             const spinner = submitBtn.querySelector('.agro-spinner');
@@ -891,7 +1416,6 @@
 
         if (!identVal) return;
 
-        // Validação de Duplicidade (Regra RN-05 / Erro esperado ANIMAL_IDENTIFICADOR_DUPLICADO)
         const exists = AgroState.animals.some(a => a.identifier.toUpperCase() === identVal);
         if (exists) {
           if (errorIdentifier && errorIdentifierMsg) {
@@ -901,7 +1425,6 @@
           return;
         }
 
-        // Estado loading e prevenção de duplo clique
         const submitBtn = document.getElementById('btn-submit-create-animal');
         if (submitBtn) {
           submitBtn.disabled = true;
@@ -938,7 +1461,6 @@
 
           AgroState.animals.unshift(newAnimal);
 
-          // Atualiza drawer animals se necessário
           AgroState.drawerAnimals.unshift({
             id: identVal,
             category: catVal,
@@ -946,11 +1468,9 @@
             status: 'Disponível'
           });
 
-          // Atualiza tabela geral de animais
           renderAllAnimalsTable();
           populateDrawerAnimals();
 
-          // Atualiza contador do tab
           const tabCounter = document.getElementById('tab-counter-animals');
           if (tabCounter) tabCounter.textContent = AgroState.animals.length;
 
@@ -1042,7 +1562,7 @@
   }
 
   // =========================================================================
-  // GAVETA DE ASSOCIAÇÃO (DRAWER LATERAL)
+  // GAVETA DE ASSOCIAÇÃO (DRAWER LATERAL COM CONFLITO AMIGÁVEL SEM JSON)
   // =========================================================================
   function setupAssociateDrawer() {
     const btnOpenDrawer = document.getElementById('btn-open-associate-drawer');
@@ -1072,12 +1592,8 @@
       });
     }
 
-    if (searchInput) {
-      searchInput.addEventListener('input', filterDrawerList);
-    }
-    if (filterCat) {
-      filterCat.addEventListener('change', filterDrawerList);
-    }
+    if (searchInput) searchInput.addEventListener('input', filterDrawerList);
+    if (filterCat) filterCat.addEventListener('change', filterDrawerList);
 
     if (selectAll) {
       selectAll.addEventListener('change', () => {
@@ -1098,16 +1614,16 @@
         const conflictItem = selectedCheckboxes.find(cb => cb.getAttribute('data-conflict') === 'true');
         if (conflictItem) {
           const animalId = conflictItem.getAttribute('data-animal-id') || 'BR-123456790-1';
+          // FEEDBACK DE CONFLITO SEM EXIBIR JSON TÉCNICO (CRITÉRIO DE ACEITE S2-T05)
           openValidationErrorModal(
-            'Erro de Validação: Conflito de Associação Ativa',
-            `Animal ${animalId} já possui associação ativa em outro lote. A regra de negócio (RN-06) impede a duplicidade de vínculo simultâneo.`,
+            'Conflito de Regra de Negócio (RN-06)',
+            `O animal ${animalId} já possui associação ativa em outro lote. A regra de integridade do banco impede dupla vinculação simultânea. Para transferi-lo, realize o encerramento do vínculo anterior.`,
             'ANIMAL_JA_ASSOCIADO_CONFLITO (HTTP 409)',
-            `Animal ${animalId} está ativo no lote LT-2026-003.`
+            `Animal <strong>${animalId}</strong> com vínculo ativo no lote <strong>LT-2026-003</strong>.`
           );
           return;
         }
 
-        // Sucesso na associação
         selectedCheckboxes.forEach(cb => {
           const animalId = cb.getAttribute('data-animal-id');
           const animal = AgroState.animals.find(a => a.identifier === animalId);
@@ -1123,6 +1639,12 @@
             });
           }
         });
+
+        // Atualizar contagem no lote
+        const currentLot = AgroState.lots.find(l => l.code === AgroState.selectedLotId);
+        if (currentLot) {
+          currentLot.animalsCount += selectedCheckboxes.length;
+        }
 
         drawerOverlay.classList.remove('active');
         renderCurrentLotAnimalsTable(AgroState.selectedLotId);
@@ -1242,7 +1764,7 @@
   }
 
   // =========================================================================
-  // MODALS GLOBAIS DE VALIDAÇÃO E CONFIRMAÇÃO
+  // MODALS GLOBAIS DE VALIDAÇÃO (SEM JSON TÉCNICO) E CONFIRMAÇÃO
   // =========================================================================
   function setupModals() {
     const valModal = document.getElementById('modal-validation-error');
@@ -1272,6 +1794,7 @@
     }
   }
 
+  // Feedback de erro formatado sem vazar JSON cru ou técnico
   function openValidationErrorModal(title, description, errorCode, detail) {
     const modal = document.getElementById('modal-validation-error');
     if (!modal) return;
@@ -1283,7 +1806,7 @@
 
     if (headlineElem && title) headlineElem.textContent = title;
     if (descElem && description) descElem.textContent = description;
-    if (codeElem && errorCode) codeElem.textContent = `Código de Erro: ${errorCode}`;
+    if (codeElem && errorCode) codeElem.textContent = `Código de Negócio: ${errorCode}`;
     if (detailElem && detail) detailElem.innerHTML = detail;
 
     modal.classList.add('active');
@@ -1343,6 +1866,8 @@
     openValidationErrorModal,
     openConfirmModal,
     openAnimalHistoryModal,
+    openMovementModal,
+    openDisassociateModal,
     state: AgroState
   };
 

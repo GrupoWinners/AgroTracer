@@ -1,8 +1,11 @@
 <?php
 /**
- * AgroTracer Herd & Lots Screen Template (Sprint 2 - Task S2-T04)
- * Módulo C: Gestão do Rebanho e Lotes (Cadastro, Listagem, Filtros, Badges e Histórico)
- * Cuidado de Engenharia: Design System rigoroso e Ações importantes 100% visíveis sem hover.
+ * AgroTracer Herd & Lots Screen Template (Sprint 2 - Task S2-T04 & S2-T05)
+ * Módulo C: Gestão do Rebanho, Lotes, Associações e Timeline de Movimentações (XOR)
+ * Cuidados de Engenharia:
+ * - Ações importantes visíveis sem hover
+ * - Identidade NÃO vem de campo hidden (zero hidden field de produtor_id/user_id)
+ * - Conflitos 409 exibidos sem JSON técnico
  */
 if (!defined('ABSPATH')) {
     // Direct access security fallback
@@ -10,8 +13,8 @@ if (!defined('ABSPATH')) {
 ?>
 <section id="screen-lotes" class="agro-screen" aria-labelledby="lots-module-title">
 
-  <!-- Sub-navegação em Abas: Lotes vs Inventário de Animais -->
-  <div class="agro-subnav-tabs" role="tablist" aria-label="Visões de Lotes e Animais">
+  <!-- Sub-navegação em Abas: Lotes vs Inventário vs Timeline Geral de Movimentações -->
+  <div class="agro-subnav-tabs" role="tablist" aria-label="Visões de Lotes, Animais e Movimentações">
     <button type="button" class="agro-tab-btn active" id="tab-btn-lotes" role="tab" aria-selected="true" aria-controls="view-lotes-container">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <circle cx="12" cy="11" r="5"></circle>
@@ -32,6 +35,17 @@ if (!defined('ABSPATH')) {
       </svg>
       <span>Inventário do Rebanho (Animais)</span>
       <span class="agro-tab-counter" id="tab-counter-animals">1.250</span>
+    </button>
+
+    <button type="button" class="agro-tab-btn" id="tab-btn-timeline" role="tab" aria-selected="false" aria-controls="view-timeline-container">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <polyline points="17 1 21 5 17 9"></polyline>
+        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+        <polyline points="7 23 3 19 7 15"></polyline>
+        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+      </svg>
+      <span>Timeline de Movimentações</span>
+      <span class="agro-tab-counter" id="tab-counter-movements">8</span>
     </button>
   </div>
 
@@ -225,13 +239,13 @@ if (!defined('ABSPATH')) {
             </div>
           </div>
 
-          <!-- Ações Importantes Visíveis Imediatamente sem Hover -->
+          <!-- Ações Importantes Visíveis Imediatamente sem Hover (Task S2-T04 & S2-T05) -->
           <div class="agro-detail-actions">
             <button type="button" class="agro-btn agro-btn-secondary" id="btn-edit-lot" onclick="AgroTracer.showToast('Edição dos parâmetros do lote habilitada.')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               <span>Editar Lote</span>
             </button>
-            <button type="button" class="agro-btn agro-btn-primary" id="btn-movement-lot" onclick="AgroTracer.showToast('Fluxo de movimentação de lote iniciado.')">
+            <button type="button" class="agro-btn agro-btn-primary" id="btn-movement-lot">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
               <span>+ Registrar Movimentação</span>
             </button>
@@ -273,75 +287,17 @@ if (!defined('ABSPATH')) {
                 <tbody id="current-animals-tbody">
                   <tr>
                     <td><strong>BR-123456789-0</strong></td>
-                    <td><span style="font-family:monospace; color:var(--agro-text-secondary);">982000365892101</span></td>
+                    <td><code>982000365892101</code></td>
                     <td>Bovino Macho</td>
-                    <td>12/03/2022</td>
+                    <td>15/03/2024</td>
                     <td>20/06/2026 10:24</td>
                     <td>
-                      <!-- AÇÕES 100% VISÍVEIS SEM HOVER -->
                       <div class="agro-table-actions">
-                        <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm btn-view-animal-history" data-animal-id="BR-123456789-0">
+                        <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.openAnimalHistoryModal(1, 'BR-123456789-0')">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                           <span>Ver Histórico</span>
                         </button>
-                        <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal" data-animal-id="BR-123456789-0">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                          <span>Desassociar</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><strong>BR-123456790-1</strong></td>
-                    <td><span style="font-family:monospace; color:var(--agro-text-secondary);">982000365892102</span></td>
-                    <td>Bovino Fêmea</td>
-                    <td>05/05/2022</td>
-                    <td>21/06/2026 14:32</td>
-                    <td>
-                      <div class="agro-table-actions">
-                        <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm btn-view-animal-history" data-animal-id="BR-123456790-1">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                          <span>Ver Histórico</span>
-                        </button>
-                        <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal" data-animal-id="BR-123456790-1">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                          <span>Desassociar</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><strong>BR-123456791-2</strong></td>
-                    <td><span style="font-family:monospace; color:var(--agro-text-secondary);">982000365892103</span></td>
-                    <td>Bovino Macho</td>
-                    <td>18/07/2022</td>
-                    <td>22/06/2026 09:12</td>
-                    <td>
-                      <div class="agro-table-actions">
-                        <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm btn-view-animal-history" data-animal-id="BR-123456791-2">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                          <span>Ver Histórico</span>
-                        </button>
-                        <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal" data-animal-id="BR-123456791-2">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                          <span>Desassociar</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><strong>BR-123456792-3</strong></td>
-                    <td><span style="font-family:monospace; color:var(--agro-text-secondary);">982000365892104</span></td>
-                    <td>Bovino Fêmea</td>
-                    <td>20/08/2022</td>
-                    <td>22/06/2026 11:45</td>
-                    <td>
-                      <div class="agro-table-actions">
-                        <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm btn-view-animal-history" data-animal-id="BR-123456792-3">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                          <span>Ver Histórico</span>
-                        </button>
-                        <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal" data-animal-id="BR-123456792-3">
+                        <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal" onclick="AgroTracer.openDisassociateModal(1, 'BR-123456789-0')">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                           <span>Desassociar</span>
                         </button>
@@ -444,6 +400,37 @@ if (!defined('ABSPATH')) {
             </div>
           </div>
         </div>
+
+        <!-- =====================================================================
+             CARD: TIMELINE DE MOVIMENTAÇÕES DO LOTE (TASK S2-T05 / RN-07)
+             ===================================================================== -->
+        <div class="agro-card" id="lot-movements-timeline-card">
+          <div class="agro-card-header">
+            <div class="agro-card-header-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="17 1 21 5 17 9"></polyline>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                <polyline points="7 23 3 19 7 15"></polyline>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+              </svg>
+              <div>
+                <h3 class="agro-card-title">Timeline de Movimentações do Lote</h3>
+                <p class="agro-card-subtitle" id="lot-timeline-subtitle">Histórico de transferências entre talhões/pastagens (RN-07).</p>
+              </div>
+            </div>
+            <button type="button" class="agro-btn agro-btn-primary agro-btn-sm" id="btn-quick-new-movement">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path></svg>
+              <span>+ Nova Movimentação</span>
+            </button>
+          </div>
+
+          <div class="agro-card-body">
+            <div class="agro-timeline" id="lot-timeline-container">
+              <!-- Itens da timeline do lote populados dinamicamente via JS -->
+            </div>
+          </div>
+        </div>
+
       </main>
     </div>
   </div>
@@ -559,7 +546,7 @@ if (!defined('ABSPATH')) {
               </tr>
             </thead>
             <tbody id="all-animals-tbody">
-              <!-- Linhas populadas dinamicamente via JS / Mock inicial conforme contratos -->
+              <!-- Linhas populadas dinamicamente via JS -->
             </tbody>
           </table>
         </div>
@@ -580,6 +567,79 @@ if (!defined('ABSPATH')) {
     </div>
   </div>
 
+  <!-- =========================================================================
+       VISÃO 3: TIMELINE GLOBAL DE MOVIMENTAÇÕES (TASK S2-T05 / RN-07)
+       ========================================================================= -->
+  <div id="view-timeline-container" class="agro-tab-panel" role="tabpanel" aria-labelledby="tab-btn-timeline" style="display:none;">
+    
+    <div class="agro-card">
+      <div class="agro-card-header">
+        <div class="agro-card-header-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="17 1 21 5 17 9"></polyline>
+            <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+            <polyline points="7 23 3 19 7 15"></polyline>
+            <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+          </svg>
+          <div>
+            <h3 class="agro-card-title">Linha do Tempo de Movimentações Zootécnicas</h3>
+            <p class="agro-card-subtitle">Rastreabilidade temporal completa de transferências de lotes e animais entre talhões (RN-07).</p>
+          </div>
+        </div>
+
+        <button type="button" class="agro-btn agro-btn-primary" id="btn-open-global-movement-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path></svg>
+          <span>+ Nova Movimentação</span>
+        </button>
+      </div>
+
+      <div class="agro-card-body">
+        
+        <!-- Filtros da Timeline -->
+        <div class="agro-filter-bar">
+          <div class="agro-filter-search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="search-movements-input" placeholder="Buscar por código de lote ou brinco de animal..." aria-label="Buscar movimentações">
+          </div>
+
+          <div class="agro-filter-group">
+            <label class="agro-filter-label" for="filter-movement-type">Tipo de Manejo:</label>
+            <select id="filter-movement-type" class="agro-filter-select">
+              <option value="all" selected>Todos os tipos</option>
+              <option value="ROTACAO_PIQUETE">Rotação de Pastagem</option>
+              <option value="TRANSFERENCIA_PASTAGEM">Transferência de Pastagem</option>
+              <option value="CONFINAMENTO">Confinamento</option>
+              <option value="PESAGEM">Pesagem e Triagem</option>
+              <option value="TRATAMENTO_SANITARIO">Manejo Sanitário</option>
+            </select>
+          </div>
+
+          <div class="agro-filter-group">
+            <label class="agro-filter-label" for="filter-movement-target">Alvo (XOR):</label>
+            <select id="filter-movement-target" class="agro-filter-select">
+              <option value="all" selected>Todos os alvos</option>
+              <option value="Lote">Lotes</option>
+              <option value="Animal">Animais</option>
+            </select>
+          </div>
+
+          <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" id="btn-clear-movement-filters">
+            <span>Limpar Filtros</span>
+          </button>
+        </div>
+
+        <!-- Timeline Gráfica Global -->
+        <div class="agro-timeline" id="global-timeline-container">
+          <!-- Populada dinamicamente via JS -->
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 </section>
 
 <!-- =========================================================================
@@ -592,6 +652,7 @@ if (!defined('ABSPATH')) {
       <button type="button" id="btn-close-associate-drawer" class="agro-drawer-close" aria-label="Fechar Painel">&times;</button>
     </div>
 
+    <!-- FORMULÁRIO SEM CAMPOS HIDDEN DE USUÁRIO/PRODUTOR (REGRA S2-T05) -->
     <div class="agro-drawer-body">
       <div class="agro-search-box">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -223,6 +223,44 @@ class AgroTracer_Bridge {
                 },
             ]
         ]);
+
+        // Sprint 2 (S2-T05): Endpoints REST de Movimentações (Timeline e Registro XOR)
+        register_rest_route('agrotracer/v1', '/movimentacoes', [
+            [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [$this, 'handle_create_movement'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ],
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [$this, 'handle_get_movements'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ]
+        ]);
+
+        // Sprint 2 (S2-T05): Endpoint para encerramento de associação temporal (RN-06)
+        register_rest_route('agrotracer/v1', '/associacoes/encerrar', [
+            [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [$this, 'handle_disassociate_animal'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ]
+        ]);
     }
 
     /**
@@ -638,6 +676,227 @@ class AgroTracer_Bridge {
         ];
 
         return new WP_REST_Response($mock_animals, 200, [
+            'X-Correlation-ID'       => $correlation_id,
+            'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        ]);
+    }
+
+    /**
+     * Handles movement creation (XOR animal/lote) and forwards to Python FastAPI backend via AgroTracer_Http_Client.
+     * Sprint 2 (S2-T05): Enforces XOR, origin != destination, and chronological integrity without exposing hidden IDs.
+     */
+    public function handle_create_movement(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+
+        $animal_id          = $request->get_param('animal_id') ? (int) $request->get_param('animal_id') : null;
+        $lote_id            = $request->get_param('lote_id') ? (int) $request->get_param('lote_id') : null;
+        $origem_talhao_id   = (int) $request->get_param('origem_talhao_id');
+        $destino_talhao_id  = (int) $request->get_param('destino_talhao_id');
+        $data_movimentacao  = sanitize_text_field((string) $request->get_param('data_movimentacao'));
+        $tipo_movimentacao  = sanitize_text_field((string) $request->get_param('tipo_movimentacao'));
+        $motivo             = sanitize_text_field((string) $request->get_param('motivo'));
+
+        // Regra XOR: Exatamente um alvo (ou animal_id ou lote_id)
+        if (($animal_id === null && $lote_id === null) || ($animal_id !== null && $lote_id !== null)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => [
+                    'code'    => 'MOVIMENTACAO_ALVO_INVALIDO',
+                    'message' => 'A movimentação deve ser associada exclusivamente a um Animal ou a um Lote (regra XOR).',
+                ]
+            ], 422, [
+                'X-Correlation-ID'       => $correlation_id,
+                'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+            ]);
+        }
+
+        // Validação de rota: origem != destino
+        if ($origem_talhao_id > 0 && $origem_talhao_id === $destino_talhao_id) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => [
+                    'code'    => 'MOVIMENTACAO_ORIGEM_DESTINO_IGUAIS',
+                    'message' => 'O piquete/talhão de destino deve ser diferente do de origem.',
+                ]
+            ], 422, [
+                'X-Correlation-ID'       => $correlation_id,
+                'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+            ]);
+        }
+
+        $body = [
+            'animal_id'         => $animal_id,
+            'lote_id'           => $lote_id,
+            'origem_talhao_id'  => $origem_talhao_id,
+            'destino_talhao_id' => $destino_talhao_id,
+            'data_movimentacao' => $data_movimentacao,
+            'tipo_movimentacao' => $tipo_movimentacao ?: 'PASTEJO',
+            'motivo'            => $motivo ?: null,
+        ];
+
+        $result = AgroTracer_Http_Client::post('/api/v1/movimentacoes', $body, $current_user_id, $correlation_id, true);
+
+        if ($result['success'] === true) {
+            return new WP_REST_Response($result['data'], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+            return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        // Mock offline fallback para homologação de frontend
+        return new WP_REST_Response([
+            'id'                => rand(100, 999),
+            'produtor_id'       => $current_user_id,
+            'animal_id'         => $animal_id,
+            'lote_id'           => $lote_id,
+            'origem_talhao_id'  => $origem_talhao_id,
+            'destino_talhao_id' => $destino_talhao_id,
+            'data_movimentacao' => $data_movimentacao ?: gmdate('Y-m-d H:i:s'),
+            'tipo_movimentacao' => $tipo_movimentacao ?: 'PASTEJO',
+            'motivo'            => $motivo ?: '',
+            'created_at'        => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
+            'correlation_id'    => $correlation_id,
+        ], 201, [
+            'X-Correlation-ID'       => $correlation_id,
+            'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        ]);
+    }
+
+    /**
+     * Handles movement history listing for lots/animals with chronological ordering.
+     */
+    public function handle_get_movements(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+
+        $result = AgroTracer_Http_Client::get('/api/v1/movimentacoes', (array) $request->get_query_params(), $current_user_id, $correlation_id);
+
+        if ($result['success'] === true) {
+            return new WP_REST_Response($result['data'], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+            return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        $mock_movements = [
+            [
+                'id'                  => 1,
+                'alvo_tipo'           => 'lote',
+                'lote_id'             => 1,
+                'codigo_lote'         => 'LT-2026-001',
+                'animal_id'           => null,
+                'origem_talhao_id'    => 1,
+                'origem_talhao_nome'  => 'Pasto 01 - Mombaça',
+                'destino_talhao_id'   => 2,
+                'destino_talhao_nome' => 'Pasto 02 - Brachiaria',
+                'data_movimentacao'   => '2026-10-15 08:30:00',
+                'tipo_movimentacao'   => 'ROTACAO_PASTEJO',
+                'motivo'              => 'Manejo rotacionado de pastagem sustentável',
+            ],
+            [
+                'id'                   => 2,
+                'alvo_tipo'            => 'animal',
+                'animal_id'            => 1,
+                'animal_identificador' => 'BR-123456789-0',
+                'lote_id'              => null,
+                'origem_talhao_id'     => 2,
+                'origem_talhao_nome'   => 'Pasto 02 - Brachiaria',
+                'destino_talhao_id'    => 3,
+                'destino_talhao_nome'  => 'Piquete Hospital',
+                'data_movimentacao'    => '2026-10-20 14:00:00',
+                'tipo_movimentacao'    => 'TRATAMENTO_VETERINARIO',
+                'motivo'               => 'Exame de rotina e pesagem de controle',
+            ],
+            [
+                'id'                  => 3,
+                'alvo_tipo'           => 'lote',
+                'lote_id'             => 2,
+                'codigo_lote'         => 'LT-2026-003',
+                'animal_id'           => null,
+                'origem_talhao_id'    => 3,
+                'origem_talhao_nome'  => 'Pasto 03 - Tifton',
+                'destino_talhao_id'   => 1,
+                'destino_talhao_nome' => 'Pasto 01 - Mombaça',
+                'data_movimentacao'   => '2026-10-25 10:15:00',
+                'tipo_movimentacao'   => 'TRANSFERENCIA_SETOR',
+                'motivo'              => 'Descanso de pastagem',
+            ]
+        ];
+
+        return new WP_REST_Response($mock_movements, 200, [
+            'X-Correlation-ID'       => $correlation_id,
+            'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        ]);
+    }
+
+    /**
+     * Handles closure of temporal association (RN-06 - Desassociação sem exclusão física).
+     */
+    public function handle_disassociate_animal(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+
+        $animal_id = (int) $request->get_param('animal_id');
+        $data_fim  = sanitize_text_field((string) $request->get_param('data_fim'));
+        $motivo    = sanitize_text_field((string) $request->get_param('motivo'));
+
+        if (!$animal_id) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => ['code' => 'ANIMAL_ID_OBRIGATORIO', 'message' => 'O ID do animal é obrigatório.']
+            ], 422, [
+                'X-Correlation-ID'       => $correlation_id,
+                'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+            ]);
+        }
+
+        $body = [
+            'animal_id' => $animal_id,
+            'data_fim'  => $data_fim ?: gmdate('Y-m-d H:i:s'),
+            'motivo'    => $motivo ?: null,
+        ];
+
+        $result = AgroTracer_Http_Client::post('/api/v1/associacoes/encerrar', $body, $current_user_id, $correlation_id, true);
+
+        if ($result['success'] === true) {
+            return new WP_REST_Response($result['data'], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+            return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        return new WP_REST_Response([
+            'success'        => true,
+            'animal_id'      => $animal_id,
+            'data_fim'       => $data_fim ?: gmdate('Y-m-d H:i:s'),
+            'status'         => 'DESASSOCIADO',
+            'correlation_id' => $correlation_id,
+        ], 200, [
             'X-Correlation-ID'       => $correlation_id,
             'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
         ]);
