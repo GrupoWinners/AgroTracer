@@ -2016,3 +2016,40 @@
   color: var(--agro-text-secondary);
   line-height: 1.4;
 }
+
+
+/* ==========================================================================
+   SPRINT 2 (TASK S2-T05) - TIMELINE, FORMULÁRIOS DE MOVIMENTAÇÃO (XOR) & ZERO HIDDEN ID
+   ========================================================================== */
+.agro-radio {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--agro-primary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.agro-timeline-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--agro-radius-full);
+}
+
+.agro-timeline-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--agro-text-primary);
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.agro-timeline-route-arrow {
+  color: var(--agro-primary);
+  font-weight: 700;
+}

@@ -1,0 +1,42 @@
+﻿=========================================================================
+EVIDÊNCIA DE TESTES AUTOMATIZADOS: SPRINT 2 - TASK S2-T05
+ÉPICO: [EP-S2] Sprint 2 — Animais, lotes e rastreabilidade temporal
+TASK: [S2-T05] Timeline e formulários de associação e movimentação
+DESENVOLVEDOR FRONT-END & PO: João Vitor Santos de Souza (Losel / LoselSpt)
+VALIDAÇÃO & HOMOLOGAÇÃO QA: SubAgent QA (Agente de IA)
+DATA: 2026-10-30 | STATUS DoD: APROVADO COM ZERO FALHAS E ZERO REGRESSÃO
+=========================================================================
+
+--- SUÍTE PRINCIPAL DA TASK: test-s2-t05-timeline-movimentacao.php ---
+=========================================================================
+AgroTracer Sprint 2 Test Suite: Task S2-T05 (Timeline & Movimentacao XOR)
+Ambiente: PHP 8.2.29 | WordPress Test Harness
+=========================================================================
+ [PASS] test_zero_hidden_identity_inputs_in_all_forms
+ [PASS] test_timeline_structure_and_visibility
+ [PASS] test_movement_form_xor_target_and_route_validation
+ [PASS] test_conflict_feedback_without_technical_json
+ [PASS] test_temporal_association_closure_form_rn06
+ [PASS] test_bridge_controller_movement_and_disassociation_handlers
+-------------------------------------------------------------------------
+Resultado: 6 passaram | 0 falharam | Tempo: 3.64 ms
+=========================================================================
+
+--- SUÍTE DE NÃO REGRESSÃO: test-s2-t04-lotes-animais.php ---
+=========================================================================
+AgroTracer Sprint 2 Test Suite: Task S2-T04 (Lotes, Animais & Zero Hover)
+Ambiente: PHP 8.2.29 | WordPress Test Harness
+=========================================================================
+ [PASS] test_templates_exist_and_contain_required_identifiers
+ [PASS] test_design_system_and_semantic_badges_applied
+ [PASS] test_important_actions_are_visible_without_hover_dependency
+ [PASS] test_expected_domain_error_codes_are_defined_and_mapped
+ [PASS] test_filter_controls_are_present_for_lots_and_animals
+ [PASS] test_bridge_controller_has_sprint2_handlers
+-------------------------------------------------------------------------
+Resultado: 6 passaram | 0 falharam | Tempo: 3.14 ms
+=========================================================================
+
+=========================================================================
+TOTAL GERAL: 12 TESTES EXECUTADOS | 12 PASSARAM | 0 FALHAS
+=========================================================================
