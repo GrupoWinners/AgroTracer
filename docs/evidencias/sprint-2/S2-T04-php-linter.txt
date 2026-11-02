@@ -1,0 +1,12 @@
+﻿No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\agrotracer-bridge.php
+No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\includes\class-agrotracer-bridge.php
+No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\includes\class-agrotracer-http-client.php
+No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\includes\class-agrotracer-shortcodes.php
+No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\templates\lots.php
+No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\templates\modals.php
+No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\templates\farms.php
+No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\templates\dashboard.php
+No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\templates\header.php
+No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\templates\footer.php
+No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\templates\page-agrotracer.php
+No syntax errors detected in C:\Users\joaov\Programa├º├úo\AgroTracer\AgroTracer\wordpress\agrotracer-bridge\templates\canvas-agrotracer.php

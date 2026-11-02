@@ -1,0 +1,44 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\joaov\Programação\AgroTracer\AgroTracer\backend
+plugins: anyio-4.15.1, asyncio-1.4.0
+collected 42 items
+
+tests/test_s1_t01_db.py::test_modelos_metadata_estrutura PASSED          [  2%]
+tests/test_s1_t01_db.py::test_s1_t01_postgresql SKIPPED                  [  4%]
+tests/test_s1_t05_crud_seguranca.py::test_crud_fazenda_e_talhao_sucesso PASSED [  7%]
+tests/test_s1_t05_crud_seguranca.py::test_rejeita_car_duplicado_rn02 PASSED [  9%]
+tests/test_s1_t05_crud_seguranca.py::test_autorizacao_por_objeto_bola PASSED [ 11%]
+tests/test_s1_t05_crud_seguranca.py::test_sec_01_hmac_tampering PASSED   [ 14%]
+tests/test_s1_t05_crud_seguranca.py::test_sec_02_timestamp_fora_da_janela PASSED [ 16%]
+tests/test_s1_t05_crud_seguranca.py::test_sec_03_anti_replay_nonce_duplicado PASSED [ 19%]
+tests/test_s1_t05_crud_seguranca.py::test_sec_04_user_id_zero_restricao_sistema PASSED [ 21%]
+tests/test_hmac_protocol.py::test_canonical_string PASSED                [ 23%]
+tests/test_hmac_protocol.py::test_assinatura_valida PASSED               [ 26%]
+tests/test_hmac_protocol.py::test_assinatura_invalida PASSED             [ 28%]
+tests/test_hmac_protocol.py::test_timestamp_valido PASSED                [ 30%]
+tests/test_hmac_protocol.py::test_timestamp_limite PASSED                [ 33%]
+tests/test_hmac_protocol.py::test_timestamp_expirado PASSED              [ 35%]
+tests/test_hmac_protocol.py::test_timestamp_futuro PASSED                [ 38%]
+tests/test_hmac_protocol.py::test_timestamp_header_valido PASSED         [ 40%]
+tests/test_hmac_protocol.py::test_timestamp_header_invalido PASSED       [ 42%]
+tests/test_hmac_protocol.py::test_vetor_hmac_compartilhado PASSED        [ 45%]
+tests/test_hmac_protocol.py::test_canonical_string_com_query PASSED      [ 47%]
+tests/test_hmac_protocol.py::test_normalizacao_query_edge_cases PASSED   [ 59%]
+tests/test_hmac_protocol.py::test_rejeita_utf8_invalido_sem_colidir PASSED [ 61%]
+tests/test_hmac_protocol.py::test_rejeita_caminhos_invalidos PASSED     [ 69%]
+tests/test_bridge_headers.py::test_leitura_headers_bridge PASSED         [ 71%]
+tests/test_bridge_headers.py::test_headers_ausentes PASSED               [ 73%]
+tests/test_bridge_headers.py::test_headers_obrigatorios_presentes PASSED [ 76%]
+tests/test_bridge_headers.py::test_headers_obrigatorios_ausentes PASSED  [ 78%]
+tests/test_bridge_headers.py::test_formato_headers_valido PASSED         [ 80%]
+tests/test_bridge_headers.py::test_formato_headers_invalido PASSED       [ 83%]
+tests/test_settings.py::test_chave_bridge_configurada PASSED             [ 85%]
+tests/test_settings.py::test_chave_bridge_ausente PASSED                 [ 88%]
+tests/test_settings.py::test_chave_bridge_curta PASSED                   [ 90%]
+tests/test_redis_url_configurada PASSED                                  [ 92%]
+tests/test_redis_url_ausente PASSED                                      [ 95%]
+tests/test_redis_url_invalida PASSED                                     [ 97%]
+tests/test_estrutura.py::test_pasta_app_existe PASSED                    [100%]
+
+======================== 41 passed, 1 skipped in 1.45s ========================

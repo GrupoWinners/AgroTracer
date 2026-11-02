@@ -1,0 +1,15 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\joaov\Programação\AgroTracer\AgroTracer\backend
+plugins: anyio-4.15.1, asyncio-1.4.0
+collected 7 items
+
+tests/test_s1_t05_crud_seguranca.py::test_crud_fazenda_e_talhao_sucesso PASSED [ 14%]
+tests/test_s1_t05_crud_seguranca.py::test_rejeita_car_duplicado_rn02 PASSED [ 28%]
+tests/test_s1_t05_crud_seguranca.py::test_autorizacao_por_objeto_bola PASSED [ 42%]
+tests/test_s1_t05_crud_seguranca.py::test_sec_01_hmac_tampering PASSED   [ 57%]
+tests/test_s1_t05_crud_seguranca.py::test_sec_02_timestamp_fora_da_janela PASSED [ 71%]
+tests/test_s1_t05_crud_seguranca.py::test_sec_03_anti_replay_nonce_duplicado PASSED [ 85%]
+tests/test_s1_t05_crud_seguranca.py::test_sec_04_user_id_zero_restricao_sistema PASSED [100%]
+
+======================== 7 passed, 0 failures in 2.72s ========================
