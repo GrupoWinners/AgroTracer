@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 # ==============================================================================
-# SPRINT 2 - TASK S2-T04: INTEGRIDADE DE ANIMAIS, LOTES E TEMPORALIDADE
+# SPRINT 2 - TASK S2-T06: INTEGRIDADE DE ANIMAIS, LOTES E TEMPORALIDADE
 # REGRAS DE NEGÓCIO: RN-05, RN-06 E RN-07
 # ==============================================================================
 
