@@ -114,7 +114,7 @@
       <div class="agro-kpi-content">
         <div class="agro-kpi-label">Emiss&otilde;es totais (kg CO&#8322;e)</div>
         <div class="agro-kpi-value">13.650</div>
-        <div class="agro-kpi-footnote">Par&acirc;metros did&aacute;ticos do AgroTracer MVP; n&atilde;o representam fator oficial.</div>
+        <div class="agro-kpi-footnote" data-source-type="SYNTHETIC">Dados sint&eacute;ticos de demonstra&ccedil;&atilde;o; n&atilde;o representam invent&aacute;rio real nem fator oficial.</div>
       </div>
     </div>
 

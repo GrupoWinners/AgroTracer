@@ -2,6 +2,7 @@ import json
 import time
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -23,16 +24,20 @@ from test_s2_t01_api import ambiente_api  # noqa: F401
 def manejo_api(request, monkeypatch):
     cliente, sessao, ids = request.getfixturevalue("cenario")
     monkeypatch.setenv("AGROTRACER_ADMIN_WP_IDS", "42")
+    demo = json.loads((Path(__file__).parents[1] / "examples" /
+                       "parametros_demo.json").read_text(encoding="utf-8"))
     with sessao() as db:
         conjunto = ParametroSet(
-            versao="DEMO-S3", vigencia_inicio=date(2026, 1, 1)
+            versao=demo["versao"],
+            vigencia_inicio=date.fromisoformat(demo["vigencia_inicio"]),
         )
         db.add(conjunto)
         db.flush()
-        db.add(Fator(
-            parametro_set_id=conjunto.id, chave="DEMO", unidade="kg",
-            valor=Decimal("2.10"), source_type="SYNTHETIC",
-        ))
+        for fator in demo["fatores"]:
+            db.add(Fator(
+                parametro_set_id=conjunto.id,
+                **dict(fator, valor=Decimal(fator["valor"])),
+            ))
         ids["parametro"] = conjunto.id
         db.commit()
     return cliente, sessao, ids
