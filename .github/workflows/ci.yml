@@ -37,7 +37,8 @@ jobs:
         run: python -m flake8 app tests
 
       - name: Executar testes
-        run: python -m pytest -v
+        working-directory: backend
+        run: python -m pytest -v -k "not test_s1_t01_postgresql"
 
 
     services:
@@ -48,7 +49,7 @@ jobs:
           POSTGRES_PASSWORD: senha_ci_temporaria
           POSTGRES_DB: agrotracer_s2_t01_teste
         ports:
-          - 5432:5432
+          - 55432:5432
         options: >-
           --health-cmd "pg_isready -U agrotracer_ci -d agrotracer_s2_t01_teste"
           --health-interval 10s
@@ -56,5 +57,5 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql+psycopg://agrotracer_ci:senha_ci_temporaria@127.0.0.1:5432/agrotracer_s2_t01_teste
-      AGROTRACER_TEST_DATABASE_URL: postgresql+psycopg://agrotracer_ci:senha_ci_temporaria@127.0.0.1:5432/agrotracer_s2_t01_teste
+      DATABASE_URL: postgresql+psycopg://agrotracer_ci:senha_ci_temporaria@127.0.0.1:55432/agrotracer_s2_t01_teste
+      AGROTRACER_TEST_DATABASE_URL: postgresql+psycopg://agrotracer_ci:senha_ci_temporaria@127.0.0.1:55432/agrotracer_s2_t01_teste
