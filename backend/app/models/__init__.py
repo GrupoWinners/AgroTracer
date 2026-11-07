@@ -7,6 +7,8 @@ from app.models.lote import Lote
 from app.models.animal import Animal
 from app.models.lote_animal import LoteAnimal
 from app.models.movimentacao import Movimentacao
+from app.models.parametro_set import ParametroSet
+from app.models.fator import Fator
 
 __all__ = [
     "Base",
@@ -18,4 +20,6 @@ __all__ = [
     "Animal",
     "LoteAnimal",
     "Movimentacao",
+    "ParametroSet",
+    "Fator",
 ]
