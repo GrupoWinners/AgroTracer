@@ -223,6 +223,44 @@ class AgroTracer_Bridge {
                 },
             ]
         ]);
+
+        // Sprint 3 (S3-T04): Endpoints REST de Manejos Nutricionais
+        register_rest_route('agrotracer/v1', '/manejos', [
+            [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [$this, 'handle_create_manejo'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ],
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [$this, 'handle_get_manejos'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ]
+        ]);
+
+        // Sprint 3 (S3-T04): Consulta de Conjuntos de Parâmetros Versionados
+        register_rest_route('agrotracer/v1', '/parametros', [
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [$this, 'handle_get_parametros'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ]
+        ]);
     }
 
     /**
@@ -638,6 +676,171 @@ class AgroTracer_Bridge {
         ];
 
         return new WP_REST_Response($mock_animals, 200, [
+            'X-Correlation-ID'       => $correlation_id,
+            'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        ]);
+    }
+
+    /**
+     * Sprint 3 (S3-T04): Handles nutritional management period registration via HMAC bridge.
+     */
+    public function handle_create_manejo(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+
+        $lote_id          = (int) $request->get_param('lote_id');
+        $inicio           = sanitize_text_field((string) $request->get_param('inicio'));
+        $fim              = sanitize_text_field((string) $request->get_param('fim'));
+        $parametro_set_id = (int) ($request->get_param('parametro_set_id') ?: 1);
+        $tipo_dieta       = sanitize_text_field((string) ($request->get_param('tipo_dieta') ?: 'PASTAGEM'));
+
+        $body = [
+            'inicio'           => $inicio,
+            'fim'              => $fim,
+            'parametro_set_id' => $parametro_set_id,
+            'tipo_dieta'       => $tipo_dieta,
+        ];
+
+        $result = AgroTracer_Http_Client::post(
+            "/api/v1/lotes/{$lote_id}/manejos",
+            $body,
+            $current_user_id,
+            $correlation_id,
+            true
+        );
+
+        if ($result['success'] === true) {
+            return new WP_REST_Response($result['data'], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        // Se o backend retornou 409 (MANEJO_SOBREPOSTO) ou erro de validação/domínio, propaga
+        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+            return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        // Fallback defensivo para preview/desenvolvimento local quando backend offline
+        $existing_mock_manejos = [
+            ['id' => 1, 'lote_id' => 1, 'inicio' => '2026-11-01', 'fim' => '2026-11-10', 'parametro_set_id' => 1, 'tipo_dieta' => 'PASTAGEM'],
+            ['id' => 2, 'lote_id' => 1, 'inicio' => '2026-11-11', 'fim' => '2026-11-30', 'parametro_set_id' => 1, 'tipo_dieta' => 'SUPLEMENTACAO_MINERAL'],
+        ];
+
+        if ($lote_id === 1) {
+            foreach ($existing_mock_manejos as $m) {
+                if ($inicio <= $m['fim'] && $m['inicio'] <= $fim) {
+                    return new WP_REST_Response([
+                        'success' => false,
+                        'error'   => [
+                            'code'           => 'MANEJO_SOBREPOSTO',
+                            'message'        => sprintf('Existe sobreposição com o manejo já registrado de %s a %s.', $m['inicio'], $m['fim']),
+                            'detalhes'       => [
+                                'manejo_conflitante_id' => $m['id'],
+                                'inicio'                => $m['inicio'],
+                                'fim'                   => $m['fim'],
+                            ],
+                            'field_errors'   => [],
+                            'correlation_id' => $correlation_id,
+                        ]
+                    ], 409, [
+                        'X-Correlation-ID'       => $correlation_id,
+                        'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+                    ]);
+                }
+            }
+        }
+
+        return new WP_REST_Response([
+            'id'               => 101,
+            'lote_id'          => $lote_id,
+            'inicio'           => $inicio,
+            'fim'              => $fim,
+            'parametro_set_id' => $parametro_set_id,
+            'tipo_dieta'       => $tipo_dieta,
+            'correlation_id'   => $correlation_id,
+        ], 201, [
+            'X-Correlation-ID'       => $correlation_id,
+            'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        ]);
+    }
+
+    /**
+     * Sprint 3 (S3-T04): Handles nutritional management listing for a lot.
+     */
+    public function handle_get_manejos(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+        $lote_id         = (int) $request->get_param('lote_id');
+
+        if ($lote_id > 0) {
+            $result = AgroTracer_Http_Client::get(
+                "/api/v1/lotes/{$lote_id}/manejos",
+                [],
+                $current_user_id,
+                $correlation_id
+            );
+
+            if ($result['success'] === true) {
+                return new WP_REST_Response($result['data'], $result['status'], [
+                    'X-Correlation-ID'       => $result['correlation_id'],
+                    'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+                ]);
+            }
+
+            if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+                return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
+                    'X-Correlation-ID'       => $result['correlation_id'],
+                    'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+                ]);
+            }
+        }
+
+        // Mock demonstrativo com dados zootécnicos e períodos contíguos sem sobreposição
+        $mock_manejos = [
+            ['id' => 1, 'lote_id' => 1, 'inicio' => '2026-11-01', 'fim' => '2026-11-10', 'parametro_set_id' => 1, 'tipo_dieta' => 'PASTAGEM'],
+            ['id' => 2, 'lote_id' => 1, 'inicio' => '2026-11-11', 'fim' => '2026-11-30', 'parametro_set_id' => 1, 'tipo_dieta' => 'SUPLEMENTACAO_MINERAL'],
+        ];
+
+        if ($lote_id > 0) {
+            $mock_manejos = array_values(array_filter($mock_manejos, fn($m) => $m['lote_id'] === $lote_id));
+        }
+
+        return new WP_REST_Response($mock_manejos, 200, [
+            'X-Correlation-ID'       => $correlation_id,
+            'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        ]);
+    }
+
+    /**
+     * Sprint 3 (S3-T04): Lists versioned parameter sets (transparência científica - fatores sintéticos didáticos).
+     */
+    public function handle_get_parametros(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+
+        $parametros = [
+            [
+                'id'              => 1,
+                'versao'          => 'v1.0-2026',
+                'status'          => 'ATIVO',
+                'vigencia_inicio' => '2026-01-01',
+                'descricao'       => 'Parâmetros Zootécnicos Nacionais (Demonstrativo Didático)',
+                'source_type'     => 'SYNTHETIC',
+                'fatores'         => [
+                    ['chave' => 'cms_medio', 'valor' => '9.50', 'unidade' => 'kg MS/cab/dia', 'descricao' => 'Consumo Médio de Matéria Seca'],
+                    ['chave' => 'ym_fator', 'valor' => '6.50', 'unidade' => '% EB', 'descricao' => 'Fator de Conversão de Metano Entérico'],
+                    ['chave' => 'fe_enterico', 'valor' => '56.00', 'unidade' => 'kg CH4/cab/ano', 'descricao' => 'Fator de Emissão Entérica'],
+                ]
+            ]
+        ];
+
+        return new WP_REST_Response($parametros, 200, [
             'X-Correlation-ID'       => $correlation_id,
             'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
         ]);
