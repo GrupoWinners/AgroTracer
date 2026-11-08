@@ -315,3 +315,126 @@ if (!defined('ABSPATH')) {
     </div>
   </div>
 </div>
+
+<!-- 6. MODAL: CADASTRO DE PERÍODO DE MANEJO NUTRICIONAL (RN-08 / S3-T04) -->
+<div id="modal-create-manejo" class="agro-modal-backdrop" role="dialog" aria-labelledby="create-manejo-modal-title" aria-modal="true">
+  <div class="agro-modal" style="max-width: 580px;">
+    <div class="agro-modal-header">
+      <div class="agro-modal-header-left">
+        <div class="agro-modal-icon-badge" style="background-color: var(--agro-primary); color: #fff;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            <path d="M9 12h6"></path>
+            <path d="M9 16h6"></path>
+          </svg>
+        </div>
+        <h3 id="create-manejo-modal-title" class="agro-modal-title">Cadastrar Período de Manejo</h3>
+      </div>
+      <button type="button" id="btn-close-create-manejo-modal" class="agro-drawer-close" aria-label="Fechar Modal">&times;</button>
+    </div>
+
+    <form id="form-create-manejo">
+      <div class="agro-modal-body">
+        <p style="margin: 0 0 16px 0; font-size: 13px; color: var(--agro-text-secondary); line-height: 1.45;">
+          Registre um período nutricional para o lote selecionado. O sistema verifica a integridade temporal em tempo real para impedir sobreposições de datas (RN-08).
+        </p>
+
+        <!-- Lote Alvo -->
+        <div class="agro-form-group" style="margin-bottom: 14px;">
+          <label for="modal-manejo-lote-select" style="display:block; font-size:12.5px; font-weight:600; color:var(--agro-text-primary); margin-bottom:5px;">
+            Lote de Destino <span style="color:#ef4444;">*</span>
+          </label>
+          <select id="modal-manejo-lote-select" class="agro-select" style="width:100%;" required>
+            <option value="1">LT-2026-001 (Fazenda Modelo)</option>
+            <option value="2">LT-2026-003 (Fazenda Santa Fé)</option>
+            <option value="3">LT-2025-090 (Fazenda Esperança)</option>
+          </select>
+        </div>
+
+        <!-- Linha de Datas (Início e Fim) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div class="agro-form-group">
+            <label for="modal-manejo-data-inicio" style="display:block; font-size:12.5px; font-weight:600; color:var(--agro-text-primary); margin-bottom:5px;">
+              Data de Início <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="date" id="modal-manejo-data-inicio" class="agro-input" style="width:100%;" required>
+            <span style="font-size:11px; color:var(--agro-text-muted);">Data inclusiva (AAAA-MM-DD)</span>
+          </div>
+
+          <div class="agro-form-group">
+            <label for="modal-manejo-data-fim" style="display:block; font-size:12.5px; font-weight:600; color:var(--agro-text-primary); margin-bottom:5px;">
+              Data de Término <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="date" id="modal-manejo-data-fim" class="agro-input" style="width:100%;" required>
+            <span style="font-size:11px; color:var(--agro-text-muted);">Data final inclusiva</span>
+          </div>
+        </div>
+
+        <!-- Tipo de Dieta & Conjunto de Parâmetros -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div class="agro-form-group">
+            <label for="modal-manejo-tipo-dieta" style="display:block; font-size:12.5px; font-weight:600; color:var(--agro-text-primary); margin-bottom:5px;">
+              Tipo de Dieta <span style="color:#ef4444;">*</span>
+            </label>
+            <select id="modal-manejo-tipo-dieta" class="agro-select" style="width:100%;" required>
+              <option value="PASTAGEM">Pastagem</option>
+              <option value="CONFINAMENTO">Confinamento</option>
+              <option value="SEMI_CONFINAMENTO">Semi-confinamento</option>
+              <option value="SUPLEMENTACAO_MINERAL">Suplementação Mineral a Pasto</option>
+            </select>
+          </div>
+
+          <div class="agro-form-group">
+            <label for="modal-manejo-parametro-set" style="display:block; font-size:12.5px; font-weight:600; color:var(--agro-text-primary); margin-bottom:5px;">
+              Conjunto de Parâmetros <span style="color:#ef4444;">*</span>
+            </label>
+            <select id="modal-manejo-parametro-set" class="agro-select" style="width:100%;" required>
+              <option value="1">v1.0-2026 [SYNTHETIC / Didático]</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Consumo Médio Diário com Unidades Claras -->
+        <div class="agro-form-group" style="margin-bottom: 14px;">
+          <label for="modal-manejo-cms-input" style="display:block; font-size:12.5px; font-weight:600; color:var(--agro-text-primary); margin-bottom:5px;">
+            Consumo Estimado de Matéria Seca (CMS) — <em>Unidade: kg MS/cab/dia</em>
+          </label>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="number" step="0.01" min="1.0" max="35.0" id="modal-manejo-cms-input" class="agro-input" value="9.50" style="width:140px;">
+            <span style="font-size:12.5px; color:var(--agro-text-secondary); font-weight:500;">kg MS / animal / dia</span>
+          </div>
+          <span style="font-size:11px; color:var(--agro-text-muted); display:block; margin-top:3px;">Base de cálculo zootécnico sem alegação indevida.</span>
+        </div>
+
+        <!-- Caixa de Alerta de Conflito em Tempo Real (Identifica o Período Conflitante) -->
+        <div class="agro-modal-conflict-box" id="modal-manejo-conflict-box" style="display: none; background-color: #fff1f2; border: 1px solid #fecdd3; padding: 12px 14px; border-radius: var(--agro-radius-md); margin-top: 14px;">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px; color: #e11d48; flex-shrink: 0; margin-top: 1px;">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+          <div>
+            <strong id="modal-manejo-conflict-code" style="display:block; font-size:13px; color:#9f1239; margin-bottom:2px;">
+              Conflito Detectado: MANEJO_SOBREPOSTO (HTTP 409)
+            </strong>
+            <span id="modal-manejo-conflict-detail" style="font-size:12.5px; color:#881337; line-height:1.4; display:block;">
+              O período selecionado colide com o manejo já cadastrado de <strong>01/11/2026 a 10/11/2026</strong>.
+            </span>
+            <span style="font-size:11.5px; color:#9f1239; display:block; margin-top:4px;">
+              Modifique a data inicial para após o término do período conflitante (ex: 11/11/2026).
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="agro-modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" id="btn-cancel-create-manejo" class="agro-btn agro-btn-secondary">
+          Cancelar
+        </button>
+        <button type="submit" id="btn-submit-create-manejo" class="agro-btn agro-btn-primary">
+          Salvar Período de Manejo
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
