@@ -1,19 +1,27 @@
 """S3-T02: ativacao administrativa de parametros."""
 
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Literal
 
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
     Request,
+    Query,
 )
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.admin_dependency import exigir_admin_wordpress
+from app.core.bridge_openapi import BRIDGE_OPENAPI
+from app.core.validation_route import ErrorResponse, ValidationRoute
 from app.db.database import obter_db
+from app.models.parametro_set import ParametroSet
 from app.services.parametro_service import (
     ErroParametro,
     ativar_parametro_set,
@@ -23,7 +31,63 @@ from app.services.parametro_service import (
 router = APIRouter(
     prefix="/admin/parametro-sets",
     tags=["Administracao de parametros"],
+    route_class=ValidationRoute,
 )
+
+
+class FatorSaida(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    chave: str
+    unidade: str
+    valor: Decimal
+    source_type: str
+    source_uri: str | None
+
+
+class ParametroSetSaida(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    versao: str
+    status: str
+    vigencia_inicio: date
+    vigencia_fim: date | None
+    aprovado_por: str | None
+    aprovado_em: datetime | None
+    fatores: list[FatorSaida]
+
+
+@router.get(
+    "", response_model=list[ParametroSetSaida],
+    openapi_extra=BRIDGE_OPENAPI,
+    responses={
+        401: {"description": "HMAC inválido"},
+        403: {"description": "Administrador obrigatório"},
+        422: {"description": "Filtro ou paginação inválidos",
+              "model": ErrorResponse},
+        503: {"description": "Autenticação/administração indisponível"},
+    },
+)
+def listar_parametro_sets(
+    status: Literal["RASCUNHO", "ATIVO", "INATIVO"] | None = None,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    administrador_id: int = Depends(exigir_admin_wordpress),
+    db: Session = Depends(obter_db),
+):
+    """Lista versões e proveniência; valores Decimal são strings JSON.
+
+    SYNTHETIC identifica exclusivamente dados didáticos, sem fonte oficial.
+    A lista de administradores vem da configuração do servidor.
+    """
+    consulta = select(ParametroSet).options(
+        selectinload(ParametroSet.fatores)
+    ).order_by(ParametroSet.id).limit(limit).offset(offset)
+    if status is not None:
+        consulta = consulta.where(ParametroSet.status == status)
+    return db.scalars(consulta).all()
 
 
 class AtivacaoParametroEntrada(BaseModel):
