@@ -1,69 +1,61 @@
-from unittest.mock import AsyncMock
+﻿import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy import create_engine, event
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from datetime import date
+from sqlalchemy import create_engine, text
+from httpx import AsyncClient, ASGITransport
 
-from app.core.bridge_dependency import exigir_usuario_wordpress
-from app.db.database import obter_db
 from app.main import app
-from app.models import Base
+from app.api.v1.manejos import exigir_usuario_wordpress 
 
+DB_TEST_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/agrotracer_test"
 
-@compiles(JSONB, "sqlite")
-def _compilar_jsonb_sqlite(type_, compiler, **kw):
-    return "TEXT"
+# 1. Seeding Hermético das chaves estrangeiras (escopo de sessão)
+@pytest.fixture(scope="session", autouse=True)
+def seed_parametro_set():
+    engine = create_engine(DB_TEST_URL)
+    data_hoje = date.today()
+    
+    with engine.connect() as conn:
+        conn.execute(
+            text("""
+                INSERT INTO parametro_sets (id, versao, vigencia_inicio) 
+                VALUES (1, 1, :vigencia_inicio) 
+                ON CONFLICT (id) DO NOTHING;
+            """),
+            {"vigencia_inicio": data_hoje}
+        )
+        conn.commit()
+    yield
 
+# 2. FIXTURE DE LIMPEZA (Teardown): Trunca a tabela de manejos a cada teste
+@pytest.fixture(autouse=True)
+def limpar_tabela_manejos():
+    """
+    Garante o isolamento limpando os registros de manejos nutricionais 
+    antes de cada função de teste ser executada.
+    """
+    engine = create_engine(DB_TEST_URL)
+    with engine.connect() as conn:
+        # Se no seu banco a tabela se chamar 'manejos_nutricionais' ou 'manejos', ajuste aqui
+        conn.execute(text("TRUNCATE TABLE manejos_nutricionais RESTART IDENTITY CASCADE;"))
+        conn.commit()
+    yield
 
-_engine = create_engine(
-    "sqlite:///:memory:",
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
+# 3. Bypass de Auth do WordPress
+def mock_exigir_usuario_wordpress():
+    return 1
 
-
-@event.listens_for(_engine, "connect")
-def _preparar_sqlite(conexao, registro):
-    conexao.create_function(
-        "btrim", 1, lambda s: s.strip() if s is not None else ""
-    )
-    conexao.create_function(
-        "char_length", 1, lambda s: len(s) if s is not None else 0
-    )
-
-
-_Session = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=_engine,
-)
-
-
-def _override_obter_db():
-    db = _Session()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@pytest_asyncio.fixture(scope="function")
+# 4. AsyncClient HTTPX
+@pytest_asyncio.fixture
 async def client():
-    """
-    Fixture assincrona com SQLite in-memory e cliente HTTPX.
-    """
-    Base.metadata.create_all(bind=_engine)
-    app.state.redis_cliente = AsyncMock()
-    app.dependency_overrides[obter_db] = _override_obter_db
-    app.dependency_overrides[exigir_usuario_wordpress] = lambda: 1
+    app.dependency_overrides[exigir_usuario_wordpress] = mock_exigir_usuario_wordpress
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
-    app.dependency_overrides.pop(obter_db, None)
-    app.dependency_overrides.pop(exigir_usuario_wordpress, None)
-    Base.metadata.drop_all(bind=_engine)
+    app.dependency_overrides.clear()
+
+@pytest.fixture
+def lote_valido():
+    return 1
