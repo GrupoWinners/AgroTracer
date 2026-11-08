@@ -7,6 +7,14 @@ Sistema AgroTracer.
 ## Status
 Sprint 0 - Preparação do ambiente.
 
+## Dados de demonstração e proveniência
+
+Os valores exibidos no dashboard são sintéticos e ilustrativos; não representam
+inventário real de emissões ou fatores oficiais. O exemplo de fatores em
+[`backend/examples/parametros_demo.json`](backend/examples/parametros_demo.json)
+usa `source_type: SYNTHETIC`, sem atribuição ao IPCC, Embrapa ou aprovação
+científica. Consulte a [revisão de proveniência da S3-T06](docs/evidencias/sprint-3/S3-T06-proveniencia-demo.md).
+
 ## Requisitos
 Python 3.12+ (ambiente testado com Python 3.14.7).
 Docker Desktop com Docker Compose.
