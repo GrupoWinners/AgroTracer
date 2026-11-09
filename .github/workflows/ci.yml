@@ -38,8 +38,10 @@ jobs:
 
       - name: Executar testes
         working-directory: backend
-        run: python -m pytest -v -k "not test_s1_t01_postgresql"
-
+        env:
+          DATABASE_URL: postgresql+psycopg2://agrotracer_ci:senha_ci_temporaria@localhost:55432/agrotracer_s2_t01_teste
+          PYTHONPATH: backend
+        run: python -m pytest -v -k "not test_s1_t01_postgres"
 
     services:
       postgres:
