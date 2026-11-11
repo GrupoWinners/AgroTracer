@@ -1,6 +1,6 @@
 import os
 from datetime import date
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
@@ -156,10 +156,9 @@ def limpar_tabela_manejos():
 @pytest_asyncio.fixture(scope="function")
 async def client():
     """
-    Fixture assincrona com SQLite in-memory e cliente HTTPX.
+    Fixture assincrona com SQLite in-memory, Redis mockado e cliente HTTPX.
     """
     Base.metadata.create_all(bind=_engine)
-    app.state.redis_cliente = AsyncMock()
     app.dependency_overrides[obter_db] = _override_obter_db
     app.dependency_overrides[exigir_usuario_wordpress] = lambda: 1
 
@@ -195,9 +194,19 @@ async def client():
             )
         db.commit()
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
+    redis_falso = AsyncMock()
+    env_patch = patch.dict(
+        os.environ,
+        {"AGROTRACER_REDIS_URL": "redis://localhost:6379/0"},
+    )
+    redis_patch = patch("app.main.Redis.from_url", return_value=redis_falso)
+
+    with env_patch, redis_patch:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(
+            transport=transport, base_url="http://test"
+        ) as ac:
+            yield ac
 
     app.dependency_overrides.pop(obter_db, None)
     app.dependency_overrides.pop(exigir_usuario_wordpress, None)
