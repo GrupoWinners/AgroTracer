@@ -131,6 +131,37 @@
       }
     ],
 
+    manejos: [
+      {
+        id: 1,
+        lote_id: 1,
+        inicio: '2026-11-01',
+        fim: '2026-11-10',
+        parametro_set_id: 1,
+        tipo_dieta: 'PASTAGEM',
+        tipo_dieta_label: 'Pastagem (Brachiaria brizantha)',
+        cms: '9.50',
+        ym: '6.50',
+        fe: '56.00',
+        status: 'Concluído',
+        statusType: 'success'
+      },
+      {
+        id: 2,
+        lote_id: 1,
+        inicio: '2026-11-11',
+        fim: '2026-11-30',
+        parametro_set_id: 1,
+        tipo_dieta: 'SUPLEMENTACAO_MINERAL',
+        tipo_dieta_label: 'Suplementação Mineral a Pasto',
+        cms: '10.20',
+        ym: '6.20',
+        fe: '54.50',
+        status: 'Em Andamento',
+        statusType: 'warning'
+      }
+    ],
+
     animals: [
       {
         identifier: 'BR-123456789-0',
@@ -313,7 +344,7 @@
 
   // Navigation between screens
   function switchScreen(screenName) {
-    if (!['dashboard', 'fazendas', 'lotes'].includes(screenName)) return;
+    if (!['dashboard', 'fazendas', 'lotes', 'manejo'].includes(screenName)) return;
     AgroState.currentScreen = screenName;
 
     document.querySelectorAll('.agro-nav-item').forEach(btn => {
@@ -1313,6 +1344,301 @@
     });
   }
 
+  // =========================================================================
+  // MÓDULO DE MANEJO NUTRICIONAL & TIMELINE (SPRINT 3 - S3-T04)
+  // =========================================================================
+  function setupManejoModule() {
+    const lotSelect = document.getElementById('select-manejo-lote');
+    const timelineContainer = document.getElementById('manejo-timeline-container');
+    const emptyState = document.getElementById('manejo-empty-state');
+    const timelineCard = document.getElementById('manejo-timeline-card');
+    const conflictBanner = document.getElementById('manejo-conflict-banner');
+    const conflictPeriodRange = document.getElementById('conflict-period-range');
+    const conflictLotCode = document.getElementById('conflict-lot-code');
+    const btnDismissConflict = document.getElementById('btn-dismiss-conflict-banner');
+
+    const modalCreateManejo = document.getElementById('modal-create-manejo');
+    const btnOpenModal = document.getElementById('btn-open-create-manejo-modal');
+    const btnEmptyCreate = document.getElementById('btn-empty-create-manejo');
+    const btnCloseModal = document.getElementById('btn-close-create-manejo-modal');
+    const btnCancelModal = document.getElementById('btn-cancel-create-manejo');
+    const formCreateManejo = document.getElementById('form-create-manejo');
+
+    const inputInicio = document.getElementById('modal-manejo-data-inicio');
+    const inputFim = document.getElementById('modal-manejo-data-fim');
+    const selectModalLote = document.getElementById('modal-manejo-lote-select');
+    const selectDieta = document.getElementById('modal-manejo-tipo-dieta');
+    const selectParamSet = document.getElementById('modal-manejo-parametro-set');
+    const inputCms = document.getElementById('modal-manejo-cms-input');
+    const conflictBox = document.getElementById('modal-manejo-conflict-box');
+    const conflictDetail = document.getElementById('modal-manejo-conflict-detail');
+    const btnSubmitManejo = document.getElementById('btn-submit-create-manejo');
+
+    const kpiDias = document.getElementById('kpi-manejo-dias');
+    const kpiIntegrity = document.getElementById('kpi-timeline-integrity-badge');
+    const countBadge = document.getElementById('manejo-count-badge');
+
+    function formatDateBR(isoStr) {
+      if (!isoStr || typeof isoStr !== 'string') return '—';
+      const parts = isoStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return isoStr;
+    }
+
+    function calculateDays(inicioIso, fimIso) {
+      if (!inicioIso || !fimIso) return 0;
+      const d1 = new Date(inicioIso + 'T00:00:00Z');
+      const d2 = new Date(fimIso + 'T00:00:00Z');
+      const diffMs = d2 - d1;
+      if (isNaN(diffMs) || diffMs < 0) return 0;
+      return Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+    function findOverlappingPeriod(loteId, inicioIso, fimIso, ignoreManejoId = null) {
+      if (!inicioIso || !fimIso || fimIso < inicioIso) return null;
+      const idNum = parseInt(loteId, 10);
+      const lotManejos = (AgroState.manejos || []).filter(m => m.lote_id === idNum && m.id !== ignoreManejoId);
+
+      for (const m of lotManejos) {
+        if (inicioIso <= m.fim && m.inicio <= fimIso) {
+          return m;
+        }
+      }
+      return null;
+    }
+
+    function validateModalDates() {
+      if (!inputInicio || !inputFim || !conflictBox || !btnSubmitManejo) return;
+      const inicio = inputInicio.value;
+      const fim = inputFim.value;
+      const loteId = selectModalLote ? selectModalLote.value : (lotSelect ? lotSelect.value : 1);
+
+      if (!inicio || !fim) {
+        conflictBox.style.display = 'none';
+        btnSubmitManejo.disabled = false;
+        btnSubmitManejo.title = '';
+        return;
+      }
+
+      if (fim < inicio) {
+        conflictBox.style.display = 'flex';
+        conflictDetail.innerHTML = 'A data de término não pode ser anterior à data de início.';
+        btnSubmitManejo.disabled = true;
+        btnSubmitManejo.title = 'Ajuste a data de término';
+        return;
+      }
+
+      const conflicting = findOverlappingPeriod(loteId, inicio, fim);
+      if (conflicting) {
+        conflictBox.style.display = 'flex';
+        const rangeText = `${formatDateBR(conflicting.inicio)} a ${formatDateBR(conflicting.fim)}`;
+        const dietaText = conflicting.tipo_dieta_label || conflicting.tipo_dieta;
+        conflictDetail.innerHTML = `O período selecionado colide diretamente com o manejo já cadastrado de <strong>${rangeText}</strong> (${dietaText}). Conforme a regra RN-08, não são permitidos períodos sobrepostos.`;
+        btnSubmitManejo.disabled = true;
+        btnSubmitManejo.title = 'Existe sobreposição temporal. Ajuste as datas para habilitar o cadastro.';
+      } else {
+        conflictBox.style.display = 'none';
+        btnSubmitManejo.disabled = false;
+        btnSubmitManejo.title = '';
+      }
+    }
+
+    function renderTimeline(loteId) {
+      const idNum = parseInt(loteId, 10);
+      const items = (AgroState.manejos || [])
+        .filter(m => m.lote_id === idNum)
+        .sort((a, b) => a.inicio.localeCompare(b.inicio));
+
+      if (items.length === 0) {
+        if (emptyState) emptyState.style.display = 'block';
+        if (timelineCard) timelineCard.style.display = 'none';
+        if (kpiDias) kpiDias.textContent = '0';
+        if (countBadge) countBadge.textContent = '0 períodos';
+        if (kpiIntegrity) {
+          kpiIntegrity.className = 'agro-badge neutral';
+          kpiIntegrity.textContent = 'Sem Períodos';
+        }
+        return;
+      }
+
+      if (emptyState) emptyState.style.display = 'none';
+      if (timelineCard) timelineCard.style.display = 'block';
+      if (countBadge) countBadge.textContent = `${items.length} período${items.length > 1 ? 's' : ''}`;
+
+      let totalDays = 0;
+      let html = '';
+
+      items.forEach((m, idx) => {
+        const duracao = calculateDays(m.inicio, m.fim);
+        totalDays += duracao;
+        const isCurrent = idx === items.length - 1;
+        const statusBadge = m.status === 'Concluído'
+          ? '<span class="agro-badge success" style="font-size:10.5px; padding:2px 6px;">Concluído</span>'
+          : '<span class="agro-badge warning" style="font-size:10.5px; padding:2px 6px;">Em Andamento</span>';
+
+        html += `
+          <div class="agro-timeline-item" data-manejo-id="${m.id}" data-inicio="${m.inicio}" data-fim="${m.fim}">
+            <div class="agro-timeline-dot ${isCurrent ? 'active' : ''}" title="${m.status || 'Período'}"></div>
+            <div class="agro-timeline-content" style="background:#fafbfc; border:1px solid var(--agro-border); border-radius:var(--agro-radius-md); padding:16px;">
+              <div class="agro-timeline-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="agro-timeline-title" style="font-size:14px; font-weight:700; color:var(--agro-text-primary);">
+                      Dieta: ${m.tipo_dieta_label || m.tipo_dieta}
+                    </span>
+                    ${statusBadge}
+                  </div>
+                  <div class="agro-timeline-date" style="font-size:12.5px; font-weight:600; color:var(--agro-primary); margin-top:3px;">
+                    Datas: <span class="format-date-range">${formatDateBR(m.inicio)} a ${formatDateBR(m.fim)}</span> (Duração: ${duracao} dias inclusivos)
+                  </div>
+                </div>
+                <span class="agro-badge info" style="font-size:11px;">Parâmetro Set #${m.parametro_set_id} (v1.0-2026)</span>
+              </div>
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:12px; background:#fff; padding:12px; border-radius:6px; border:1px solid #e2e8f0;">
+                <div>
+                  <span style="font-size:11px; color:var(--agro-text-muted); display:block;">Consumo Diário (CMS)</span>
+                  <strong style="font-size:13px; color:var(--agro-text-primary);">${m.cms || '9.50'} kg MS/cab/dia</strong>
+                </div>
+                <div>
+                  <span style="font-size:11px; color:var(--agro-text-muted); display:block;">Conversão Metano (Ym)</span>
+                  <strong style="font-size:13px; color:var(--agro-text-primary);">${m.ym || '6.50'} % EB</strong>
+                </div>
+                <div>
+                  <span style="font-size:11px; color:var(--agro-text-muted); display:block;">Emissão Entérica</span>
+                  <strong style="font-size:13px; color:var(--agro-text-primary);">${m.fe || '56.00'} kg CH4/cab/ano</strong>
+                </div>
+                <div>
+                  <span style="font-size:11px; color:var(--agro-text-muted); display:block;">Classificação de Origem</span>
+                  <span class="agro-badge neutral" style="font-size:10px;">SYNTHETIC (Didático)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      if (timelineContainer) timelineContainer.innerHTML = html;
+      if (kpiDias) kpiDias.textContent = String(totalDays);
+      if (kpiIntegrity) {
+        kpiIntegrity.className = 'agro-badge success';
+        kpiIntegrity.textContent = '✓ Sem Conflitos (RN-08)';
+      }
+    }
+
+    if (lotSelect) {
+      lotSelect.addEventListener('change', (e) => {
+        const selVal = e.target.value;
+        if (selectModalLote) selectModalLote.value = selVal;
+        renderTimeline(selVal);
+      });
+    }
+
+    if (btnOpenModal && modalCreateManejo) {
+      btnOpenModal.addEventListener('click', () => {
+        if (selectModalLote && lotSelect) selectModalLote.value = lotSelect.value;
+        if (inputInicio) inputInicio.value = '2026-12-01';
+        if (inputFim) inputFim.value = '2026-12-31';
+        validateModalDates();
+        modalCreateManejo.classList.add('active');
+      });
+    }
+
+    if (btnEmptyCreate && modalCreateManejo) {
+      btnEmptyCreate.addEventListener('click', () => {
+        if (selectModalLote && lotSelect) selectModalLote.value = lotSelect.value;
+        if (inputInicio) inputInicio.value = '2026-11-01';
+        if (inputFim) inputFim.value = '2026-11-30';
+        validateModalDates();
+        modalCreateManejo.classList.add('active');
+      });
+    }
+
+    const closeModal = () => {
+      if (modalCreateManejo) modalCreateManejo.classList.remove('active');
+    };
+    if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
+    if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
+
+    if (inputInicio) {
+      inputInicio.addEventListener('change', validateModalDates);
+      inputInicio.addEventListener('input', validateModalDates);
+    }
+    if (inputFim) {
+      inputFim.addEventListener('change', validateModalDates);
+      inputFim.addEventListener('input', validateModalDates);
+    }
+    if (selectModalLote) {
+      selectModalLote.addEventListener('change', validateModalDates);
+    }
+
+    if (btnDismissConflict && conflictBanner) {
+      btnDismissConflict.addEventListener('click', () => {
+        conflictBanner.style.display = 'none';
+        document.querySelectorAll('.agro-timeline-item.conflict').forEach(el => el.classList.remove('conflict'));
+      });
+    }
+
+    if (formCreateManejo) {
+      formCreateManejo.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const loteId = parseInt(selectModalLote ? selectModalLote.value : (lotSelect ? lotSelect.value : 1), 10);
+        const inicio = inputInicio ? inputInicio.value : '';
+        const fim = inputFim ? inputFim.value : '';
+        const tipoDieta = selectDieta ? selectDieta.value : 'PASTAGEM';
+        const parametroSetId = parseInt(selectParamSet ? selectParamSet.value : 1, 10);
+        const cmsVal = inputCms ? parseFloat(inputCms.value) || 9.50 : 9.50;
+
+        const conflicting = findOverlappingPeriod(loteId, inicio, fim);
+        if (conflicting) {
+          validateModalDates();
+          if (conflictBanner && conflictPeriodRange && conflictLotCode) {
+            conflictPeriodRange.textContent = `${formatDateBR(conflicting.inicio)} a ${formatDateBR(conflicting.fim)}`;
+            conflictLotCode.textContent = (selectModalLote && selectModalLote.options[selectModalLote.selectedIndex])
+              ? selectModalLote.options[selectModalLote.selectedIndex].text.split(' ')[0]
+              : 'LT-2026-001';
+            conflictBanner.style.display = 'flex';
+          }
+          return;
+        }
+
+        const correlationId = AgroState.correlationId || '123e4567-e89b-42d3-a456-426614174000';
+        const newManejo = {
+          id: Date.now(),
+          lote_id: loteId,
+          inicio: inicio,
+          fim: fim,
+          parametro_set_id: parametroSetId,
+          tipo_dieta: tipoDieta,
+          tipo_dieta_label: (selectDieta && selectDieta.options[selectDieta.selectedIndex])
+            ? selectDieta.options[selectDieta.selectedIndex].text
+            : tipoDieta,
+          cms: cmsVal.toFixed(2),
+          ym: '6.50',
+          fe: '56.00',
+          status: 'Em Andamento',
+          statusType: 'warning'
+        };
+
+        AgroState.manejos = AgroState.manejos || [];
+        AgroState.manejos.push(newManejo);
+
+        closeModal();
+        renderTimeline(loteId);
+
+        showToast(
+          'Período de manejo cadastrado com sucesso!',
+          `Período: ${formatDateBR(inicio)} a ${formatDateBR(fim)} · ID: ${correlationId}`,
+          'success'
+        );
+      });
+    }
+
+    const initialLote = lotSelect ? lotSelect.value : 1;
+    renderTimeline(initialLote);
+  }
+
   // Initialization
   function init() {
     document.querySelectorAll('.agro-nav-item[data-screen]').forEach(btn => {
@@ -1325,13 +1651,14 @@
 
     if (window.location.hash) {
       const hashScreen = window.location.hash.replace('#', '');
-      if (['dashboard', 'fazendas', 'lotes'].includes(hashScreen)) {
+      if (['dashboard', 'fazendas', 'lotes', 'manejo'].includes(hashScreen)) {
         switchScreen(hashScreen);
       }
     }
 
     setupFarmsModule();
     setupLotsModule();
+    setupManejoModule();
     setupModals();
   }
 
@@ -1343,6 +1670,7 @@
     openValidationErrorModal,
     openConfirmModal,
     openAnimalHistoryModal,
+    setupManejoModule,
     state: AgroState
   };
 

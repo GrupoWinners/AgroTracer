@@ -766,6 +766,7 @@ class AgroTracer_Http_Client {
 
         $api_error_code = 'API_ERROR_' . $status_code;
         $field_errors   = [];
+        $detalhes       = [];
 
         if (is_array($decoded)) {
             if (isset($decoded['error']) && is_array($decoded['error'])) {
@@ -774,6 +775,9 @@ class AgroTracer_Http_Client {
                 }
                 if (!empty($decoded['error']['field_errors']) && is_array($decoded['error']['field_errors'])) {
                     $field_errors = self::sanitize_field_errors($decoded['error']['field_errors']);
+                }
+                if (!empty($decoded['error']['detalhes']) && is_array($decoded['error']['detalhes'])) {
+                    $detalhes = $decoded['error']['detalhes'];
                 }
             } elseif (isset($decoded['detail']) && is_array($decoded['detail'])) {
                 // FastAPI default 422 Pydantic validation format fallback
@@ -788,6 +792,9 @@ class AgroTracer_Http_Client {
         }
 
         $safe_ui_message = self::map_error_to_ui_message($status_code, $api_error_code, $field_errors);
+        if ($api_error_code === 'MANEJO_SOBREPOSTO' && !empty($detalhes['inicio']) && !empty($detalhes['fim'])) {
+            $safe_ui_message = sprintf('Existe sobreposição com o manejo já registrado de %s a %s.', $detalhes['inicio'], $detalhes['fim']);
+        }
 
         return [
             'success'        => false,
@@ -797,6 +804,7 @@ class AgroTracer_Http_Client {
                 'code'           => $api_error_code,
                 'message'        => $safe_ui_message,
                 'field_errors'   => $field_errors,
+                'detalhes'       => $detalhes,
                 'correlation_id' => $resolved_corr_id,
                 'timestamp'      => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
             ],
