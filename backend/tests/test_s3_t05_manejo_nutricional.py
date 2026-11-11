@@ -1,80 +1,50 @@
-import pytest
+"""S3-T05: Testes de integracao da RN-08 (Manejo Nutricional).
+
+Valida vigencias inclusivas, rejeicao de fim < inicio e sobreposicao.
+"""
 from datetime import date, timedelta
-from httpx import AsyncClient
+
+from test_s2_t01_api import ambiente_api  # noqa: F401
+from test_s2_t03_api import cenario  # noqa: F401
+from test_s3_t03_api import enviar, manejo_api  # noqa: F401
 
 
-@pytest.mark.asyncio
-async def test_rn08_manejo_mesmo_dia_conta_um_dia(
-    client: AsyncClient, lote_valido: int
-):
-    """
-    RN-08: Data de inicio igual a data de fim deve ser aceita
-    e contabilizar 1 dia.
-    Endpoint: POST /api/v1/lotes/{lote_id}/manejos
-    """
+def test_rn08_manejo_mesmo_dia_conta_um_dia(manejo_api):  # noqa: F811
+    """RN-08: Inicio igual a fim aceito e contabiliza 1 dia."""
+    cliente, _, ids = manejo_api
     data_hoje = str(date.today())
 
-    payload_manejo = {
-        "inicio": data_hoje,
-        "fim": data_hoje,
-        "parametro_set_id": 1,
-        "tipo_dieta": "CONCENTRADO",
-    }
-
-    url = f"/api/v1/lotes/{lote_valido}/manejos"
-    resp = await client.post(url, json=payload_manejo)
-    msg_erro = f"Erro ao criar manejo: {resp.text}"
-    assert resp.status_code in [200, 201], msg_erro
+    resposta = enviar(cliente, ids, inicio=data_hoje, fim=data_hoje)
+    msg_erro = f"Erro ao criar manejo: {resposta.text}"
+    assert resposta.status_code in [200, 201], msg_erro
+    dados = resposta.json()
+    assert dados["inicio"] == data_hoje
+    assert dados["fim"] == data_hoje
 
 
-@pytest.mark.asyncio
-async def test_rn08_impedir_data_fim_anterior_a_inicio(
-    client: AsyncClient, lote_valido: int
-):
-    """
-    RN-08: Data de fim anterior a data de inicio deve ser
-    rejeitada com HTTP 400 ou 422.
-    """
+def test_rn08_impedir_data_fim_anterior_a_inicio(manejo_api):  # noqa: F811
+    """RN-08: Fim anterior ao inicio rejeitado com 400 ou 422."""
+    cliente, _, ids = manejo_api
     data_inicio = str(date.today())
     data_fim = str(date.today() - timedelta(days=5))
 
-    payload_manejo = {
-        "inicio": data_inicio,
-        "fim": data_fim,
-        "parametro_set_id": 1,
-        "tipo_dieta": "SILAGEM",
-    }
-
-    url = f"/api/v1/lotes/{lote_valido}/manejos"
-    resp = await client.post(url, json=payload_manejo)
+    resposta = enviar(cliente, ids, inicio=data_inicio, fim=data_fim)
     msg_erro = (
         f"RN-08 VIOLADA: API aceitou fim < inicio! "
-        f"Status: {resp.status_code}"
+        f"Status: {resposta.status_code}"
     )
-    assert resp.status_code in [400, 422], msg_erro
+    assert resposta.status_code in [400, 422], msg_erro
 
 
-@pytest.mark.asyncio
-async def test_rn08_impedir_sobreposicao_de_periodos(
-    client: AsyncClient, lote_valido: int
-):
-    """
-    RN-08: Rejeitar novos manejos que se sobreponham a um
-    periodo existente no mesmo lote.
-    """
-    url = f"/api/v1/lotes/{lote_valido}/manejos"
+def test_rn08_impedir_sobreposicao_de_periodos(manejo_api):  # noqa: F811
+    """RN-08: Rejeitar novos manejos sobrepostos no mesmo lote."""
+    cliente, _, ids = manejo_api
 
     # 1. Registrar manejo base
     d_inicio_1 = str(date.today() + timedelta(days=10))
     d_fim_1 = str(date.today() + timedelta(days=20))
 
-    payload_1 = {
-        "inicio": d_inicio_1,
-        "fim": d_fim_1,
-        "parametro_set_id": 1,
-        "tipo_dieta": "PASTAGEM",
-    }
-    resp1 = await client.post(url, json=payload_1)
+    resp1 = enviar(cliente, ids, inicio=d_inicio_1, fim=d_fim_1)
     msg_erro1 = f"Erro ao registrar manejo base: {resp1.text}"
     assert resp1.status_code in [200, 201], msg_erro1
 
@@ -82,15 +52,10 @@ async def test_rn08_impedir_sobreposicao_de_periodos(
     d_inicio_2 = str(date.today() + timedelta(days=15))
     d_fim_2 = str(date.today() + timedelta(days=25))
 
-    payload_2 = {
-        "inicio": d_inicio_2,
-        "fim": d_fim_2,
-        "parametro_set_id": 1,
-        "tipo_dieta": "CONCENTRADO",
-    }
-    resp2 = await client.post(url, json=payload_2)
+    resp2 = enviar(cliente, ids, inicio=d_inicio_2, fim=d_fim_2)
     msg_erro2 = (
         f"RN-08 VIOLADA: API permitiu sobreposicao! "
         f"Status: {resp2.status_code}"
     )
     assert resp2.status_code == 409, msg_erro2
+    assert resp2.json()["error"]["code"] == "MANEJO_SOBREPOSTO"
