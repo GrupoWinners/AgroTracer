@@ -61,14 +61,18 @@ def _override_obter_db():
 DB_TEST_URL = (
     os.getenv("AGROTRACER_TEST_DATABASE_URL")
     or os.getenv("DATABASE_URL")
-    or "postgresql+psycopg2://postgres:postgres@localhost:5432/agrotracer_test"
 )
 
 
 def _criar_engine_pg(url: str):
     """Cria engine com fallback entre drivers psycopg e psycopg2."""
+    args = {}
+    if "psycopg2" in url:
+        args = {"connect_timeout": 3}
+    elif "psycopg" in url:
+        args = {"timeout": 3}
     try:
-        return create_engine(url)
+        return create_engine(url, connect_args=args)
     except Exception:
         if "postgresql+psycopg2://" in url:
             alt = url.replace(
@@ -94,6 +98,10 @@ def seed_parametro_set():
         or os.getenv("DATABASE_URL")
         or DB_TEST_URL
     )
+    if not url:
+        yield
+        return
+
     try:
         engine = _criar_engine_pg(url)
         data_hoje = date.today()
@@ -108,33 +116,6 @@ def seed_parametro_set():
                     """
                 ),
                 {"vigencia_inicio": data_hoje},
-            )
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO produtores (id, wordpress_user_id)
-                    VALUES (1, 1)
-                    ON CONFLICT (id) DO NOTHING;
-                    """
-                )
-            )
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO fazendas (id, produtor_id, nome, municipio, uf)
-                    VALUES (1, 1, 'Fazenda Teste', 'Municipio Teste', 'MG')
-                    ON CONFLICT (id) DO NOTHING;
-                    """
-                )
-            )
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO lotes (id, fazenda_id, codigo_lote, status)
-                    VALUES (1, 1, 'LOTE-TESTE-01', 'EM_MANEJO')
-                    ON CONFLICT (id) DO NOTHING;
-                    """
-                )
             )
             conn.commit()
     except Exception:
@@ -153,6 +134,10 @@ def limpar_tabela_manejos():
         or os.getenv("DATABASE_URL")
         or DB_TEST_URL
     )
+    if not url:
+        yield
+        return
+
     try:
         engine = _criar_engine_pg(url)
         with engine.connect() as conn:
