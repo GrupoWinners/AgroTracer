@@ -20,6 +20,7 @@ if (!defined('ABSPATH')) {
       include $plugin_dir . '/templates/farms.php';
       include $plugin_dir . '/templates/lots.php';
       include $plugin_dir . '/templates/manejo.php';
+      include $plugin_dir . '/templates/fechamento.php';
     ?>
   </main>
 

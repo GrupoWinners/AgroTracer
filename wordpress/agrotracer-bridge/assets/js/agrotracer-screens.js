@@ -344,7 +344,7 @@
 
   // Navigation between screens
   function switchScreen(screenName) {
-    if (!['dashboard', 'fazendas', 'lotes', 'manejo'].includes(screenName)) return;
+    if (!['dashboard', 'fazendas', 'lotes', 'manejo', 'fechamento'].includes(screenName)) return;
     AgroState.currentScreen = screenName;
 
     document.querySelectorAll('.agro-nav-item').forEach(btn => {
@@ -1639,6 +1639,539 @@
     renderTimeline(initialLote);
   }
 
+  // Sprint 4 (S4-T04): Fechamento do Lote e Cálculo CarbonEngine
+  function setupFechamentoModule() {
+    const lotSelect = document.getElementById('select-fechamento-lote');
+    const statusBadge = document.getElementById('fechamento-lote-status-badge');
+
+    const inputDataAbate = document.getElementById('fechamento-data-abate');
+    const inputAnimais = document.getElementById('fechamento-animais-abate');
+    const inputPeso = document.getElementById('fechamento-peso-medio');
+    const inputRendimento = document.getElementById('fechamento-rendimento');
+    const form = document.getElementById('form-fechar-lote');
+    const btnSubmit = document.getElementById('btn-submit-fechamento');
+    const btnSubmitText = document.getElementById('btn-submit-fechamento-text');
+    const spinner = document.getElementById('spinner-fechamento');
+
+    const rendimentoFracao = document.getElementById('rendimento-fração-preview');
+    const previewPesoVivo = document.getElementById('preview-peso-vivo-total');
+    const previewCarcaca = document.getElementById('preview-carcaca-total');
+    const hintDataMinima = document.getElementById('data-minima-abate-hint');
+    const hintMaxAnimais = document.getElementById('max-animais-permitidos-hint');
+
+    const resumoCodigo = document.getElementById('resumo-lote-codigo');
+    const resumoFazenda = document.getElementById('resumo-lote-fazenda');
+    const resumoAnimais = document.getElementById('resumo-lote-animais');
+    const resumoPeriodo = document.getElementById('resumo-lote-periodo');
+    const resumoParamSet = document.getElementById('resumo-lote-param-set');
+    const boxJaFechado = document.getElementById('box-lote-ja-fechado');
+
+    const errorBanner = document.getElementById('fechamento-actionable-error-banner');
+    const errorCodeBadge = document.getElementById('fechamento-error-code-badge');
+    const errorTitle = document.getElementById('fechamento-error-title');
+    const errorMessage = document.getElementById('fechamento-error-message');
+    const errorActionGuide = document.getElementById('fechamento-error-action-guide');
+    const btnErrorAction = document.getElementById('btn-fechamento-error-action');
+    const errorCorrelation = document.getElementById('fechamento-error-correlation-id');
+    const btnDismissError = document.getElementById('btn-dismiss-fechamento-error');
+
+    const resultadoCard = document.getElementById('fechamento-resultado-card');
+    const resEmissaoTotal = document.getElementById('res-emissao-total');
+    const resIntensidade = document.getElementById('res-intensidade');
+    const resVersaoMetodo = document.getElementById('res-versao-metodo');
+    const resFechamentoId = document.getElementById('res-fechamento-id');
+    const resParamId = document.getElementById('res-param-id');
+    const resCorrelationId = document.getElementById('res-correlation-id');
+
+    const modalConfirm = document.getElementById('modal-confirm-fechamento');
+    const modalConfirmLoteCode = document.getElementById('modal-confirm-lote-code');
+    const modalConfirmData = document.getElementById('modal-confirm-data-abate');
+    const modalConfirmAnimais = document.getElementById('modal-confirm-animais');
+    const modalConfirmPeso = document.getElementById('modal-confirm-peso');
+    const modalConfirmRendimento = document.getElementById('modal-confirm-rendimento');
+    const modalConfirmCarcaca = document.getElementById('modal-confirm-carcaca-total');
+    const btnCancelConfirm = document.getElementById('btn-cancel-confirm-fechamento');
+    const btnCloseConfirm = document.getElementById('btn-close-confirm-fechamento');
+    const btnDoConfirm = document.getElementById('btn-execute-confirm-fechamento');
+
+    const btnOpenFromLot = document.getElementById('btn-open-fechamento-from-lot');
+
+    // Prevenção estrita de submissão dupla (Cuidado de Engenharia)
+    let isSubmitting = false;
+
+    // Catálogo de dados de mock zootécnicos dos lotes
+    const mockLotProfiles = {
+      1: {
+        code: 'LT-2026-001',
+        farm: 'Fazenda Modelo (Aquidauana/MS)',
+        animals: 50,
+        status: 'EM_MANEJO',
+        statusLabel: 'Em manejo',
+        statusBadgeClass: 'agro-badge warning',
+        lastManejoFim: '2026-05-30',
+        periodoTexto: '01/01/2026 a 30/05/2026 (150 dias inclusivos)',
+        paramSet: 'v1.0-2026 [SYNTHETIC / Didático]',
+        isClosed: false
+      },
+      2: {
+        code: 'LT-2026-003',
+        farm: 'Fazenda São Bento (Corumbá/MS)',
+        animals: 45,
+        status: 'FECHADO',
+        statusLabel: 'Fechado',
+        statusBadgeClass: 'agro-badge info',
+        lastManejoFim: '2026-05-30',
+        periodoTexto: '15/04/2026 a 30/05/2026 (46 dias)',
+        paramSet: 'v1.0-2026 [SYNTHETIC / Didático]',
+        isClosed: true,
+        closedResult: {
+          emissao: '12.285,00',
+          intensidade: '0,942',
+          id: '#100'
+        }
+      },
+      3: {
+        code: 'LT-2025-090',
+        farm: 'Fazenda Esperança (Miranda/MS)',
+        animals: 12,
+        status: 'EM_MANEJO',
+        statusLabel: 'Em manejo',
+        statusBadgeClass: 'agro-badge warning',
+        lastManejoFim: '2026-04-15',
+        periodoTexto: '01/03/2026 a 15/04/2026 (46 dias)',
+        paramSet: 'v1.0-2026 [SYNTHETIC / Didático]',
+        isClosed: false
+      },
+      4: {
+        code: 'LT-2024-087',
+        farm: 'Fazenda Alvorada (Bodoquena/MS)',
+        animals: 0,
+        status: 'RASCUNHO',
+        statusLabel: 'Rascunho (Vazio)',
+        statusBadgeClass: 'agro-badge neutral',
+        lastManejoFim: null,
+        periodoTexto: 'Sem períodos de manejo cadastrados',
+        paramSet: 'Nenhum',
+        isClosed: false
+      }
+    };
+
+    function formatDateBR(isoStr) {
+      if (!isoStr || typeof isoStr !== 'string') return '—';
+      const parts = isoStr.split('-');
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      return isoStr;
+    }
+
+    function formatNumberBR(val, decimals = 2) {
+      return (Number(val) || 0).toLocaleString('pt-BR', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function updateZootecnicPreview() {
+      if (!inputAnimais || !inputPeso || !inputRendimento) return;
+      const animais = parseInt(inputAnimais.value, 10) || 0;
+      const peso = parseFloat(inputPeso.value) || 0;
+      let rendimento = parseFloat(inputRendimento.value) || 0;
+
+      if (rendimentoFracao) {
+        const fracao = rendimento > 1.0 ? rendimento / 100.0 : rendimento;
+        rendimentoFracao.textContent = fracao.toFixed(4);
+      }
+
+      const rendimentoPercent = rendimento > 1.0 ? rendimento / 100.0 : rendimento;
+      const pesoTotal = animais * peso;
+      const carcacaTotal = pesoTotal * rendimentoPercent;
+
+      if (previewPesoVivo) {
+        previewPesoVivo.textContent = `${formatNumberBR(pesoTotal, 2)} kg`;
+      }
+      if (previewCarcaca) {
+        previewCarcaca.textContent = `${formatNumberBR(carcacaTotal, 2)} kg carcaça`;
+      }
+    }
+
+    function updateSelectedLotInfo(loteId) {
+      const profile = mockLotProfiles[loteId] || mockLotProfiles[1];
+
+      if (resumoCodigo) resumoCodigo.textContent = profile.code;
+      if (resumoFazenda) resumoFazenda.textContent = profile.farm;
+      if (resumoAnimais) resumoAnimais.textContent = `${profile.animals} cabeças`;
+      if (resumoPeriodo) resumoPeriodo.textContent = profile.periodoTexto;
+      if (resumoParamSet) resumoParamSet.textContent = profile.paramSet;
+
+      if (statusBadge) {
+        statusBadge.className = profile.statusBadgeClass;
+        statusBadge.textContent = profile.statusLabel;
+      }
+
+      if (hintMaxAnimais) {
+        hintMaxAnimais.textContent = `${profile.animals} animais`;
+      }
+      if (hintDataMinima && profile.lastManejoFim) {
+        hintDataMinima.textContent = formatDateBR(profile.lastManejoFim);
+      }
+
+      if (inputAnimais && profile.animals > 0) {
+        inputAnimais.value = profile.animals;
+        inputAnimais.max = profile.animals;
+      }
+
+      if (profile.isClosed) {
+        if (boxJaFechado) boxJaFechado.style.display = 'block';
+        if (btnSubmit) {
+          btnSubmit.disabled = true;
+          btnSubmit.title = 'Este lote já foi fechado e possui snapshot imutável.';
+        }
+        if (resultadoCard && profile.closedResult) {
+          resultadoCard.style.display = 'block';
+          if (resEmissaoTotal) resEmissaoTotal.textContent = profile.closedResult.emissao;
+          if (resIntensidade) resIntensidade.textContent = profile.closedResult.intensidade;
+          if (resFechamentoId) resFechamentoId.textContent = profile.closedResult.id;
+        }
+      } else {
+        if (boxJaFechado) boxJaFechado.style.display = 'none';
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.title = '';
+        }
+        if (resultadoCard) resultadoCard.style.display = 'none';
+      }
+
+      updateZootecnicPreview();
+    }
+
+    function showActionableError(code, message, correlationId) {
+      if (!errorBanner) return;
+
+      const corrId = correlationId || AgroState.correlationId || generateCorrelationId();
+      if (errorCodeBadge) errorCodeBadge.textContent = code || 'ERRO_FECHAMENTO';
+      if (errorCorrelation) errorCorrelation.textContent = corrId;
+      if (errorMessage) errorMessage.textContent = message || 'Ocorreu um erro ao processar o fechamento.';
+
+      // Mapeamento semântico acionável (Critério de Aceite 2)
+      let titleText = 'Falha no Fechamento do Lote';
+      let guideText = 'Verifique os dados informados e tente novamente.';
+      let actionBtnText = 'Entendido';
+      let actionHandler = () => { errorBanner.style.display = 'none'; };
+
+      switch (code) {
+        case 'ABATE_SUPERIOR_AOS_ANIMAIS':
+          titleText = 'Quantidade Abatida Inválida (Excede o Lote)';
+          guideText = 'A quantidade de animais abatidos não pode exceder o número de animais comprovado no último período de manejo. Ajuste o campo para no máximo o total de animais do lote.';
+          actionBtnText = 'Ajustar para Total do Lote';
+          actionHandler = () => {
+            const currentLot = lotSelect ? lotSelect.value : 1;
+            const profile = mockLotProfiles[currentLot];
+            if (inputAnimais && profile) {
+              inputAnimais.value = profile.animals;
+              updateZootecnicPreview();
+            }
+            errorBanner.style.display = 'none';
+          };
+          break;
+
+        case 'ABATE_ANTERIOR_AO_MANEJO':
+          titleText = 'Data de Abate Incompatível com o Manejo';
+          guideText = 'A data de abate não pode ser anterior à data final do último período de manejo. Ajuste a data de abate para ser igual ou posterior ao término do manejo.';
+          actionBtnText = 'Corrigir Data de Abate';
+          actionHandler = () => {
+            const currentLot = lotSelect ? lotSelect.value : 1;
+            const profile = mockLotProfiles[currentLot];
+            if (inputDataAbate && profile && profile.lastManejoFim) {
+              inputDataAbate.value = profile.lastManejoFim;
+            }
+            errorBanner.style.display = 'none';
+          };
+          break;
+
+        case 'ASSOCIACOES_PARCIAIS':
+          titleText = 'Associações Parciais Detectadas no Manejo (RN-09 / RN-10)';
+          guideText = 'Houve entrada ou saída de animais no meio de um período de manejo. Para garantir cálculo exato e sem dupla contagem, acesse a timeline de manejo e divida o período nas datas em que houve movimentação.';
+          actionBtnText = 'Ir para Tela de Manejo';
+          actionHandler = () => {
+            errorBanner.style.display = 'none';
+            switchScreen('manejo');
+          };
+          break;
+
+        case 'MANEJO_OBRIGATORIO':
+          titleText = 'Lote Sem Manejo Nutricional Registrado';
+          guideText = 'Conforme a regra RN-04, um lote só pode ser fechado se possuir ao menos um período de manejo nutricional cadastrado. Registre os manejos antes de fechar.';
+          actionBtnText = 'Cadastrar Manejo Agora';
+          actionHandler = () => {
+            errorBanner.style.display = 'none';
+            switchScreen('manejo');
+          };
+          break;
+
+        case 'LOTE_JA_FECHADO':
+        case 'LOTE_ESTADO_INVALIDO':
+          titleText = 'Lote Já Fechado (Operação Irreversível RN-11/21)';
+          guideText = 'Este lote já se encontra no status FECHADO com snapshot imutável protegido por triggers no PostgreSQL. Não é permitido fechar novamente um lote finalizado.';
+          actionBtnText = 'Ver Painel de Lotes';
+          actionHandler = () => {
+            errorBanner.style.display = 'none';
+            switchScreen('lotes');
+          };
+          break;
+
+        case 'PARAMETROS_NAO_PUBLICADOS':
+        case 'PARAMETROS_FORA_VIGENCIA':
+          titleText = 'Parâmetros Zootécnicos Não Publicados ou Fora da Vigência';
+          guideText = 'O conjunto de fatores vinculado ao manejo deve estar publicado (ATIVO ou INATIVO) e cobrir integralmente as datas de manejo. Verifique os parâmetros versionados.';
+          actionBtnText = 'Ver Timeline de Manejo';
+          actionHandler = () => {
+            errorBanner.style.display = 'none';
+            switchScreen('manejo');
+          };
+          break;
+
+        default:
+          guideText = message || 'Verifique as pré-condições do lote e tente novamente.';
+          break;
+      }
+
+      if (errorTitle) errorTitle.textContent = titleText;
+      if (errorActionGuide) errorActionGuide.textContent = guideText;
+      if (btnErrorAction) {
+        btnErrorAction.textContent = actionBtnText;
+        btnErrorAction.onclick = actionHandler;
+      }
+
+      errorBanner.style.display = 'block';
+      errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function resetSubmitState() {
+      isSubmitting = false;
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        if (btnSubmitText) btnSubmitText.textContent = 'Fechar Lote e Calcular';
+      }
+      if (spinner) spinner.style.display = 'none';
+      if (btnDoConfirm) {
+        btnDoConfirm.disabled = false;
+        btnDoConfirm.textContent = 'Sim, Confirmar e Fechar Lote';
+      }
+    }
+
+    function openConfirmModal(data) {
+      if (!modalConfirm) return;
+
+      if (modalConfirmLoteCode) modalConfirmLoteCode.textContent = data.lotCode;
+      if (modalConfirmData) modalConfirmData.textContent = formatDateBR(data.dataAbate);
+      if (modalConfirmAnimais) modalConfirmAnimais.textContent = `${data.animais} cabeças`;
+      if (modalConfirmPeso) modalConfirmPeso.textContent = `${formatNumberBR(data.peso, 2)} kg / cab`;
+      if (modalConfirmRendimento) modalConfirmRendimento.textContent = `${formatNumberBR(data.rendimento, 2)}% (${(data.rendimento / 100).toFixed(4)})`;
+      if (modalConfirmCarcaca) modalConfirmCarcaca.textContent = `${formatNumberBR(data.carcacaTotal, 2)} kg`;
+
+      modalConfirm.classList.add('active');
+    }
+
+    function closeConfirmModal() {
+      if (modalConfirm) modalConfirm.classList.remove('active');
+    }
+
+    function executeFechamento(payload) {
+      const correlationId = AgroState.correlationId || generateCorrelationId();
+      const restBase = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.restUrl)
+        ? window.agrotracerConfig.restUrl
+        : '/wp-json/agrotracer/v1';
+
+      const nonce = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.nonce)
+        ? window.agrotracerConfig.nonce
+        : '';
+
+      fetch(`${restBase}/lotes/${payload.lote_id}/fechamento`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': nonce,
+          'X-Correlation-ID': correlationId
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json().then(data => ({ status: res.status, ok: res.ok, data })))
+      .then(({ status, ok, data }) => {
+        closeConfirmModal();
+        resetSubmitState();
+
+        if (ok && (status === 200 || status === 201)) {
+          // Sucesso comprovado
+          if (errorBanner) errorBanner.style.display = 'none';
+
+          // Atualiza estado do lote
+          const currentLot = payload.lote_id;
+          if (mockLotProfiles[currentLot]) {
+            mockLotProfiles[currentLot].isClosed = true;
+            mockLotProfiles[currentLot].status = 'FECHADO';
+            mockLotProfiles[currentLot].statusLabel = 'Fechado';
+            mockLotProfiles[currentLot].statusBadgeClass = 'agro-badge info';
+          }
+          updateSelectedLotInfo(currentLot);
+
+          // Exibe resultado oficial
+          if (resultadoCard) {
+            resultadoCard.style.display = 'block';
+            if (resEmissaoTotal) resEmissaoTotal.textContent = formatNumberBR(data.emissao_total_kg_co2e, 2);
+            if (resIntensidade) resIntensidade.textContent = formatNumberBR(data.intensidade_kg_co2e_kg, 3);
+            if (resVersaoMetodo) resVersaoMetodo.textContent = `Método: ${data.versao_metodo || 'CARBONENGINE-MVP-1.0'}`;
+            if (resFechamentoId) resFechamentoId.textContent = `#${data.id || 101}`;
+            if (resParamId) resParamId.textContent = `#${data.parametro_set_id || 1} (v1.0-2026)`;
+            if (resCorrelationId) resCorrelationId.textContent = correlationId;
+            resultadoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+
+          showToast('Lote fechado com sucesso! Snapshot imutável gravado no PostgreSQL.', correlationId);
+        } else {
+          // Erro acionável
+          const err = data.error || data;
+          const code = err.code || 'ERRO_FECHAMENTO';
+          const msg = err.message || 'Não foi possível concluir o fechamento do lote.';
+          showActionableError(code, msg, correlationId);
+        }
+      })
+      .catch(err => {
+        closeConfirmModal();
+        resetSubmitState();
+        showActionableError('ERRO_CONEXAO', 'Falha na comunicação com o servidor. Verifique a conexão e tente novamente.', correlationId);
+      });
+    }
+
+    // Listeners do formulário e inputs
+    if (lotSelect) {
+      lotSelect.addEventListener('change', (e) => {
+        updateSelectedLotInfo(parseInt(e.target.value, 10));
+      });
+    }
+
+    [inputAnimais, inputPeso, inputRendimento].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateZootecnicPreview);
+        el.addEventListener('change', updateZootecnicPreview);
+      }
+    });
+
+    if (btnDismissError && errorBanner) {
+      btnDismissError.addEventListener('click', () => {
+        errorBanner.style.display = 'none';
+      });
+    }
+
+    if (btnCloseConfirm) btnCloseConfirm.addEventListener('click', closeConfirmModal);
+    if (btnCancelConfirm) btnCancelConfirm.addEventListener('click', closeConfirmModal);
+
+    // Botão de acesso rápido na tela de lotes
+    if (btnOpenFromLot) {
+      btnOpenFromLot.addEventListener('click', () => {
+        switchScreen('fechamento');
+      });
+    }
+
+    // Submissão com prevenção estrita de duplo submit (Cuidado de Engenharia)
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        if (isSubmitting) {
+          // Ignora cliques múltiplos
+          return;
+        }
+
+        const loteId = parseInt(lotSelect ? lotSelect.value : 1, 10);
+        const profile = mockLotProfiles[loteId] || mockLotProfiles[1];
+
+        if (profile.isClosed) {
+          showActionableError('LOTE_JA_FECHADO', 'Este lote já se encontra FECHADO. Não é possível fechá-lo novamente.');
+          return;
+        }
+
+        const dataAbate = inputDataAbate ? inputDataAbate.value : '';
+        const animais = parseInt(inputAnimais ? inputAnimais.value : 0, 10);
+        const peso = parseFloat(inputPeso ? inputPeso.value : 0);
+        const rendimento = parseFloat(inputRendimento ? inputRendimento.value : 0);
+
+        // Validações básicas inline
+        if (!dataAbate) {
+          showActionableError('DATA_OBRIGATORIA', 'Informe a data do abate.');
+          return;
+        }
+        if (profile.lastManejoFim && dataAbate < profile.lastManejoFim) {
+          showActionableError('ABATE_ANTERIOR_AO_MANEJO', `A data de abate (${formatDateBR(dataAbate)}) é anterior ao fim do manejo (${formatDateBR(profile.lastManejoFim)}).`);
+          return;
+        }
+        if (animais <= 0 || animais > profile.animals) {
+          showActionableError('ABATE_SUPERIOR_AOS_ANIMAIS', `Quantidade abatida (${animais}) inválida ou superior ao total do lote (${profile.animals} cab).`);
+          return;
+        }
+        if (peso <= 0) {
+          showActionableError('PESO_INVALIDO', 'O peso médio vivo deve ser maior que zero.');
+          return;
+        }
+        if (rendimento <= 0 || rendimento > 100) {
+          showActionableError('RENDIMENTO_INVALIDO', 'O rendimento de carcaça deve estar entre 1% e 100%.');
+          return;
+        }
+
+        // Abre modal de confirmação antes da gravação definitiva
+        const rendimentoPercent = rendimento > 1.0 ? rendimento / 100.0 : rendimento;
+        const carcacaTotal = animais * peso * rendimentoPercent;
+
+        openConfirmModal({
+          loteId,
+          lotCode: profile.code,
+          dataAbate,
+          animais,
+          peso,
+          rendimento,
+          carcacaTotal
+        });
+      });
+    }
+
+    if (btnDoConfirm) {
+      btnDoConfirm.addEventListener('click', () => {
+        if (isSubmitting) return;
+
+        // Ativa trava de submissão dupla imediatamente (Cuidado de Engenharia)
+        isSubmitting = true;
+        btnDoConfirm.disabled = true;
+        btnDoConfirm.textContent = 'Gravando snapshot...';
+
+        if (btnSubmit) {
+          btnSubmit.disabled = true;
+          if (btnSubmitText) btnSubmitText.textContent = 'Processando fechamento...';
+        }
+        if (spinner) spinner.style.display = 'inline-block';
+
+        const loteId = parseInt(lotSelect ? lotSelect.value : 1, 10);
+        const dataAbate = inputDataAbate ? inputDataAbate.value : '2026-06-01';
+        const animais = parseInt(inputAnimais ? inputAnimais.value : 50, 10);
+        const peso = parseFloat(inputPeso ? inputPeso.value : 540);
+        const rendimento = parseFloat(inputRendimento ? inputRendimento.value : 53);
+
+        const rendimentoFrac = rendimento > 1.0 ? rendimento / 100.0 : rendimento;
+
+        const payload = {
+          lote_id: loteId,
+          data_abate: dataAbate,
+          numero_animais_abate: animais,
+          peso_medio_abate_kg: peso.toFixed(2),
+          rendimento_carcaca: rendimentoFrac.toFixed(4)
+        };
+
+        executeFechamento(payload);
+      });
+    }
+
+    // Inicializa lote padrão
+    const initialLote = lotSelect ? parseInt(lotSelect.value, 10) : 1;
+    updateSelectedLotInfo(initialLote);
+  }
+
   // Initialization
   function init() {
     document.querySelectorAll('.agro-nav-item[data-screen]').forEach(btn => {
@@ -1651,7 +2184,7 @@
 
     if (window.location.hash) {
       const hashScreen = window.location.hash.replace('#', '');
-      if (['dashboard', 'fazendas', 'lotes', 'manejo'].includes(hashScreen)) {
+      if (['dashboard', 'fazendas', 'lotes', 'manejo', 'fechamento'].includes(hashScreen)) {
         switchScreen(hashScreen);
       }
     }
@@ -1659,6 +2192,7 @@
     setupFarmsModule();
     setupLotsModule();
     setupManejoModule();
+    setupFechamentoModule();
     setupModals();
   }
 
@@ -1671,6 +2205,7 @@
     openConfirmModal,
     openAnimalHistoryModal,
     setupManejoModule,
+    setupFechamentoModule,
     state: AgroState
   };
 

@@ -438,3 +438,70 @@ if (!defined('ABSPATH')) {
     </form>
   </div>
 </div>
+
+<!-- 5. MODAL: CONFIRMAÇÃO DE FECHAMENTO E SNAPSHOT IMUTÁVEL (SPINT 4 - TASK S4-T04) -->
+<div id="modal-confirm-fechamento" class="agro-modal-backdrop" role="dialog" aria-labelledby="confirm-fechamento-modal-title" aria-modal="true">
+  <div class="agro-modal" style="max-width: 520px;">
+    <div class="agro-modal-header">
+      <div class="agro-modal-header-left">
+        <div class="agro-modal-icon-badge warning" style="background-color: #fef3c7; color: #b45309;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h3 id="confirm-fechamento-modal-title" class="agro-modal-title">Confirmar Fechamento Irreversível</h3>
+      </div>
+      <button type="button" class="agro-drawer-close" id="btn-close-confirm-fechamento" aria-label="Fechar Modal">&times;</button>
+    </div>
+
+    <div class="agro-modal-body">
+      <p style="margin: 0 0 14px 0; color: var(--agro-text-secondary); font-size: 13px; line-height: 1.5;">
+        Você está prestes a fechar o lote <strong id="modal-confirm-lote-code">LT-2026-001</strong>.
+        Esta ação consolidará o cálculo pelo motor determinístico <code>CarbonEngine</code> e persistirá um snapshot imutável protegido por triggers no PostgreSQL.
+      </p>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px; margin-bottom: 14px;">
+        <span style="display:block; font-size:11px; text-transform:uppercase; font-weight:700; color:#64748b; margin-bottom:8px;">
+          Resumo dos Parâmetros de Abate:
+        </span>
+        <div style="display:flex; flex-direction:column; gap:6px; font-size:12.5px;">
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--agro-text-muted);">Data de Abate:</span>
+            <strong id="modal-confirm-data-abate">01/06/2026</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--agro-text-muted);">Animais Abatidos:</span>
+            <strong id="modal-confirm-animais">50 cabeças</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--agro-text-muted);">Peso Médio Vivo:</span>
+            <strong id="modal-confirm-peso">540,00 kg / cab</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--agro-text-muted);">Rendimento de Carcaça:</span>
+            <strong id="modal-confirm-rendimento">53,00% (0.53)</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; border-top:1px dashed #cbd5e1; padding-top:6px; margin-top:2px;">
+            <span style="color:var(--agro-text-muted);">Carcaça Total Estimada:</span>
+            <strong id="modal-confirm-carcaca-total" style="color:var(--agro-primary);">14.310,00 kg</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="agro-alert danger" style="padding: 10px 12px; font-size: 11.5px; line-height: 1.4;">
+        <strong>Atenção:</strong> Após a confirmação, o lote não poderá mais ser reaberto ou receber novos períodos de manejo (RN-11/21).
+      </div>
+    </div>
+
+    <div class="agro-modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+      <button type="button" id="btn-cancel-confirm-fechamento" class="agro-btn agro-btn-secondary">
+        Revisar Dados
+      </button>
+      <button type="button" id="btn-execute-confirm-fechamento" class="agro-btn agro-btn-primary" style="background-color: #0f766e; border-color: #0f766e;">
+        Sim, Confirmar e Fechar Lote
+      </button>
+    </div>
+  </div>
+</div>
