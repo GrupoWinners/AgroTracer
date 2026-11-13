@@ -1,4 +1,4 @@
-"""S4-T03: triggers PostgreSQL impedem snapshot e fechamento mutaveis."""
+"""S4-T03: provas reais de integridade PostgreSQL com rollback."""
 
 import os
 
@@ -7,14 +7,16 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
 
+from test_s3_t01_db import cenario_pg  # noqa: F401
+
 
 @pytest.fixture
 def conexao_pg():
     url = os.getenv("AGROTRACER_TEST_DATABASE_URL")
     if not url:
-        pytest.skip("Banco PostgreSQL de testes nao configurado")
+        pytest.skip("PostgreSQL de teste nao configurado")
     if make_url(url).database != "agrotracer_s2_t01_teste":
-        pytest.fail("Exige banco descartavel agrotracer_s2_t01_teste")
+        pytest.fail("Banco descartavel de teste obrigatorio")
     engine = create_engine(url)
     try:
         with engine.connect() as conn:
@@ -42,33 +44,68 @@ def test_triggers_de_integridade_presentes(conexao_pg):
     } <= nomes
 
 
-def test_fechamento_sem_snapshot_nao_confirma(conexao_pg):
-    # Uma FK verdadeira e criada em savepoint e nunca confirmada.
-    # A verificacao da restricao adiada e forcada antes do rollback.
-    ids = conexao_pg.execute(text("""
-        SELECT l.id AS lote_id, p.id AS parametro_set_id
-        FROM lotes l CROSS JOIN parametro_sets p
-        LIMIT 1
-    """)).first()
-    if ids is None:
-        pytest.skip("Nao ha dados de teste para este check")
+def _inserir_fechamento(conn, ids):
+    return conn.scalar(text("""
+        INSERT INTO fechamentos_lote (
+            lote_id, parametro_set_id, versao_metodo,
+            data_abate, numero_animais_abate,
+            peso_medio_abate_kg, rendimento_carcaca,
+            emissao_total_kg_co2e, intensidade_kg_co2e_kg
+        ) VALUES (
+            :lote_id, :parametro_set_id, 'TESTE',
+            '2026-11-12', 1, 540, 0.53, 2.10, 0.01
+        ) RETURNING id
+    """), {"lote_id": ids[0], "parametro_set_id": ids[1]})
 
-    with pytest.raises(DBAPIError):
-        with conexao_pg.begin_nested():
-            conexao_pg.execute(text("""
-                INSERT INTO fechamentos_lote (
-                    lote_id, parametro_set_id, versao_metodo,
-                    data_abate, numero_animais_abate,
-                    peso_medio_abate_kg, rendimento_carcaca,
-                    emissao_total_kg_co2e, intensidade_kg_co2e_kg
+
+def test_fechamento_sem_snapshot_nao_confirma(cenario_pg):
+    engine, ids = cenario_pg
+    with engine.connect() as conn:
+        transacao = conn.begin()
+        try:
+            with pytest.raises(DBAPIError):
+                with conn.begin_nested():
+                    _inserir_fechamento(conn, ids)
+                    conn.execute(text(
+                        "SET CONSTRAINTS trg_fechamento_snapshot IMMEDIATE"
+                    ))
+        finally:
+            transacao.rollback()
+
+
+def test_snapshot_e_fechamento_nao_podem_ser_alterados(cenario_pg):
+    engine, ids = cenario_pg
+    with engine.connect() as conn:
+        transacao = conn.begin()
+        try:
+            fechamento_id = _inserir_fechamento(conn, ids)
+            snapshot_id = conn.scalar(text("""
+                INSERT INTO snapshots_fechamento (
+                    fechamento_id, lote_id, parametro_set_id,
+                    versao_parametros, versao_metodo,
+                    entradas, resultados
                 ) VALUES (
-                    :lote_id, :parametro_set_id, 'TESTE',
-                    '2026-11-12', 1, 540, 0.53, 2.10, 0.01
-                )
+                    :fechamento_id, :lote_id, :parametro_set_id,
+                    'TESTE', 'TESTE', '{}'::jsonb, '{}'::jsonb
+                ) RETURNING id
             """), {
-                "lote_id": ids.lote_id,
-                "parametro_set_id": ids.parametro_set_id,
+                "fechamento_id": fechamento_id,
+                "lote_id": ids[0],
+                "parametro_set_id": ids[1],
             })
-            conexao_pg.execute(text(
-                "SET CONSTRAINTS trg_fechamento_snapshot IMMEDIATE"
-            ))
+            for tabela, ident in (
+                ("snapshots_fechamento", snapshot_id),
+                ("fechamentos_lote", fechamento_id),
+            ):
+                with pytest.raises(DBAPIError):
+                    with conn.begin_nested():
+                        conn.execute(text(
+                            f"UPDATE {tabela} SET id = id WHERE id = :id"
+                        ), {"id": ident})
+                with pytest.raises(DBAPIError):
+                    with conn.begin_nested():
+                        conn.execute(text(
+                            f"DELETE FROM {tabela} WHERE id = :id"
+                        ), {"id": ident})
+        finally:
+            transacao.rollback()
