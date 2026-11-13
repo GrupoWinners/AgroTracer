@@ -70,3 +70,20 @@ def test_sem_snapshot_quando_abate_invalido(request):
     with sessao() as db:
         assert db.get(Lote, ids["lote"]).status == "EM_MANEJO"
         assert db.scalar(select(func.count(SnapshotFechamento.id))) == 0
+
+
+def test_novo_manejo_apos_fechamento_bloqueado(request):
+    cenario = request.getfixturevalue("fechamento_api")
+    cliente, _, ids = cenario
+    assert enviar(cenario).status_code == 201
+    resposta = cliente.post(
+        f'/api/v1/lotes/{ids["lote"]}/manejos',
+        json={
+            "inicio": "2026-02-03",
+            "fim": "2026-02-04",
+            "tipo_dieta": "PASTAGEM",
+            "parametro_set_id": ids["parametros"],
+        },
+    )
+    assert resposta.status_code == 409
+    assert resposta.json()["error"]["code"] == "LOTE_FECHADO"
