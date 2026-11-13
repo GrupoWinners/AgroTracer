@@ -58,8 +58,8 @@ def _inserir_fechamento(conn, ids):
     """), {"lote_id": ids[0], "parametro_set_id": ids[1]})
 
 
-def test_fechamento_sem_snapshot_nao_confirma(cenario_pg):
-    engine, ids = cenario_pg
+def test_fechamento_sem_snapshot_nao_confirma(request):
+    engine, ids = request.getfixturevalue("cenario_pg")
     with engine.connect() as conn:
         transacao = conn.begin()
         try:
@@ -73,8 +73,8 @@ def test_fechamento_sem_snapshot_nao_confirma(cenario_pg):
             transacao.rollback()
 
 
-def test_snapshot_e_fechamento_nao_podem_ser_alterados(cenario_pg):
-    engine, ids = cenario_pg
+def test_snapshot_e_fechamento_nao_podem_ser_alterados(request):
+    engine, ids = request.getfixturevalue("cenario_pg")
     with engine.connect() as conn:
         transacao = conn.begin()
         try:
