@@ -10,9 +10,14 @@ from app.models.lote import Lote
 from app.models.snapshot_fechamento import SnapshotFechamento
 from app.services.carbon_engine import VERSAO_METODO
 
-from test_s4_t02_fechamento import (  # noqa: F401
-    enviar, fechamento_api,
+from test_s4_t02_fechamento import (
+    enviar, fechamento_api as fixture_de_base,
 )
+
+
+@pytest.fixture(name="fechamento_api")
+def compartilhar_fixture(fixture_de_base):
+    return fixture_de_base
 
 
 def test_snapshot_criado_com_fechamento(request):
