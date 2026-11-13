@@ -11,21 +11,13 @@ from app.models.snapshot_fechamento import SnapshotFechamento
 from app.services.carbon_engine import VERSAO_METODO
 
 from test_s2_t01_api import ambiente_api  # noqa: F401
-
-from test_s4_t02_fechamento import (
-    enviar, fechamento_api as fixture_de_base,
-)
-
-
-@pytest.fixture(name="fechamento_api")
-def compartilhar_fixture(fixture_de_base):
-    return fixture_de_base
+from test_s4_t02_fechamento import enviar, fechamento_api  # noqa: F401
 
 
 def test_snapshot_criado_com_fechamento(request):
-    fechamento_api = request.getfixturevalue("fechamento_api")
-    _, sessao, ids = fechamento_api
-    resposta = enviar(fechamento_api)
+    cenario = request.getfixturevalue("fechamento_api")
+    _, sessao, ids = cenario
+    resposta = enviar(cenario)
     assert resposta.status_code == 201, resposta.text
     with sessao() as db:
         snap = db.scalar(select(SnapshotFechamento).where(
@@ -50,8 +42,8 @@ def test_snapshot_criado_com_fechamento(request):
 
 
 def test_falha_snapshot_desfaz_fechamento(request, monkeypatch):
-    fechamento_api = request.getfixturevalue("fechamento_api")
-    _, sessao, ids = fechamento_api
+    cenario = request.getfixturevalue("fechamento_api")
+    _, sessao, ids = cenario
 
     def falhar(*args, **kwargs):
         raise RuntimeError("erro proposital de snapshot")
@@ -61,7 +53,7 @@ def test_falha_snapshot_desfaz_fechamento(request, monkeypatch):
         falhar,
     )
     with pytest.raises(RuntimeError, match="erro proposital"):
-        enviar(fechamento_api)
+        enviar(cenario)
     with sessao() as db:
         assert db.get(Lote, ids["lote"]).status == "EM_MANEJO"
         assert db.scalar(select(func.count(FechamentoLote.id))) == 0
@@ -69,10 +61,10 @@ def test_falha_snapshot_desfaz_fechamento(request, monkeypatch):
 
 
 def test_sem_snapshot_quando_abate_invalido(request):
-    fechamento_api = request.getfixturevalue("fechamento_api")
-    _, sessao, ids = fechamento_api
+    cenario = request.getfixturevalue("fechamento_api")
+    _, sessao, ids = cenario
     resposta = enviar(
-        fechamento_api, numero_animais_abate=0,
+        cenario, numero_animais_abate=0,
     )
     assert resposta.status_code == 422
     with sessao() as db:
