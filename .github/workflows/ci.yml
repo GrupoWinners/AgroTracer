@@ -2,7 +2,7 @@ name: AgroTracer CI
 
 on:
   pull_request:
-    branches: [develop, main, 'feature/S3-*']
+    branches: [develop, main, 'feature/S3-*', 'feature/S4-*']
   push:
     branches: [develop, main]
 
