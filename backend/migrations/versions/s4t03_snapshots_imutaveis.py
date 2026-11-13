@@ -78,6 +78,11 @@ def upgrade() -> None:
         $$ LANGUAGE plpgsql;
     """)
     op.execute("""
+        CREATE TRIGGER trg_fechamento_imutavel
+        BEFORE UPDATE OR DELETE ON fechamentos_lote
+        FOR EACH ROW EXECUTE FUNCTION bloquear_mutacao_snapshot();
+    """)
+    op.execute("""
         CREATE CONSTRAINT TRIGGER trg_fechamento_snapshot
         AFTER INSERT ON fechamentos_lote
         DEFERRABLE INITIALLY DEFERRED
@@ -92,6 +97,9 @@ def downgrade() -> None:
     op.execute("DROP FUNCTION exigir_snapshot_no_fechamento();")
     op.execute(
         "DROP TRIGGER trg_snapshot_imutavel ON snapshots_fechamento;"
+    )
+    op.execute(
+        "DROP TRIGGER trg_fechamento_imutavel ON fechamentos_lote;"
     )
     op.execute("DROP FUNCTION bloquear_mutacao_snapshot();")
     op.drop_table("snapshots_fechamento")
