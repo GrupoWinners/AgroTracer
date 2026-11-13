@@ -10,6 +10,8 @@ from app.models.lote import Lote
 from app.models.snapshot_fechamento import SnapshotFechamento
 from app.services.carbon_engine import VERSAO_METODO
 
+from test_s2_t01_api import ambiente_api  # noqa: F401
+
 from test_s4_t02_fechamento import (
     enviar, fechamento_api as fixture_de_base,
 )
