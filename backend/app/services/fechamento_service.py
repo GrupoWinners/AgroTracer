@@ -20,6 +20,7 @@ from app.services.carbon_engine import (
     calcular_emissoes, calcular_intensidade,
 )
 from app.services.carbon_fatores_service import carregar_fatores_versionados
+from app.services.snapshot_service import persistir_snapshot_fechamento
 
 
 class ErroFechamento(Exception):
@@ -195,6 +196,10 @@ def registrar_fechamento(
     db.add(fechamento)
     db.flush()
     lote.status = EstadoLote.FECHADO.value
+
+    persistir_snapshot_fechamento(
+        db, fechamento, dados, resultado, intensidade,
+    )
 
     registrar_auditoria(
         db=db, entidade="fechamentos_lote",

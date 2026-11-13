@@ -93,7 +93,7 @@ def registrar_manejo(
     # Bloqueia o lote durante a operacao para serializar
     # criacoes que passam por este service.
     lote_encontrado = db.scalar(
-        select(Lote.id)
+        select(Lote)
         .where(Lote.id == lote_id)
         .with_for_update()
     )
@@ -103,6 +103,13 @@ def registrar_manejo(
             404,
             "LOTE_NAO_ENCONTRADO",
             "Lote nao encontrado.",
+        )
+
+    if lote_encontrado.status == "FECHADO":
+        raise ErroManejo(
+            409,
+            "LOTE_FECHADO",
+            "Lote fechado nao permite novos manejos.",
         )
 
     conjunto_encontrado = db.scalar(
