@@ -10,6 +10,7 @@ from app.models.movimentacao import Movimentacao
 from app.models.parametro_set import ParametroSet
 from app.models.fator import Fator
 from app.models.manejo_nutricional import ManejoNutricional
+from app.models.fechamento_lote import FechamentoLote
 
 __all__ = [
     "Base",
@@ -24,4 +25,5 @@ __all__ = [
     "ParametroSet",
     "Fator",
     "ManejoNutricional",
+    "FechamentoLote",
 ]
