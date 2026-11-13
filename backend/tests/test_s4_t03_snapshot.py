@@ -15,7 +15,8 @@ from test_s4_t02_fechamento import (  # noqa: F401
 )
 
 
-def test_snapshot_criado_com_fechamento(request):\n    fechamento_api = request.getfixturevalue("fechamento_api")
+def test_snapshot_criado_com_fechamento(request):
+    fechamento_api = request.getfixturevalue("fechamento_api")
     _, sessao, ids = fechamento_api
     resposta = enviar(fechamento_api)
     assert resposta.status_code == 201, resposta.text
@@ -41,7 +42,8 @@ def test_snapshot_criado_com_fechamento(request):\n    fechamento_api = request.
         ) > 0
 
 
-def test_falha_snapshot_desfaz_fechamento(request, monkeypatch):\n    fechamento_api = request.getfixturevalue("fechamento_api")
+def test_falha_snapshot_desfaz_fechamento(request, monkeypatch):
+    fechamento_api = request.getfixturevalue("fechamento_api")
     _, sessao, ids = fechamento_api
 
     def falhar(*args, **kwargs):
@@ -59,7 +61,8 @@ def test_falha_snapshot_desfaz_fechamento(request, monkeypatch):\n    fechamento
         assert db.scalar(select(func.count(SnapshotFechamento.id))) == 0
 
 
-def test_sem_snapshot_quando_abate_invalido(request):\n    fechamento_api = request.getfixturevalue("fechamento_api")
+def test_sem_snapshot_quando_abate_invalido(request):
+    fechamento_api = request.getfixturevalue("fechamento_api")
     _, sessao, ids = fechamento_api
     resposta = enviar(
         fechamento_api, numero_animais_abate=0,
