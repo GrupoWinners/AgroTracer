@@ -1,0 +1,4 @@
+Flake8: APROVADO - sem erros (0 violacoes PEP8).
+Comando executado: python -m flake8 app tests
+Arquivos auditados: backend/app e backend/tests (incluindo test_s4_t05_casos_limite.py)
+Resultado: 0 avisos, 0 erros.
