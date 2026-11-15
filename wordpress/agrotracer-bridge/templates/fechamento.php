@@ -361,6 +361,12 @@ if (!defined('ABSPATH')) {
 
     </div>
 
+    <!-- Aviso de Premissas, Limitações e Rotulagem SYNTHETIC (S4-T06) -->
+    <div id="fechamento-aviso-sintetico" data-source-type="SYNTHETIC" style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; margin-bottom: 20px; font-size: 12px; color: #92400e; line-height: 1.45;">
+      <strong>Premissas e Limitações (Dados Rotulados [SYNTHETIC]):</strong>
+      Os valores exibidos utilizam fatores sintéticos/didáticos para demonstração matemática determinística do <code>CARBONENGINE-MVP-1.0</code>. Não representam inventário oficial (IPCC/Embrapa), medição direta em campo ou certificação ambiental definitiva.
+    </div>
+
     <!-- Ações Finais Pós-Fechamento -->
     <div style="display: flex; justify-content: flex-end; gap: 12px;">
       <button type="button" class="agro-btn agro-btn-secondary" onclick="AgroTracer.switchScreen('manejo')">
