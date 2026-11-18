@@ -661,6 +661,9 @@ class AgroTracer_Http_Client {
             'SNAPSHOT_AUSENTE'        => 'O lote está fechado, mas não possui snapshot consolidado para certificação.',
             'CERTIFICADO_NAO_ENCONTRADO' => 'Certificado inexistente ou não disponível para o seu perfil.',
             'PDF_INDISPONIVEL'        => 'O PDF do certificado está temporariamente indisponível. Tente baixar novamente em instantes.',
+            'CONSULTA_INDISPONIVEL'   => 'A consulta pública está temporariamente indisponível. Tente novamente em instantes.',
+            'LIMITE_CONSULTAS'        => 'Muitas consultas públicas realizadas em sequência. Aguarde um minuto antes de tentar novamente.',
+            'SNAPSHOT_INTEGRO_OBRIGATORIO' => 'Não foi possível confirmar a integridade criptográfica do certificado.',
             'DENOMINADOR_INVALIDO'    => 'Os dados de peso ou rendimento informados são inválidos para o cálculo de emissões.',
             'AUTH_USER_REQUIRED'      => 'Esta operação exige um usuário autenticado com perfil de Produtor Rural.',
             'AUTH_INVALID_REQUEST'    => 'Não foi possível validar a autenticidade da sua sessão com o servidor. Recarregue a página e tente novamente.',
@@ -924,6 +927,69 @@ class AgroTracer_Http_Client {
 
         $wp_response = wp_remote_get($target_url, [
             'headers'     => $headers,
+            'timeout'     => $defensive_timeout,
+            'redirection' => 0,
+            'httpversion' => '1.1',
+            'sslverify'   => self::should_verify_ssl(),
+        ]);
+
+        return self::format_api_response($wp_response, $corr_uuid, $timestamp_utc);
+    }
+
+    /**
+     * Executes an unauthenticated public HTTP GET request to the FastAPI backend
+     * (e.g., `/api/v1/certificados/publico`) without WordPress actor or HMAC headers.
+     *
+     * @param string               $path           Relative API endpoint path.
+     * @param array<string, mixed> $query_params   Optional query parameters.
+     * @param string|null          $correlation_id Optional UUIDv4 correlation ID.
+     * @param int|null             $timeout        Optional defensive timeout in seconds.
+     * @return array<string, mixed> Standardized response envelope with safe UI messages.
+     */
+    public static function get_public(
+        string $path,
+        array $query_params = [],
+        ?string $correlation_id = null,
+        ?int $timeout = null
+    ): array {
+        $timestamp_utc = time();
+        $corr_uuid     = self::resolve_correlation_id($correlation_id);
+        $path_with_query = $path;
+
+        if (!empty($query_params)) {
+            $qs = http_build_query($query_params, '', '&', PHP_QUERY_RFC3986);
+            if ($qs !== '') {
+                $path_with_query .= (strpos($path, '?') === false ? '?' : '&') . $qs;
+            }
+        }
+
+        try {
+            $normalized_uri = self::normalize_path_query($path_with_query);
+        } catch (\Throwable $e) {
+            return [
+                'success'        => false,
+                'status'         => 400,
+                'data'           => null,
+                'error'          => [
+                    'code'           => 'INVALID_REQUEST_URI',
+                    'message'        => self::map_error_to_ui_message(400),
+                    'field_errors'   => [],
+                    'correlation_id' => $corr_uuid,
+                    'timestamp'      => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
+                ],
+                'correlation_id' => $corr_uuid,
+                'timestamp'      => $timestamp_utc,
+            ];
+        }
+
+        $target_url = self::resolve_api_base_url() . $normalized_uri;
+        $defensive_timeout = $timeout ?? self::resolve_timeout();
+
+        $wp_response = wp_remote_get($target_url, [
+            'headers'     => [
+                'Accept'           => 'application/json',
+                'X-Correlation-ID' => $corr_uuid,
+            ],
             'timeout'     => $defensive_timeout,
             'redirection' => 0,
             'httpversion' => '1.1',

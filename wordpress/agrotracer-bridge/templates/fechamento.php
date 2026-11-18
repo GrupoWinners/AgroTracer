@@ -401,16 +401,24 @@ if (!defined('ABSPATH')) {
         </button>
       </div>
 
-      <!-- Link Público Gerado em Memória a partir do Token Único -->
-      <div id="cert-res-token-box" style="display: none; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 12px; margin-bottom: 10px;">
-        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;">
-          <div style="font-size: 12px; color: #334155;">
-            <strong style="display: block; margin-bottom: 2px;">Link Público de Verificação (token exibido uma única vez nesta sessão):</strong>
-            <code id="cert-res-public-url" style="font-size: 11.5px; word-break: break-all;">—</code>
+      <!-- Link Público Gerado em Memória a partir do Token Único (S5-T04 / S5-T05 QR Local) -->
+      <div id="cert-res-token-box" style="display: none; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; margin-bottom: 10px;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;">
+          <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 240px;">
+            <div id="cert-res-qr-container" class="agro-qr-preview" aria-label="QR Code do link público de verificação"></div>
+            <div style="font-size: 12px; color: #334155;">
+              <strong style="display: block; margin-bottom: 2px;">Link Público e QR Code de Verificação (token exibido uma única vez nesta sessão):</strong>
+              <code id="cert-res-public-url" style="font-size: 11.5px; word-break: break-all;">—</code>
+            </div>
           </div>
-          <button type="button" id="btn-copy-cert-token-url" class="agro-btn agro-btn-secondary" style="font-size: 12px; padding: 5px 10px;">
-            Copiar Link Público
-          </button>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <a id="cert-res-public-open-link" href="#" target="_blank" rel="noopener noreferrer" class="agro-btn agro-btn-secondary" style="font-size: 12px; padding: 5px 10px;">
+              Abrir Página Pública
+            </a>
+            <button type="button" id="btn-copy-cert-token-url" class="agro-btn agro-btn-secondary" style="font-size: 12px; padding: 5px 10px;">
+              Copiar Link Público
+            </button>
+          </div>
         </div>
       </div>
 

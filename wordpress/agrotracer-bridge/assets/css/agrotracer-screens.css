@@ -97,7 +97,7 @@
   color: inherit;
 }
 
-.agrotracer-app button {
+:where(.agrotracer-app button) {
   font-family: inherit;
   cursor: pointer;
   border: none;
@@ -1310,7 +1310,7 @@
 }
 
 .agro-drawer-close {
-  color: var(--agro-text-subtle);
+  color: var(--agro-text-secondary);
   width: 32px;
   height: 32px;
   border-radius: var(--agro-radius-sm);
@@ -2081,5 +2081,157 @@
   font-size: 11.5px;
   color: #dc2626;
   margin-top: 4px;
+}
+
+/* Sprint 5 (S5-T05) — Página Pública de Verificação & QR Code Local */
+.agro-qr-preview {
+  width: 96px;
+  height: 96px;
+  padding: 6px;
+  background-color: #ffffff;
+  border: 1px solid var(--agro-border);
+  border-radius: var(--agro-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.agro-qr-preview svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.agro-public-shell {
+  min-height: 100vh;
+  background-color: var(--agro-bg);
+}
+
+.agro-public-main {
+  flex: 1;
+  padding: 32px 20px 48px;
+}
+
+.agro-public-container {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.agro-public-hero {
+  margin-bottom: 24px;
+}
+
+.agro-public-hero h1 {
+  margin: 0 0 8px 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--agro-text-primary);
+}
+
+.agro-public-hero p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--agro-text-secondary);
+  line-height: 1.5;
+}
+
+.agro-public-card {
+  background-color: var(--agro-surface);
+  border: 1px solid var(--agro-border);
+  border-radius: var(--agro-radius-lg);
+  padding: 24px;
+  box-shadow: var(--agro-shadow-sm);
+}
+
+.agro-public-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--agro-border);
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+}
+
+.agro-public-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.agro-public-metric-box {
+  background-color: var(--agro-bg);
+  border: 1px solid var(--agro-border);
+  border-radius: var(--agro-radius-md);
+  padding: 16px;
+}
+
+.agro-public-metric-box.highlight {
+  background-color: var(--agro-accent-soft);
+  border-color: var(--agro-success-border);
+}
+
+.agro-public-metric-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--agro-text-secondary);
+  margin-bottom: 6px;
+}
+
+.agro-public-metric-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.agro-public-metric-value strong {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--agro-text-primary);
+}
+
+.agro-public-metric-value span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--agro-text-secondary);
+}
+
+.agro-public-details-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px 20px;
+  margin: 0 0 20px 0;
+  padding: 16px;
+  background-color: #f8fafc;
+  border: 1px solid var(--agro-border);
+  border-radius: var(--agro-radius-md);
+}
+
+.agro-public-details-list dt {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--agro-text-muted);
+  margin-bottom: 3px;
+}
+
+.agro-public-details-list dd {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--agro-text-primary);
+}
+
+.agro-public-integrity-box {
+  padding: 14px 16px;
+  background-color: #f8fafc;
+  border: 1px dashed var(--agro-border-strong);
+  border-radius: var(--agro-radius-md);
 }
 
