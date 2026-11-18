@@ -14,6 +14,7 @@ from app.models.fechamento_lote import FechamentoLote
 from app.models.snapshot_fechamento import SnapshotFechamento
 from app.models.token_publico import TokenPublico
 from app.models.certificado import Certificado
+from app.models.certificado_pdf import CertificadoPDF
 
 __all__ = [
     "Base",
@@ -32,4 +33,5 @@ __all__ = [
     "SnapshotFechamento",
     "TokenPublico",
     "Certificado",
+    "CertificadoPDF",
 ]

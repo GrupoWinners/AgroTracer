@@ -192,3 +192,17 @@ O volume do PostgreSQL será preservado.
 Não utilize `docker compose down -v` para
 encerrar normalmente, pois isso remove o
 volume de dados.
+# Sprint 5 — certificacao e PDF
+
+Fluxo backend: `POST /api/v1/lotes/{id}/certificar` com autenticacao HMAC,
+`Idempotency-Key` e o mesmo corpo do fechamento. Resposta 201 inclui token
+opaco uma unica vez; repeticoes recebem 409 controlado. O token original
+nao e salvo. `GET /api/v1/certificados/{id}/pdf` retorna arquivo autenticado
+e `X-PDF-SHA256`, gerando/persistindo o PDF no primeiro download.
+
+Aplicar `python -m alembic upgrade head` antes do deploy. Migrações:
+`s5t03_tokens` → `s5t01_certificados` → `s5t02_pdf`. Instalar as dependencias
+atualizadas do backend. Detalhes, contratos e limites de integracao em
+`docs/adr/S5-T01-certificacao-atomica.md` e `docs/evidencias/sprint-5/`.
+Servico de consulta publica com rate limit disponivel para integracao
+na S5-T05; pagina publica/DTO nao fazem parte destas tres tarefas.
