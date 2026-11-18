@@ -97,7 +97,7 @@
   color: inherit;
 }
 
-.agrotracer-app button {
+:where(.agrotracer-app button) {
   font-family: inherit;
   cursor: pointer;
   border: none;
@@ -1310,7 +1310,7 @@
 }
 
 .agro-drawer-close {
-  color: var(--agro-text-subtle);
+  color: var(--agro-text-secondary);
   width: 32px;
   height: 32px;
   border-radius: var(--agro-radius-sm);
