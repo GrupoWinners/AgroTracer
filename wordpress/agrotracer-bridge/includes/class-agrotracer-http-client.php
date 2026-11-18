@@ -653,6 +653,14 @@ class AgroTracer_Http_Client {
             'MANEJO_SOBREPOSTO'       => 'Existe sobreposição de datas com outro manejo já registrado para este lote.',
             'ANIMAL_JA_ASSOCIADO'     => 'Este animal já possui associação ativa em outro lote no período selecionado.',
             'LOTE_JA_CERTIFICADO'     => 'Este lote já possui um certificado ativo emitido.',
+            'CERTIFICADO_JA_EXISTENTE' => 'Este lote já possui um certificado válido emitido.',
+            'CERTIFICACAO_JA_PROCESSADA' => 'Esta emissão já foi processada anteriormente para a mesma chave de idempotência. Nenhuma duplicação foi gerada.',
+            'IDEMPOTENCY_KEY_REUTILIZADA' => 'Os dados enviados divergem da tentativa anterior vinculada a esta chave de idempotência. Inicie uma nova tentativa.',
+            'CERTIFICACAO_CONFLITANTE' => 'Emissão concorrente detectada para este lote. Consulte o certificado existente.',
+            'FECHAMENTO_DIVERGENTE'   => 'Os parâmetros de abate informados divergem do fechamento imutável já registrado para este lote.',
+            'SNAPSHOT_AUSENTE'        => 'O lote está fechado, mas não possui snapshot consolidado para certificação.',
+            'CERTIFICADO_NAO_ENCONTRADO' => 'Certificado inexistente ou não disponível para o seu perfil.',
+            'PDF_INDISPONIVEL'        => 'O PDF do certificado está temporariamente indisponível. Tente baixar novamente em instantes.',
             'DENOMINADOR_INVALIDO'    => 'Os dados de peso ou rendimento informados são inválidos para o cálculo de emissões.',
             'AUTH_USER_REQUIRED'      => 'Esta operação exige um usuário autenticado com perfil de Produtor Rural.',
             'AUTH_INVALID_REQUEST'    => 'Não foi possível validar a autenticidade da sua sessão com o servidor. Recarregue a página e tente novamente.',
@@ -934,6 +942,7 @@ class AgroTracer_Http_Client {
      * @param string|null          $correlation_id   Optional UUIDv4 correlation ID.
      * @param bool                 $bind_produtor_id Whether to bind `produtor_id = $actor_id` in the payload.
      * @param int|null             $timeout          Optional defensive timeout in seconds.
+     * @param array<string, string> $extra_headers   Optional extra HTTP headers (e.g., `Idempotency-Key`).
      * @return array<string, mixed> Standardized response envelope with safe UI messages.
      */
     public static function post(
@@ -942,7 +951,8 @@ class AgroTracer_Http_Client {
         int $actor_id,
         ?string $correlation_id = null,
         bool $bind_produtor_id = true,
-        ?int $timeout = null
+        ?int $timeout = null,
+        array $extra_headers = []
     ): array {
         $timestamp_utc = time();
         $corr_uuid     = self::resolve_correlation_id($correlation_id);
@@ -981,6 +991,7 @@ class AgroTracer_Http_Client {
                 $corr_uuid,
                 $timestamp_utc
             );
+            $headers = self::merge_extra_headers($headers, $extra_headers);
         } catch (\Throwable $e) {
             return [
                 'success'        => false,
@@ -1012,6 +1023,181 @@ class AgroTracer_Http_Client {
         ]);
 
         return self::format_api_response($wp_response, $corr_uuid, $timestamp_utc);
+    }
+
+    /**
+     * Executes a signed HTTP GET request expecting a binary payload (e.g., PDF certificate).
+     * Non-2xx responses and transport errors are normalized via `format_api_response()`.
+     *
+     * @param string               $path           Relative API endpoint path.
+     * @param array<string, mixed> $query_params   Optional query parameters.
+     * @param int                  $actor_id       Authenticated WordPress user ID.
+     * @param string|null          $correlation_id Optional UUIDv4 correlation ID.
+     * @param int|null             $timeout        Optional defensive timeout in seconds.
+     * @return array<string, mixed> Binary envelope (`content`, `content_type`, `pdf_sha256`) or normalized error.
+     */
+    public static function get_binary(
+        string $path,
+        array $query_params,
+        int $actor_id,
+        ?string $correlation_id = null,
+        ?int $timeout = null
+    ): array {
+        $timestamp_utc = time();
+        $corr_uuid     = self::resolve_correlation_id($correlation_id);
+
+        if ($actor_id <= self::SYSTEM_USER_ID) {
+            return [
+                'success'        => false,
+                'status'         => 403,
+                'data'           => null,
+                'error'          => [
+                    'code'           => 'AUTH_USER_REQUIRED',
+                    'message'        => self::map_error_to_ui_message(403, 'AUTH_USER_REQUIRED'),
+                    'field_errors'   => [],
+                    'correlation_id' => $corr_uuid,
+                    'timestamp'      => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
+                ],
+                'correlation_id' => $corr_uuid,
+                'timestamp'      => $timestamp_utc,
+            ];
+        }
+
+        $clean_query = self::sanitize_actor_payload($query_params, $actor_id, false);
+        $path_with_query = $path;
+        if (!empty($clean_query)) {
+            $qs = http_build_query($clean_query, '', '&', PHP_QUERY_RFC3986);
+            if ($qs !== '') {
+                $path_with_query .= (strpos($path, '?') === false ? '?' : '&') . $qs;
+            }
+        }
+
+        try {
+            $normalized_uri = self::normalize_path_query($path_with_query);
+            $headers = self::build_signed_headers(
+                'GET',
+                $normalized_uri,
+                '',
+                $actor_id,
+                $corr_uuid,
+                $timestamp_utc
+            );
+            $headers['Accept'] = 'application/pdf, application/json';
+        } catch (\Throwable $e) {
+            return [
+                'success'        => false,
+                'status'         => 400,
+                'data'           => null,
+                'error'          => [
+                    'code'           => 'INVALID_REQUEST_URI',
+                    'message'        => self::map_error_to_ui_message(400),
+                    'field_errors'   => [],
+                    'correlation_id' => $corr_uuid,
+                    'timestamp'      => gmdate('Y-m-d\TH:i:s\Z', $timestamp_utc),
+                ],
+                'correlation_id' => $corr_uuid,
+                'timestamp'      => $timestamp_utc,
+            ];
+        }
+
+        $target_url = self::resolve_api_base_url() . $normalized_uri;
+        $defensive_timeout = $timeout ?? self::resolve_timeout();
+
+        $wp_response = wp_remote_get($target_url, [
+            'headers'     => $headers,
+            'timeout'     => $defensive_timeout,
+            'redirection' => 0,
+            'httpversion' => '1.1',
+            'sslverify'   => self::should_verify_ssl(),
+        ]);
+
+        if (function_exists('is_wp_error') && is_wp_error($wp_response)) {
+            return self::format_api_response($wp_response, $corr_uuid, $timestamp_utc);
+        }
+
+        $status_code = function_exists('wp_remote_retrieve_response_code')
+            ? (int) wp_remote_retrieve_response_code($wp_response)
+            : (int) ($wp_response['response']['code'] ?? 500);
+
+        if ($status_code < 200 || $status_code >= 300) {
+            return self::format_api_response($wp_response, $corr_uuid, $timestamp_utc);
+        }
+
+        $raw_body = function_exists('wp_remote_retrieve_body')
+            ? (string) wp_remote_retrieve_body($wp_response)
+            : (string) ($wp_response['body'] ?? '');
+
+        $resp_corr_header = function_exists('wp_remote_retrieve_header')
+            ? (string) wp_remote_retrieve_header($wp_response, 'x-correlation-id')
+            : (string) ($wp_response['headers']['x-correlation-id'] ?? '');
+
+        $resolved_corr_id = $resp_corr_header !== ''
+            ? self::resolve_correlation_id($resp_corr_header)
+            : $corr_uuid;
+
+        $content_type = function_exists('wp_remote_retrieve_header')
+            ? (string) wp_remote_retrieve_header($wp_response, 'content-type')
+            : (string) ($wp_response['headers']['content-type'] ?? 'application/pdf');
+
+        $content_disposition = function_exists('wp_remote_retrieve_header')
+            ? (string) wp_remote_retrieve_header($wp_response, 'content-disposition')
+            : (string) ($wp_response['headers']['content-disposition'] ?? '');
+
+        $pdf_sha256 = function_exists('wp_remote_retrieve_header')
+            ? (string) wp_remote_retrieve_header($wp_response, 'x-pdf-sha256')
+            : (string) ($wp_response['headers']['x-pdf-sha256'] ?? '');
+
+        return [
+            'success'             => true,
+            'status'              => $status_code,
+            'content'             => $raw_body,
+            'content_type'        => $content_type !== '' ? $content_type : 'application/pdf',
+            'content_disposition' => $content_disposition,
+            'pdf_sha256'          => $pdf_sha256,
+            'error'               => null,
+            'correlation_id'      => $resolved_corr_id,
+            'timestamp'           => $timestamp_utc,
+        ];
+    }
+
+    /**
+     * Merges non-security extra headers (e.g., `Idempotency-Key`) without allowing
+     * callers to override HMAC authentication or content-type headers.
+     *
+     * @param array<string, string> $signed_headers Base signed headers.
+     * @param array<string, string> $extra_headers  Extra caller headers.
+     * @return array<string, string> Merged headers.
+     */
+    private static function merge_extra_headers(array $signed_headers, array $extra_headers): array {
+        if (empty($extra_headers)) {
+            return $signed_headers;
+        }
+
+        $protected = [
+            'content-type',
+            'accept',
+            'host',
+            'user-agent',
+            'x-correlation-id',
+            'x-agrotracer-actor-id',
+            'x-agrotracer-user-id',
+            'x-agrotracer-timestamp',
+            'x-agrotracer-nonce',
+            'x-agrotracer-signature',
+        ];
+
+        foreach ($extra_headers as $name => $value) {
+            $header_name = trim((string) $name);
+            if ($header_name === '' || !is_string($value)) {
+                continue;
+            }
+            if (in_array(strtolower($header_name), $protected, true)) {
+                continue;
+            }
+            $signed_headers[$header_name] = trim($value);
+        }
+
+        return $signed_headers;
     }
 
     /**

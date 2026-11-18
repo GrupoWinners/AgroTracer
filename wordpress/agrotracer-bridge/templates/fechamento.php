@@ -78,10 +78,20 @@ if (!defined('ABSPATH')) {
           <span id="fechamento-error-action-guide" style="font-size: 12.5px; color: #374151; line-height: 1.4;">
             Instrução acionável de correção.
           </span>
-          <div id="fechamento-error-action-button-container" style="margin-top: 8px;">
+          <div id="fechamento-error-action-button-container" style="margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
             <button type="button" id="btn-fechamento-error-action" class="agro-btn agro-btn-secondary" style="font-size: 12px; padding: 4px 10px;">
               Ir para Tela de Manejo
             </button>
+            <button type="button" id="btn-fechamento-retry-seguro" class="agro-btn agro-btn-primary" style="display: none; font-size: 12px; padding: 5px 12px;">
+              <svg id="spinner-retry-fechamento" class="agro-spinner" viewBox="0 0 24 24" style="display:none; width:14px;height:14px;margin-right:6px;" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10" stroke-width="4" style="opacity:0.25;"></circle>
+                <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:0.75;"></path>
+              </svg>
+              <span>Tentar Novamente (Retry Seguro)</span>
+            </button>
+            <span id="fechamento-idempotency-status" style="display: none; font-size: 11px; color: #0f766e; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 4px; padding: 3px 8px;">
+              Idempotency-Key preservada — clique sem risco de duplicar certificado.
+            </span>
           </div>
         </div>
         <div style="margin-top: 8px; font-size: 11px; color: #9ca3af;">
@@ -273,17 +283,21 @@ if (!defined('ABSPATH')) {
           </div>
         </div>
 
-        <!-- Botões de Ação com Prevenção de Duplo Clique (Cuidado de Engenharia) -->
+        <!-- Proteção Idempotente e Botões de Ação com Prevenção de Duplo Clique (S4-T04 / S5-T04) -->
+        <div id="fechamento-idempotency-hint" style="font-size: 11.5px; color: #475569; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; justify-content: flex-end;">
+          <span class="agro-badge info" style="font-size: 10.5px;">Idempotency-Key ativa</span>
+          <span>Cada tentativa lógica preserva chave única contra emissão duplicada.</span>
+        </div>
         <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px;">
           <button type="button" id="btn-cancel-fechamento" class="agro-btn agro-btn-secondary" onclick="AgroTracer.switchScreen('lotes')">
             Cancelar
           </button>
-          <button type="submit" id="btn-submit-fechamento" class="agro-btn agro-btn-primary" style="min-width: 200px;">
+          <button type="submit" id="btn-submit-fechamento" class="agro-btn agro-btn-primary" style="min-width: 220px;">
             <svg id="spinner-fechamento" class="agro-spinner" viewBox="0 0 24 24" style="display:none; width:16px;height:16px;margin-right:8px;" fill="none" stroke="currentColor">
               <circle cx="12" cy="12" r="10" stroke-width="4" style="opacity:0.25;"></circle>
               <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" style="opacity:0.75;"></path>
             </svg>
-            <span id="btn-submit-fechamento-text">Fechar Lote e Calcular</span>
+            <span id="btn-submit-fechamento-text">Fechar Lote e Emitir Certificado</span>
           </button>
         </div>
 
@@ -359,6 +373,56 @@ if (!defined('ABSPATH')) {
         </div>
       </div>
 
+    </div>
+
+    <!-- Bloco de Certificado Emitido, Token Único e Download do PDF (Sprint 5 - S5-T04) -->
+    <div id="certificado-resultado-card" style="display: none; background: #f8fafc; border: 1px solid #99f6e4; border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <strong style="font-size: 15px; color: #0f172a;">Certificado de Carbono Emitido</strong>
+            <span id="cert-res-id" class="agro-badge info" style="font-size: 11px;">#—</span>
+            <span id="cert-res-status" class="agro-badge success" style="font-size: 11px;">VALIDO</span>
+          </div>
+          <div style="font-size: 12px; color: #475569; margin-top: 4px;">
+            Snapshot SHA-256: <code id="cert-res-snapshot-sha256" style="font-size: 11px; word-break: break-all;">—</code>
+          </div>
+          <div id="cert-res-pdf-sha256-row" style="display: none; font-size: 12px; color: #0f766e; margin-top: 4px;">
+            PDF SHA-256 verificado: <code id="cert-res-pdf-sha256" style="font-size: 11px; word-break: break-all;">—</code>
+          </div>
+        </div>
+
+        <button type="button" id="btn-download-certificado-pdf" class="agro-btn agro-btn-primary" style="min-width: 210px;">
+          <svg id="spinner-download-pdf" class="agro-spinner" viewBox="0 0 24 24" style="display:none; width:16px;height:16px;margin-right:8px;" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" stroke-width="4" style="opacity:0.25;"></circle>
+            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:0.75;"></path>
+          </svg>
+          <span id="btn-download-pdf-text">Baixar Certificado PDF</span>
+        </button>
+      </div>
+
+      <!-- Link Público Gerado em Memória a partir do Token Único -->
+      <div id="cert-res-token-box" style="display: none; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 12px; margin-bottom: 10px;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;">
+          <div style="font-size: 12px; color: #334155;">
+            <strong style="display: block; margin-bottom: 2px;">Link Público de Verificação (token exibido uma única vez nesta sessão):</strong>
+            <code id="cert-res-public-url" style="font-size: 11.5px; word-break: break-all;">—</code>
+          </div>
+          <button type="button" id="btn-copy-cert-token-url" class="agro-btn agro-btn-secondary" style="font-size: 12px; padding: 5px 10px;">
+            Copiar Link Público
+          </button>
+        </div>
+      </div>
+
+      <!-- Erro / Retry Seguro de Download do PDF (503 PDF_INDISPONIVEL sem perder certificado) -->
+      <div id="cert-pdf-error-box" class="agro-alert danger" style="display: none; padding: 10px 12px; font-size: 12px; margin-top: 8px;" role="alert">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;">
+          <span id="cert-pdf-error-message">Falha ao baixar o PDF. O certificado permanece válido; tente novamente.</span>
+          <button type="button" id="btn-retry-download-pdf" class="agro-btn agro-btn-secondary" style="font-size: 12px; padding: 4px 10px;">
+            Tentar Baixar Novamente
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Aviso de Premissas, Limitações e Rotulagem SYNTHETIC (S4-T06) -->

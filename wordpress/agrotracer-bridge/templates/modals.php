@@ -458,8 +458,8 @@ if (!defined('ABSPATH')) {
 
     <div class="agro-modal-body">
       <p style="margin: 0 0 14px 0; color: var(--agro-text-secondary); font-size: 13px; line-height: 1.5;">
-        Você está prestes a fechar o lote <strong id="modal-confirm-lote-code">LT-2026-001</strong>.
-        Esta ação consolidará o cálculo pelo motor determinístico <code>CarbonEngine</code> e persistirá um snapshot imutável protegido por triggers no PostgreSQL.
+        Você está prestes a fechar o lote <strong id="modal-confirm-lote-code">LT-2026-001</strong> e emitir o certificado atômico correspondente.
+        Esta ação consolidará o cálculo pelo motor determinístico <code>CarbonEngine</code>, persistirá um snapshot imutável protegido por triggers no PostgreSQL e gerará o token único do certificado com proteção por <code>Idempotency-Key</code>.
       </p>
 
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px; margin-bottom: 14px;">
