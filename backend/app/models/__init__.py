@@ -12,6 +12,7 @@ from app.models.fator import Fator
 from app.models.manejo_nutricional import ManejoNutricional
 from app.models.fechamento_lote import FechamentoLote
 from app.models.snapshot_fechamento import SnapshotFechamento
+from app.models.token_publico import TokenPublico
 
 __all__ = [
     "Base",
@@ -28,4 +29,5 @@ __all__ = [
     "ManejoNutricional",
     "FechamentoLote",
     "SnapshotFechamento",
+    "TokenPublico",
 ]
