@@ -31,8 +31,9 @@ Nao adicionar handlers/formatadores externos que reintroduzam dados brutos.
 | SEC-01 assinatura adulterada | test_s1_t05_crud_seguranca |
 | SEC-02 timestamp fora da janela | test_s1_t05_crud_seguranca |
 | SEC-03 replay de nonce | test_s1_t05_crud_seguranca |
-| SEC-04 usuario zero | test_s1_t05_crud_seguranca |
-| SEC-05 / SEC-06 | Definicoes nao localizadas na issue/repositorio; solicitadas a Samela. Nao atribuir nomes inventados. |
+| SEC-04 usuario adulterado sem reassinar | test_s3_t03_api::test_hmac_real_nas_rotas |
+| SEC-05 lote de outro produtor | test_s6_t02_hardening::test_bola_todas_rotas_id e test_s5_t06_qa_gate |
+| SEC-06 tokens inexistentes repetidos | test_s6_t02_hardening::test_sec06_tokens_inexistentes_genericos_ate_bloqueio; test_s5_t05_publico; contador Redis real em test_s6_t02_redis |
 | SEC-07 leak do DTO | test_s5_t06_qa_gate |
 | SEC-08 clique duplo | test_s5_t06_qa_gate e test_s5_concorrencia |
 | Cobertura adicional | test_s6_t02_hardening: BOLA em rotas com ID, admin, limite e logs; test_s6_t02_redis: contador/expiracao em Redis real |
@@ -41,6 +42,9 @@ As verificacoes por ID incluem fazenda/talhoes, lote, associacao,
 manejo, fechamento, certificacao, PDF e parametro administrativo.
 As referencias por ID no corpo (animal, origem/destino de movimentacao,
 fazenda do lote) mantem a cobertura das suites S2/S3.
-Review/QA humanos e confirmacao da numeracao SEC-05/06 nao sao declarados
-concluidos. Logs de infraestrutura WordPress/proxy devem usar a politica
+Matriz conferida no AgroTracer_Guia_Comercial_Detalhado_v3_Revisado_TechLead.pdf,
+pagina 19, secao 13.2 (documento fornecido por Samela). A marcacao historica
+SEC-04 no teste de usuario zero e imprecisa; o cenario oficial e adulteracao
+do ID sem reassinar, coberto pela suite S3. Usuario zero e cobertura adicional.
+Review/QA humanos nao sao declarados concluidos. Logs de infraestrutura WordPress/proxy devem usar a politica
 em docs/operacao/logs-seguros.md; nao houve alteracao do servidor do usuario.

@@ -125,3 +125,21 @@ def test_uvicorn_log_nao_vaza_query_ip_e_assinatura():
     texto = SafeFormatter().format(record)
     assert "segredo" not in texto
     assert "192.0.2.1" not in texto
+
+
+def test_sec06_tokens_inexistentes_genericos_ate_bloqueio(request):
+    cliente, _ = request.getfixturevalue("ambiente_api")
+    redis = AsyncMock()
+    redis.eval.side_effect = range(1, 32)
+    app.state.redis_cliente = redis
+    for numero in range(31):
+        resposta = cliente.get(
+            "/api/v1/certificados/publico",
+            params={"token": f"inexistente-{numero}"},
+        )
+        assert resposta.status_code == (404 if numero < 30 else 429)
+        if numero < 30:
+            assert resposta.json()["error"]["message"] == (
+                "Certificado nao encontrado."
+            )
+    assert redis.eval.await_count == 31
