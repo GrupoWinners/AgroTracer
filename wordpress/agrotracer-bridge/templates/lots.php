@@ -178,6 +178,11 @@ if (!defined('ABSPATH')) {
           </div>
         </div>
 
+        <div id="lots-empty-state" class="agro-empty-state" style="display:none; padding:24px 16px;">
+          <p class="agro-empty-text" style="margin:0 0 10px 0;">Nenhum lote corresponde aos filtros selecionados.</p>
+          <button type="button" id="btn-clear-lot-filters" class="agro-btn agro-btn-secondary agro-btn-sm">Limpar Filtros</button>
+        </div>
+
         <div class="agro-sidebar-footer" id="lots-sidebar-footer-count">
           Total de lotes: 4
         </div>
@@ -186,13 +191,13 @@ if (!defined('ABSPATH')) {
       <!-- Coluna Direita: Detalhes do Lote Selecionado & Rebanho -->
       <main class="agro-detail-main">
         <div class="agro-detail-top-bar">
-          <a href="#lotes" class="agro-back-link" onclick="AgroTracer.switchScreen('lotes')">
+          <button type="button" class="agro-back-link" onclick="AgroTracer.switchScreen('dashboard')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
               <line x1="19" y1="12" x2="5" y2="12"></line>
               <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
-            Visão Geral de Lotes
-          </a>
+            Voltar ao Dashboard
+          </button>
         </div>
 
         <!-- Header do Lote com Ações Sempre Visíveis (Sem Hover) -->

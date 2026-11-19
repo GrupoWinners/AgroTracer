@@ -58,6 +58,9 @@ $logo_url = defined('AGROTRACER_PLUGIN_URL')
     : (function_exists('plugin_dir_url')
         ? plugin_dir_url(dirname(__FILE__)) . 'assets/images/logo-agrotracer-emblem.png'
         : '');
+$agro_portal_url = function_exists('home_url')
+    ? home_url('/agrotracer/')
+    : '/';
 ?>
 <div class="agrotracer-app agro-public-shell" id="agrotracer-public-cert-page">
   <header class="agro-header agro-public-header">
@@ -72,6 +75,15 @@ $logo_url = defined('AGROTRACER_PLUGIN_URL')
 
   <main class="agro-main agro-public-main">
     <section class="agro-public-container" aria-labelledby="public-cert-heading">
+      <nav class="agro-breadcrumb agro-public-breadcrumb" aria-label="Breadcrumb">
+        <ol class="agro-breadcrumb-list">
+          <li class="agro-breadcrumb-item">
+            <a class="agro-breadcrumb-link" href="<?php echo $agro_esc_attr($agro_portal_url); ?>">AgroTracer</a>
+          </li>
+          <li class="agro-breadcrumb-sep" aria-hidden="true">/</li>
+          <li class="agro-breadcrumb-item agro-breadcrumb-current" aria-current="page">Consulta Pública de Certificado</li>
+        </ol>
+      </nav>
       <div class="agro-public-hero">
         <h1 id="public-cert-heading">Consulta Pública de Certificado</h1>
         <p>
@@ -82,7 +94,7 @@ $logo_url = defined('AGROTRACER_PLUGIN_URL')
 
       <?php if (!$has_token): ?>
         <div class="agro-card agro-public-card" id="public-cert-form-card">
-          <form method="get" class="agro-public-lookup-form">
+          <form method="get" class="agro-public-lookup-form" onsubmit="var b=this.querySelector('button[type=submit]');if(b){b.disabled=true;b.textContent='Verificando certificado...';}">
             <label for="public-cert-token-input" style="display:block; font-size:13px; font-weight:600; color:var(--agro-text-primary); margin-bottom:6px;">
               Código de Verificação (Token Público)
             </label>
@@ -98,7 +110,7 @@ $logo_url = defined('AGROTRACER_PLUGIN_URL')
                 required
                 style="flex:1; min-width:240px;"
               >
-              <button type="submit" class="agro-btn agro-btn-primary">
+              <button type="submit" id="btn-public-verify-submit" class="agro-btn agro-btn-primary">
                 Verificar Certificado
               </button>
             </div>

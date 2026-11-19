@@ -10,7 +10,7 @@
     <aside class="agro-sidebar-card" aria-label="Lista de Fazendas">
       <div class="agro-sidebar-header">
         <h2 id="farms-module-title" class="agro-sidebar-title">Minhas Propriedades</h2>
-        <button type="button" class="agro-btn agro-btn-primary agro-sidebar-action-btn" onclick="AgroTracer.showToast('Formulário de nova fazenda ativado.')">
+        <button type="button" id="btn-new-farm" class="agro-btn agro-btn-primary agro-sidebar-action-btn">
           + Nova Fazenda
         </button>
       </div>
@@ -124,18 +124,23 @@
           </div>
         </div>
       </div>
+
+      <div id="farms-empty-state" class="agro-empty-state" style="display:none; padding:24px 16px;">
+        <p class="agro-empty-text" style="margin:0 0 10px 0;">Nenhuma fazenda encontrada para a busca informada.</p>
+        <button type="button" id="btn-clear-farms-search" class="agro-btn agro-btn-secondary agro-btn-sm">Limpar Busca</button>
+      </div>
     </aside>
 
     <!-- Coluna Direita: Detalhes da Fazenda & Talhões -->
     <main class="agro-detail-main">
       <div class="agro-detail-top-bar">
-        <a href="#fazendas" class="agro-back-link" onclick="AgroTracer.switchScreen('fazendas')">
+        <button type="button" class="agro-back-link" onclick="AgroTracer.switchScreen('dashboard')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
-          Voltar para Fazendas
-        </a>
+          Voltar ao Dashboard
+        </button>
       </div>
 
       <!-- Header da Fazenda Selecionada -->
@@ -197,20 +202,20 @@
               <input type="text" id="farm-input-name" class="agro-input" value="Fazenda Modelo" required>
             </div>
 
-            <!-- Número do CAR (com erro/alerta demonstrativo) -->
+            <!-- Número do CAR (validação dinâmica sem erro estático pré-ativado) -->
             <div class="agro-form-group">
               <label class="agro-form-label" for="farm-input-car">
                 N&uacute;mero do CAR <span class="required">*</span>
               </label>
               <div class="agro-input-wrap">
-                <input type="text" id="farm-input-car" class="agro-input error has-icon" value="MS-5002708-1234.5678.9ABC.DEF0.1234.5678" required>
-                <div class="agro-input-icon">
+                <input type="text" id="farm-input-car" class="agro-input has-icon" value="MS-5002708-1234.5678.9ABC.DEF0.1234.5678" required>
+                <div class="agro-input-icon" id="farm-car-error-icon" style="display:none;">
                   <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;color:#dc2626;">
                     <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
                   </svg>
                 </div>
               </div>
-              <div id="farm-car-error" class="agro-field-error">
+              <div id="farm-car-error" class="agro-field-error" style="display:none;">
                 Este CAR j&aacute; est&aacute; cadastrado em outra fazenda.
               </div>
               <div class="agro-field-help">
@@ -292,7 +297,7 @@
             </svg>
             <h3 class="agro-card-title">Talh&otilde;es / Pastagens</h3>
           </div>
-          <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.showToast('Novo talhão adicionado em rascunho.')">
+          <button type="button" id="btn-add-paddock" class="agro-btn agro-btn-secondary agro-btn-sm">
             + Adicionar Talh&atilde;o
           </button>
         </div>
@@ -377,6 +382,12 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div id="paddocks-empty-state" class="agro-empty-state" style="display:none; padding:28px 16px;">
+            <p class="agro-empty-title" style="font-size:14px;">Nenhum talh&atilde;o cadastrado nesta propriedade</p>
+            <p class="agro-empty-text" style="margin-bottom:12px;">Adicione o primeiro talh&atilde;o ou piquete para registrar pastagens e &aacute;reas em hectares.</p>
+            <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" id="btn-empty-add-paddock">+ Adicionar Primeiro Talh&atilde;o</button>
           </div>
 
           <div class="agro-table-footer">

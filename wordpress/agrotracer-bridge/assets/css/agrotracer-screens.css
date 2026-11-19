@@ -287,6 +287,73 @@
   font-weight: 500;
 }
 
+.agro-header-menu-wrap {
+  position: relative;
+}
+
+.agro-header-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 310px;
+  background-color: var(--agro-surface);
+  color: var(--agro-text-primary);
+  border: 1px solid var(--agro-border);
+  border-radius: var(--agro-radius-md);
+  box-shadow: var(--agro-shadow-xl);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.agro-user-dropdown {
+  width: 240px;
+}
+
+.agro-header-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--agro-border);
+  background-color: var(--agro-bg);
+  font-size: 13px;
+}
+
+.agro-popover-clear {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--agro-primary);
+}
+
+.agro-popover-clear:hover {
+  text-decoration: underline;
+}
+
+.agro-header-popover-list {
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: 4px;
+}
+
+.agro-popover-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: var(--agro-radius-sm);
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--agro-text-primary);
+  transition: var(--agro-transition);
+}
+
+.agro-popover-item:hover {
+  background-color: var(--agro-bg-subtle);
+}
+
 /* ==========================================================================
    MAIN CONTENT & CONTAINER
    ========================================================================== */
@@ -2038,22 +2105,28 @@
 }
 
 .agro-alert.info {
-  background-color: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #166534;
+  background-color: var(--agro-info-bg);
+  border: 1px solid var(--agro-info-border);
+  color: var(--agro-info-text);
+}
+
+.agro-alert.success {
+  background-color: var(--agro-success-bg);
+  border: 1px solid var(--agro-success-border);
+  color: var(--agro-success-text);
 }
 
 .agro-alert.danger {
-  background-color: #fff1f2;
-  border: 1px solid #fecdd3;
-  color: #9f1239;
+  background-color: var(--agro-danger-bg);
+  border: 1px solid var(--agro-danger-border);
+  color: var(--agro-danger-text);
 }
 
 /* Sprint 4 (S4-T04) — Fechamento de Lote & Prevenção de Duplo Clique */
 .agro-alert.warning {
-  background-color: #fffbeb;
-  border: 1px solid #fef3c7;
-  color: #92400e;
+  background-color: var(--agro-warning-bg);
+  border: 1px solid var(--agro-warning-border);
+  color: var(--agro-warning-text);
 }
 
 .agro-spinner {
@@ -2233,5 +2306,62 @@
   background-color: #f8fafc;
   border: 1px dashed var(--agro-border-strong);
   border-radius: var(--agro-radius-md);
+}
+
+/* Sprint 6 (S6-T01) — Breadcrumbs & Estados Semânticos */
+.agro-breadcrumb {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background-color: var(--agro-surface);
+  border: 1px solid var(--agro-border);
+  border-radius: var(--agro-radius-md);
+}
+
+.agro-breadcrumb-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12.5px;
+}
+
+.agro-breadcrumb-link {
+  color: var(--agro-primary);
+  font-weight: 600;
+  padding: 2px 4px;
+  border-radius: var(--agro-radius-sm);
+}
+
+.agro-breadcrumb-link:hover {
+  background-color: var(--agro-accent-soft);
+  text-decoration: underline;
+}
+
+.agro-breadcrumb-sep {
+  color: var(--agro-text-subtle);
+  user-select: none;
+}
+
+.agro-breadcrumb-current {
+  color: var(--agro-text-secondary);
+  font-weight: 500;
+}
+
+.agro-toast.info .agro-toast-icon {
+  background-color: var(--agro-info-bg);
+  color: var(--agro-info-text);
+}
+
+.agro-toast.warning .agro-toast-icon {
+  background-color: var(--agro-warning-bg);
+  color: var(--agro-warning-text);
+}
+
+.agro-toast.danger .agro-toast-icon {
+  background-color: var(--agro-danger-bg);
+  color: var(--agro-danger-text);
 }
 
