@@ -1,0 +1,22 @@
+=== Evidência de Testes — Task S6-T04 (QA Desktop 1366x768 e 1920x1080) ===
+
+1. PHP Lint (`php -l` em `wordpress/agrotracer-bridge/`):
+   - 26 arquivos `.php` verificados: 0 erros de sintaxe.
+
+2. JS Syntax Check (`node --check wordpress/agrotracer-bridge/assets/js/agrotracer-screens.js`):
+   - JS syntax OK.
+
+3. QA Headless Real em Navegadores (Chrome + Edge via CDP em `1366x768` e `1920x1080`):
+   - 32/32 combinações verificadas (`dashboard`, `fazendas`, `lotes`, `animais`, `manejo`, `fechamento`, `certificados`, `publico`) com `docOverflow <= 0` e zero clipping crítico.
+   - 28 screenshots PNG válidos gerados e auditados em `docs/evidencias/sprint-6/screenshots/`.
+
+4. Suites de Testes PHP (`wordpress/agrotracer-bridge/tests/test-*.php`, PHP 8.2.12):
+   - `test-agrotracer-http-client.php`: 8 passaram | 0 falharam (72 assertions)
+   - `test-s2-t04-lotes-animais.php`: 6 passaram | 0 falharam
+   - `test-s3-t04-timeline-manejo.php`: 5 passaram | 0 falharam
+   - `test-s4-t04-fechamento-tela.php`: 5 passaram | 0 falharam
+   - `test-s5-t04-certificacao-download.php`: 6 passaram | 0 falharam
+   - `test-s5-t05-consulta-publica.php`: 5 passaram | 0 falharam
+   - `test-s6-t01-integracao-ui.php`: 5 passaram | 0 falharam
+   - `test-s6-t04-desktop-qa.php`: 3 passaram | 0 falharam
+   - Total: 8 suites | 43 testes passaram | 0 falharam.
