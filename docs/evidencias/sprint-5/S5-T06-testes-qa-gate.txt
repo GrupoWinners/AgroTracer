@@ -1,0 +1,69 @@
+=========================================================================
+AgroTracer Sprint 5 — Evidencia Oficial S5-T06 (QA Gate Sprint 5)
+Ambiente: Python 3.14.5 | pytest 9.1.1 | flake8 7.4.1 | Node.js v26.13.0
+Data: 2026-11-19
+=========================================================================
+
+1. Linter Backend (flake8 app tests):
+   - Comando: python -m flake8 backend/app backend/tests
+   - Resultado: 0 violacoes de estilo / PEP 8
+
+2. Frontend JS Syntax Check:
+   - Comando: node --check wordpress/agrotracer-bridge/assets/js/agrotracer-screens.js
+   - Resultado: 0 erros de sintaxe (OK)
+
+3. Suíte de Testes Sprint 5 (Pytest):
+   - Comando: python -m pytest tests/test_s5_t01_certificacao.py tests/test_s5_t02_pdf.py tests/test_s5_t03_tokens.py tests/test_s5_t05_publico.py tests/test_s5_t06_qa_gate.py -v
+
+============================= test session starts =============================
+platform win32 -- Python 3.14.5, pytest-9.1.1, pluggy-1.7.0
+rootdir: backend, configfile: pytest.ini
+plugins: anyio-4.16.0, asyncio-1.5.0
+collected 42 items
+
+backend/tests/test_s5_t01_certificacao.py::test_emissao_atomica_e_hash PASSED [  2%]
+backend/tests/test_s5_t01_certificacao.py::test_repeticao_chaves_e_payload PASSED [  4%]
+backend/tests/test_s5_t01_certificacao.py::test_rollback_integral[calcular_emissoes] PASSED [  7%]
+backend/tests/test_s5_t01_certificacao.py::test_rollback_integral[persistir_snapshot_fechamento] PASSED [  9%]
+backend/tests/test_s5_t01_certificacao.py::test_rollback_integral[emitir_token] PASSED [ 11%]
+backend/tests/test_s5_t01_certificacao.py::test_rollback_integral[registrar_auditoria] PASSED [ 14%]
+backend/tests/test_s5_t01_certificacao.py::test_fechado_sprint4_reutiliza_snapshot PASSED [ 16%]
+backend/tests/test_s5_t01_certificacao.py::test_chave_obrigatoria[None] PASSED [ 19%]
+backend/tests/test_s5_t01_certificacao.py::test_chave_obrigatoria[] PASSED [ 21%]
+backend/tests/test_s5_t01_certificacao.py::test_chave_obrigatoria[ ] PASSED [ 23%]
+backend/tests/test_s5_t01_certificacao.py::test_chave_obrigatoria[129_chars] PASSED [ 26%]
+backend/tests/test_s5_t01_certificacao.py::test_nao_autorizado_e_inexistente_mesma_resposta PASSED [ 28%]
+backend/tests/test_s5_t02_pdf.py::test_pdf_conteudo_hash_e_download_estavel PASSED [ 30%]
+backend/tests/test_s5_t02_pdf.py::test_pdf_allowlist_exclui_pii_e_escapa_markup PASSED [ 33%]
+backend/tests/test_s5_t02_pdf.py::test_falha_geracao_nao_persiste_hash_e_permite_retry PASSED [ 35%]
+backend/tests/test_s5_t02_pdf.py::test_snapshot_alterado_nao_gera_pdf PASSED [ 38%]
+backend/tests/test_s5_t02_pdf.py::test_arquivo_corrompido_nao_e_servido PASSED [ 40%]
+backend/tests/test_s5_t02_pdf.py::test_download_outro_proprietario_e_ausente PASSED [ 42%]
+backend/tests/test_s5_t02_pdf.py::test_pdf_versoes_longas_legiveis[80_chars] PASSED [ 45%]
+backend/tests/test_s5_t02_pdf.py::test_pdf_versoes_longas_legiveis[versao_longa] PASSED [ 47%]
+backend/tests/test_s5_t03_tokens.py::test_tokens_aleatorios_unicos_e_apenas_hash PASSED [ 50%]
+backend/tests/test_s5_t03_tokens.py::test_lookup_hash_e_limite_compartilhado PASSED [ 52%]
+backend/tests/test_s5_t03_tokens.py::test_inexistente_generico_e_tambem_limitado[invalido] PASSED [ 54%]
+backend/tests/test_s5_t03_tokens.py::test_inexistente_generico_e_tambem_limitado[43_A] PASSED [ 57%]
+backend/tests/test_s5_t03_tokens.py::test_inexistente_generico_e_tambem_limitado[10000_x] PASSED [ 59%]
+backend/tests/test_s5_t03_tokens.py::test_redis_indisponivel_nao_libera_lookup PASSED [ 61%]
+backend/tests/test_s5_t05_publico.py::test_consulta_publica_dto_minimizado_sem_autenticacao PASSED [ 64%]
+backend/tests/test_s5_t05_publico.py::test_consulta_publica_inclui_pdf_sha256_quando_gerado PASSED [ 66%]
+backend/tests/test_s5_t05_publico.py::test_consulta_publica_certificado_revogado PASSED [ 69%]
+backend/tests/test_s5_t05_publico.py::test_consulta_publica_inexistente_generico_rn13[] PASSED [ 71%]
+backend/tests/test_s5_t05_publico.py::test_consulta_publica_inexistente_generico_rn13[invalido] PASSED [ 73%]
+backend/tests/test_s5_t05_publico.py::test_consulta_publica_inexistente_generico_rn13[43_A] PASSED [ 76%]
+backend/tests/test_s5_t05_publico.py::test_consulta_publica_inexistente_generico_rn13[2048_x] PASSED [ 78%]
+backend/tests/test_s5_t05_publico.py::test_consulta_publica_respeita_rate_limit_e_falha_redis PASSED [ 80%]
+backend/tests/test_s5_t05_publico.py::test_consulta_publica_rejeita_snapshot_adulterado PASSED [ 83%]
+backend/tests/test_s5_t05_publico.py::test_obter_ip_cliente_ignora_xff_sem_proxy_confiavel PASSED [ 85%]
+backend/tests/test_s5_t06_qa_gate.py::test_qa_gate_consistencia_banco_api_pdf_qr PASSED [ 88%]
+backend/tests/test_s5_t06_qa_gate.py::test_qa_gate_tres_tokens_validos_revogados_e_inexistentes PASSED [ 90%]
+backend/tests/test_s5_t06_qa_gate.py::test_qa_gate_leak_test_dto_publico_sec07 PASSED [ 92%]
+backend/tests/test_s5_t06_qa_gate.py::test_qa_gate_clique_duplo_e_idempotencia_sec08 PASSED [ 95%]
+backend/tests/test_s5_t06_qa_gate.py::test_qa_gate_bola_em_certificados PASSED [ 97%]
+backend/tests/test_s5_t06_qa_gate.py::test_qa_gate_frontend_qr_local_e_travas_clique_duplo PASSED [100%]
+
+======================== 42 passed, 1 warning in 1.66s ========================
+Status: QA GATE SPRINT 5 APROVADO COM 100% DE SUCESSO
+=========================================================================
