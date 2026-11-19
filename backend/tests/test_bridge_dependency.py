@@ -68,6 +68,7 @@ def test_rota_aceita_assinatura_valida(monkeypatch):
     )
 
     redis_falso = AsyncMock()
+    redis_falso.eval.return_value = 1
     redis_falso.set.return_value = True
     app_teste.state.redis_cliente = redis_falso
 

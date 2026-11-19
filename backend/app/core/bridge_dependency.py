@@ -4,6 +4,7 @@ from app.core.bridge_auth import verificar_hmac_requisicao
 from app.core.nonce_store import RedisIndisponivel
 from app.core.settings import obter_chave_bridge
 from app.core.bridge_errors import ErroBridge
+from app.core.rate_limit import limitar
 
 
 async def exigir_autenticacao_bridge(request: Request) -> int:
@@ -42,6 +43,7 @@ async def exigir_autenticacao_bridge(request: Request) -> int:
 
 
 async def exigir_usuario_wordpress(
+    request: Request,
     wp_user_id: int = Depends(exigir_autenticacao_bridge),
 ) -> int:
     if wp_user_id == 0:
@@ -51,4 +53,7 @@ async def exigir_usuario_wordpress(
             "Operação restrita a usuários WordPress.",
         )
 
+    await limitar(
+        request.app.state.redis_cliente, "usuario", wp_user_id, 120,
+    )
     return wp_user_id

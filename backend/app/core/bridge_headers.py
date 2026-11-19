@@ -57,6 +57,9 @@ def validar_headers_bridge(
     if not re.fullmatch(r"(0|[1-9][0-9]{0,19})", user_id):
         return False
 
+    if int(user_id) > 9223372036854775807:
+        return False
+
     if len(correlation_id) != 36:
         return False
 

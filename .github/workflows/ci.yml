@@ -2,7 +2,7 @@ name: AgroTracer CI
 
 on:
   pull_request:
-    branches: [develop, main, 'feature/S3-*', 'feature/S4-*', 'feature/S5-*']
+    branches: [develop, main, 'feature/S3-*', 'feature/S4-*', 'feature/S5-*', 'feature/S6-*']
   push:
     branches: [develop, main]
 
@@ -42,6 +42,10 @@ jobs:
 
 
     services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 16379:6379
       postgres:
         image: postgres:16
         env:
@@ -57,5 +61,6 @@ jobs:
           --health-retries 5
 
     env:
+      AGROTRACER_TEST_REDIS_URL: redis://127.0.0.1:16379/15
       DATABASE_URL: postgresql+psycopg://agrotracer_ci:senha_ci_temporaria@127.0.0.1:55432/agrotracer_s2_t01_teste
       AGROTRACER_TEST_DATABASE_URL: postgresql+psycopg://agrotracer_ci:senha_ci_temporaria@127.0.0.1:55432/agrotracer_s2_t01_teste

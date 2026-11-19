@@ -187,6 +187,7 @@ def test_hmac_real_nas_rotas(manejo_api, monkeypatch, method):
                        "segredo_ficticio_exclusivamente_para_testes")
     app.dependency_overrides.pop(exigir_usuario_wordpress)
     app.state.redis_cliente.set.return_value = True
+    app.state.redis_cliente.eval.return_value = 1
     path = (f'/api/v1/lotes/{ids["lote"]}/manejos' if method == "POST"
             else "/api/v1/admin/parametro-sets")
     corpo = json.dumps(payload(ids)).encode() if method == "POST" else b""

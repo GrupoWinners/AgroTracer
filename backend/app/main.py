@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+import logging
+from time import perf_counter
 
 from fastapi import FastAPI, Request
 
@@ -14,10 +16,12 @@ from app.core.bridge_errors import (
     tratar_erro_bridge,
 )
 from app.core.settings import obter_redis_url
+from app.core.safe_logging import ROTAS, configurar_logs
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    configurar_logs()
     if Redis is not None:
         cliente = Redis.from_url(
             obter_redis_url(),
@@ -59,7 +63,25 @@ async def adicionar_correlation_id(request: Request, call_next):
 
     request.state.correlation_id = correlation_id
 
-    resposta = await call_next(request)
+    inicio = perf_counter()
+    status_code = 500
+    try:
+        resposta = await call_next(request)
+        status_code = resposta.status_code
+    finally:
+        rota = getattr(request.scope.get("route"), "path", None)
+        if rota and "/api/v1" + rota in ROTAS:
+            rota = "/api/v1" + rota
+        logging.getLogger("agrotracer.http").info("", extra={
+            "evento": (
+                "request_failed" if status_code >= 500
+                else "request_completed"
+            ),
+            "route_template": rota,
+            "status_code": status_code,
+            "correlation_id": correlation_id,
+            "duration_ms": (perf_counter() - inicio) * 1000,
+        })
 
     resposta.headers["X-Correlation-ID"] = correlation_id
 
@@ -72,3 +94,6 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/health", tags=["Health"])
 def health():
     return {"status": "ok"}
+
+
+ROTAS.update(app.openapi()["paths"])

@@ -24,6 +24,12 @@ async def verificar_hmac_requisicao(
     cliente_redis: Any,
     agora: int | None = None,
 ) -> bool:
+    nomes = (
+        "X-AgroTracer-Signature", "X-AgroTracer-Timestamp",
+        "X-AgroTracer-Nonce", "X-AgroTracer-User-Id", "X-Correlation-ID",
+    )
+    if any(len(request.headers.getlist(nome)) != 1 for nome in nomes):
+        return False
     headers = ler_headers_bridge(request)
 
     if not validar_headers_bridge(headers, agora):
