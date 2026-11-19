@@ -15,12 +15,23 @@ if (!defined('ABSPATH')) {
   ?>
 
   <main class="agro-main">
+    <nav id="agro-breadcrumb" class="agro-breadcrumb" aria-label="Breadcrumb">
+      <ol class="agro-breadcrumb-list">
+        <li class="agro-breadcrumb-item">
+          <button type="button" class="agro-breadcrumb-link" onclick="AgroTracer.switchScreen('dashboard')">AgroTracer</button>
+        </li>
+        <li class="agro-breadcrumb-sep" aria-hidden="true">/</li>
+        <li class="agro-breadcrumb-item agro-breadcrumb-current" aria-current="page">Dashboard</li>
+      </ol>
+    </nav>
+
     <?php 
       include $plugin_dir . '/templates/dashboard.php';
       include $plugin_dir . '/templates/farms.php';
       include $plugin_dir . '/templates/lots.php';
       include $plugin_dir . '/templates/manejo.php';
       include $plugin_dir . '/templates/fechamento.php';
+      include $plugin_dir . '/templates/certificados.php';
     ?>
   </main>
 
@@ -30,19 +41,5 @@ if (!defined('ABSPATH')) {
   ?>
 
   <!-- Toast Notification Container Persistente -->
-  <div id="agro-toast-container" class="agro-toast-container">
-    <!-- Toast Inicial demonstrativo conforme tela B de Fazendas -->
-    <div class="agro-toast" id="initial-demo-toast">
-      <div class="agro-toast-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-      </div>
-      <div class="agro-toast-content">
-        <p class="agro-toast-title">Fazenda atualizada com sucesso!</p>
-        <div class="agro-toast-correlation">ID da requisi&ccedil;&atilde;o: 8d7c3f2a-9e4b</div>
-      </div>
-      <button type="button" class="agro-toast-close" onclick="document.getElementById('initial-demo-toast').remove()" aria-label="Fechar">&times;</button>
-    </div>
-  </div>
+  <div id="agro-toast-container" class="agro-toast-container" aria-live="polite"></div>
 </div>

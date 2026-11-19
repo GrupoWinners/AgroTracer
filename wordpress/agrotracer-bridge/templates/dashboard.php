@@ -3,6 +3,13 @@
  * AgroTracer Dashboard Screen Template (Task S1-T03)
  * Módulo A: Dashboard do Produtor com Próxima Ação Recomendada
  */
+$dash_user_name = 'João Silva';
+if (function_exists('wp_get_current_user')) {
+    $wp_user = wp_get_current_user();
+    if ($wp_user && !empty($wp_user->display_name)) {
+        $dash_user_name = (string) $wp_user->display_name;
+    }
+}
 ?>
 <section id="screen-dashboard" class="agro-screen active" aria-labelledby="dashboard-title">
   <!-- Top Greeting -->
@@ -14,7 +21,7 @@
       </svg>
     </div>
     <div>
-      <h1 id="dashboard-title" class="agro-welcome-title">Ol&aacute;, Jo&atilde;o Silva!</h1>
+      <h1 id="dashboard-title" class="agro-welcome-title">Ol&aacute;, <?php echo esc_html($dash_user_name); ?>!</h1>
       <p class="agro-welcome-subtitle">Bem-vindo &agrave; vis&atilde;o geral da Fazenda Modelo (MS).</p>
     </div>
   </div>
@@ -43,7 +50,7 @@
           <strong>Aten&ccedil;&atilde;o:</strong> Per&iacute;odo de manejo do lote <strong>LT-2026-001</strong> termina em <strong>2 dias (30/09/2026)</strong>. Registre o fechamento/abate para iniciar a certifica&ccedil;&atilde;o.
         </div>
       </div>
-      <button type="button" class="agro-btn agro-btn-primary" onclick="AgroTracer.switchScreen('lotes')">
+      <button type="button" class="agro-btn agro-btn-primary" onclick="AgroTracer.openLotInFechamento(1)">
         Registrar abate
       </button>
     </div>
@@ -61,7 +68,7 @@
           <span>Consulte mudan&ccedil;as nas estimativas de teste.</span>
         </div>
       </div>
-      <button type="button" class="agro-btn agro-btn-secondary">
+      <button type="button" class="agro-btn agro-btn-secondary" onclick="AgroTracer.switchScreen('manejo'); AgroTracer.showToast('Parâmetros versionados exibidos na timeline de manejo.', null, 'info');">
         Ver nova vers&atilde;o
       </button>
     </div>
@@ -188,7 +195,7 @@
                   <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('lotes')">
                     Ver detalhes
                   </button>
-                  <button type="button" class="agro-btn agro-btn-primary agro-btn-sm" onclick="AgroTracer.switchScreen('lotes')">
+                  <button type="button" class="agro-btn agro-btn-primary agro-btn-sm" onclick="AgroTracer.switchScreen('manejo')">
                     Manejo
                   </button>
                 </div>
@@ -219,7 +226,7 @@
                   <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('lotes')">
                     Ver detalhes
                   </button>
-                  <button type="button" class="agro-btn agro-btn-primary agro-btn-sm" onclick="AgroTracer.showToast('Certificado gerado com Idempotency-Key.')">
+                  <button type="button" class="agro-btn agro-btn-primary agro-btn-sm" onclick="AgroTracer.openLotInFechamento(2)">
                     Emitir certificado
                   </button>
                 </div>
@@ -250,10 +257,10 @@
                   <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('lotes')">
                     Ver detalhes
                   </button>
-                  <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm">
+                  <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('certificados')">
                     Baixar PDF
                   </button>
-                  <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm">
+                  <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('certificados')">
                     Ver QR
                   </button>
                 </div>
