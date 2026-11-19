@@ -50,9 +50,11 @@ class Laboratorio:
             # Nao imprimir argv, dumps, senhas, token ou saida do processo.
             erro = resultado.stderr.decode(errors="replace").lower()
             categorias = (
-                "permission denied", "manifest unknown", "no matching manifest",
+                "permission denied", "manifest unknown",
+                "no matching manifest",
                 "error establishing a database connection", "access denied",
-                "does not seem to be a wordpress installation", "invalid email",
+                "does not seem to be a wordpress installation",
+                "invalid email",
                 "cannot create", "unknown user", "pull access denied",
                 "certificate verify failed", "ssl connection error",
             )
@@ -84,11 +86,12 @@ class Laboratorio:
         return self.run(
             "run", "--rm", "-i", "--network", self.prefixo,
             "--volumes-from", wp, "--user", "33:33",
+            "-e", "HOME=/tmp",
             "-e", f"WORDPRESS_DB_HOST={mysql}",
             "-e", "WORDPRESS_DB_USER=wordpress",
             "-e", "WORDPRESS_DB_NAME=wordpress",
             "-e", "WORDPRESS_DB_PASSWORD",
-            "wordpress:cli-php8.3", *args, entrada=entrada,
+            "wordpress:cli-php8.3", "wp", *args, entrada=entrada,
         )
 
     def limpar(self):
