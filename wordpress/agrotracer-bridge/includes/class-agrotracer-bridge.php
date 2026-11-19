@@ -84,6 +84,26 @@ class AgroTracer_Bridge {
             update_option('agrotracer_page_id', $existing_page->ID);
         }
 
+        // 3. Provisionamento Idempotente da Página Pública de Verificação (/certificado)
+        $cert_slug = 'certificado';
+        $cert_page = get_page_by_path($cert_slug);
+        if (!$cert_page) {
+            $cert_page_id = wp_insert_post([
+                'post_title'     => 'Verificação Pública de Certificado – AgroTracer',
+                'post_name'      => $cert_slug,
+                'post_content'   => '[agrotracer_certificado_publico]',
+                'post_status'    => 'publish',
+                'post_type'      => 'page',
+                'comment_status' => 'closed',
+                'ping_status'    => 'closed',
+            ]);
+            if (!is_wp_error($cert_page_id)) {
+                update_option('agrotracer_certificado_page_id', $cert_page_id);
+            }
+        } else {
+            update_option('agrotracer_certificado_page_id', $cert_page->ID);
+        }
+
         flush_rewrite_rules();
     }
 
@@ -324,6 +344,15 @@ class AgroTracer_Bridge {
                         current_user_can('publish_posts')
                     );
                 },
+            ]
+        ]);
+
+        // Sprint 5 (S5-T05): Consulta pública de certificado por token opaco (RN-13)
+        register_rest_route('agrotracer/v1', '/certificados/publico', [
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [$this, 'handle_get_certificado_publico'],
+                'permission_callback' => '__return_true',
             ]
         ]);
     }
@@ -1255,6 +1284,114 @@ class AgroTracer_Bridge {
         ]);
     }
 
+    /**
+     * Sprint 5 (S5-T05): Enforces strict DTO allowlist on the WordPress side
+     * so no personal or internal data can ever reach the public page or REST response.
+     *
+     * @param array<string, mixed> $raw Raw payload returned by FastAPI.
+     * @return array<string, mixed> Strictly minimized public certificate DTO.
+     */
+    public static function sanitize_public_certificate_dto(array $raw): array {
+        $resultados_raw = isset($raw['resultados']) && is_array($raw['resultados'])
+            ? $raw['resultados']
+            : [];
+        $source_types_raw = isset($raw['source_types']) && is_array($raw['source_types'])
+            ? $raw['source_types']
+            : [];
+
+        $source_types = array_values(array_map(
+            static fn($item): string => (string) $item,
+            array_filter($source_types_raw, static fn($item): bool => is_string($item) && $item !== '')
+        ));
+
+        $status_raw = strtoupper(trim((string) ($raw['status'] ?? '')));
+        $status     = in_array($status_raw, ['VALIDO', 'REVOGADO'], true) ? $status_raw : 'REVOGADO';
+        $synthetic  = !empty($raw['synthetic']) || in_array('SYNTHETIC', $source_types, true);
+
+        return [
+            'certificado_id'       => (int) ($raw['certificado_id'] ?? 0),
+            'lote_id'              => (int) ($raw['lote_id'] ?? 0),
+            'status'               => $status,
+            'emitido_em'           => (string) ($raw['emitido_em'] ?? ''),
+            'versao_metodo'        => (string) ($raw['versao_metodo'] ?? ''),
+            'versao_parametros'    => (string) ($raw['versao_parametros'] ?? ''),
+            'source_types'         => $source_types,
+            'synthetic'            => $synthetic,
+            'aviso_proveniencia'   => isset($raw['aviso_proveniencia']) && is_string($raw['aviso_proveniencia'])
+                ? $raw['aviso_proveniencia']
+                : null,
+            'data_abate'           => (string) ($raw['data_abate'] ?? ''),
+            'numero_animais_abate' => (int) ($raw['numero_animais_abate'] ?? 0),
+            'resultados'           => [
+                'emissao_total_kg_co2e'  => (string) ($resultados_raw['emissao_total_kg_co2e'] ?? ''),
+                'intensidade_kg_co2e_kg' => (string) ($resultados_raw['intensidade_kg_co2e_kg'] ?? ''),
+                'unidade_emissao'        => (string) ($resultados_raw['unidade_emissao'] ?? 'kg CO2e'),
+                'unidade_intensidade'    => (string) ($resultados_raw['unidade_intensidade'] ?? 'kg CO2e/kg de carcaça'),
+            ],
+            'snapshot_sha256'      => (string) ($raw['snapshot_sha256'] ?? ''),
+            'pdf_sha256'           => isset($raw['pdf_sha256']) && is_string($raw['pdf_sha256']) && $raw['pdf_sha256'] !== ''
+                ? $raw['pdf_sha256']
+                : null,
+        ];
+    }
+
+    /**
+     * Sprint 5 (S5-T05): Queries the public verification endpoint with generic RN-13 error handling.
+     *
+     * @param string      $token          Opaque public token.
+     * @param string|null $correlation_id Optional correlation ID.
+     * @return array<string, mixed> Standardized envelope with minimized DTO or generic error.
+     */
+    public static function consultar_certificado_publico(
+        string $token,
+        ?string $correlation_id = null
+    ): array {
+        $corr_id = self::resolve_correlation_id($correlation_id);
+        $result  = AgroTracer_Http_Client::get_public(
+            '/api/v1/certificados/publico',
+            ['token' => $token],
+            $corr_id
+        );
+
+        if ($result['success'] === true && is_array($result['data'])) {
+            $result['data'] = self::sanitize_public_certificate_dto($result['data']);
+            return $result;
+        }
+
+        if ((int) $result['status'] === 404 && isset($result['error']) && is_array($result['error'])) {
+            $result['error']['code']    = 'CERTIFICADO_NAO_ENCONTRADO';
+            $result['error']['message'] = 'Certificado não encontrado.';
+        }
+
+        return $result;
+    }
+
+    /**
+     * Sprint 5 (S5-T05): Public WordPress REST endpoint for token verification (RN-13).
+     */
+    public function handle_get_certificado_publico(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc  = time();
+        $token          = (string) ($request->get_param('token') ?? '');
+
+        $result = self::consultar_certificado_publico($token, $correlation_id);
+
+        $headers = [
+            'Cache-Control'          => 'no-store',
+            'Referrer-Policy'        => 'no-referrer',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Robots-Tag'           => 'noindex, nofollow',
+            'X-Correlation-ID'       => $result['correlation_id'] ?? $correlation_id,
+            'X-AgroTracer-Timestamp' => (string) ($result['timestamp'] ?? $timestamp_utc),
+        ];
+
+        if ($result['success'] === true) {
+            return new WP_REST_Response($result['data'], $result['status'], $headers);
+        }
+
+        return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], $headers);
+    }
+
     public function register_assets(): void {
         $plugin_url = plugin_dir_url(dirname(__FILE__));
         $version = '3.1.0';
@@ -1311,6 +1448,12 @@ class AgroTracer_Bridge {
      * Intercepta o carregamento de templates e entrega o Canvas Autônomo
      */
     public function load_agrotracer_canvas_template($template) {
+        if (is_page('certificado') || (get_the_ID() && get_the_ID() == get_option('agrotracer_certificado_page_id'))) {
+            $public_canvas = dirname(__DIR__) . '/templates/canvas-certificado-publico.php';
+            if (file_exists($public_canvas)) {
+                return $public_canvas;
+            }
+        }
         if (is_page('agrotracer') || (get_the_ID() && get_the_ID() == get_option('agrotracer_page_id'))) {
             $canvas_file = dirname(__DIR__) . '/templates/canvas-agrotracer.php';
             if (file_exists($canvas_file)) {
@@ -1321,6 +1464,18 @@ class AgroTracer_Bridge {
     }
 
     public function handle_standalone_preview(): void {
+        if (isset($_GET['agrotracer_certificado_preview']) && $_GET['agrotracer_certificado_preview'] === '1') {
+            $this->register_assets();
+            wp_enqueue_style('agrotracer-screens-css');
+            if (!headers_sent()) {
+                header('Cache-Control: no-store');
+                header('Referrer-Policy: no-referrer');
+                header('X-Robots-Tag: noindex, nofollow');
+            }
+            $plugin_dir = dirname(__DIR__);
+            include $plugin_dir . '/templates/canvas-certificado-publico.php';
+            exit;
+        }
         if (isset($_GET['agrotracer_preview']) && $_GET['agrotracer_preview'] === '1') {
             $this->register_assets();
             wp_enqueue_style('agrotracer-screens-css');

@@ -10,6 +10,9 @@ from app.api.v1.manejos import router as manejos_router
 from app.api.v1.fechamentos import router as fechamentos_router
 from app.api.v1.certificados import router as certificados_router
 from app.api.v1.certificados_pdf import router as certificados_pdf_router
+from app.api.v1.certificados_publico import (
+    router as certificados_publico_router,
+)
 
 
 api_router = APIRouter()
@@ -24,5 +27,6 @@ api_router.include_router(manejos_router)
 api_router.include_router(fechamentos_router)
 api_router.include_router(certificados_router)
 api_router.include_router(certificados_pdf_router)
+api_router.include_router(certificados_publico_router)
 
 __all__ = ["api_router"]

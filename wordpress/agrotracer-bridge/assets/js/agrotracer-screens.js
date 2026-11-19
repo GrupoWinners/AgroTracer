@@ -1693,7 +1693,9 @@
     const certResPdfShaRow = document.getElementById('cert-res-pdf-sha256-row');
     const certResPdfSha = document.getElementById('cert-res-pdf-sha256');
     const certResTokenBox = document.getElementById('cert-res-token-box');
+    const certResQrContainer = document.getElementById('cert-res-qr-container');
     const certResPublicUrl = document.getElementById('cert-res-public-url');
+    const certResPublicOpenLink = document.getElementById('cert-res-public-open-link');
     const btnCopyTokenUrl = document.getElementById('btn-copy-cert-token-url');
     const btnDownloadPdf = document.getElementById('btn-download-certificado-pdf');
     const btnDownloadPdfText = document.getElementById('btn-download-pdf-text');
@@ -1951,11 +1953,347 @@
             : '';
           const publicUrl = `${baseOrigin}/certificado/?token=${encodeURIComponent(cert.token)}`;
           certResPublicUrl.textContent = publicUrl;
+          if (certResPublicOpenLink) {
+            certResPublicOpenLink.setAttribute('href', publicUrl);
+          }
+          if (certResQrContainer) {
+            certResQrContainer.innerHTML = buildQrCodeSvg(publicUrl);
+          }
           certResTokenBox.style.display = 'block';
         } else {
           certResTokenBox.style.display = 'none';
+          if (certResQrContainer) certResQrContainer.innerHTML = '';
         }
       }
+    }
+
+    /**
+     * Gerador QR Code ISO-18004 (Byte Mode, ECC-M, Versões 1..10) 100% local em memória.
+     * Evita envio do token opaco a APIs externas de QR Code.
+     */
+    function buildQrCodeSvg(text) {
+      const bytes = new TextEncoder().encode(String(text || ''));
+      // Versões 1..10 (ECC Level M): [capBytes, ecPerBlock, [[count, dataCw], ...]]
+      const SPECS = [
+        null,
+        [14, 10, [[1, 16]]],
+        [26, 16, [[1, 28]]],
+        [42, 26, [[1, 44]]],
+        [62, 18, [[2, 32]]],
+        [84, 24, [[2, 43]]],
+        [106, 16, [[4, 27]]],
+        [122, 18, [[4, 31]]],
+        [152, 22, [[2, 38], [2, 39]]],
+        [180, 22, [[3, 36], [2, 37]]],
+        [213, 26, [[4, 43], [1, 44]]]
+      ];
+      const ALIGN = [null, [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+
+      let ver = 0;
+      for (let v = 1; v < SPECS.length; v++) {
+        if (bytes.length <= SPECS[v][0]) {
+          ver = v;
+          break;
+        }
+      }
+      if (ver === 0) return '';
+
+      const spec = SPECS[ver];
+      const ecLen = spec[1];
+      const groups = spec[2];
+      const totalDataCw = groups.reduce((acc, g) => acc + g[0] * g[1], 0);
+      const size = ver * 4 + 17;
+
+      // GF(256) com polinômio primitivo 0x11d
+      const EXP = new Uint8Array(512);
+      const LOG = new Uint8Array(256);
+      let x = 1;
+      for (let i = 0; i < 255; i++) {
+        EXP[i] = x;
+        LOG[x] = i;
+        x <<= 1;
+        if (x & 0x100) x ^= 0x11d;
+      }
+      for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+
+      function rsGenPoly(deg) {
+        let poly = [1];
+        for (let i = 0; i < deg; i++) {
+          const next = new Array(poly.length + 1).fill(0);
+          const root = EXP[i];
+          for (let j = 0; j < poly.length; j++) {
+            next[j] ^= poly[j];
+            next[j + 1] ^= poly[j] ? EXP[(LOG[poly[j]] + LOG[root]) % 255] : 0;
+          }
+          poly = next;
+        }
+        return poly;
+      }
+
+      function rsEncode(data, deg) {
+        const gen = rsGenPoly(deg);
+        const rem = new Uint8Array(deg);
+        for (let i = 0; i < data.length; i++) {
+          const factor = data[i] ^ rem[0];
+          rem.copyWithin(0, 1);
+          rem[deg - 1] = 0;
+          if (factor !== 0) {
+            for (let j = 0; j < deg; j++) {
+              if (gen[j + 1] !== 0) {
+                rem[j] ^= EXP[(LOG[gen[j + 1]] + LOG[factor]) % 255];
+              }
+            }
+          }
+        }
+        return rem;
+      }
+
+      // Bitstream Byte Mode (0100)
+      const bits = [];
+      const pushBits = (val, len) => {
+        for (let i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1);
+      };
+      pushBits(0b0100, 4);
+      pushBits(bytes.length, ver >= 10 ? 16 : 8);
+      for (let i = 0; i < bytes.length; i++) pushBits(bytes[i], 8);
+
+      const maxBits = totalDataCw * 8;
+      pushBits(0, Math.min(4, maxBits - bits.length));
+      while (bits.length % 8 !== 0) bits.push(0);
+      let padByte = 0xec;
+      while (bits.length < maxBits) {
+        pushBits(padByte, 8);
+        padByte = padByte === 0xec ? 0x11 : 0xec;
+      }
+
+      const dataCw = new Uint8Array(totalDataCw);
+      for (let i = 0; i < totalDataCw; i++) {
+        let b = 0;
+        for (let k = 0; k < 8; k++) b = (b << 1) | bits[i * 8 + k];
+        dataCw[i] = b;
+      }
+
+      // Blocos + intercalação
+      const dataBlocks = [];
+      const ecBlocks = [];
+      let offset = 0;
+      for (const [count, cwLen] of groups) {
+        for (let i = 0; i < count; i++) {
+          const blk = dataCw.slice(offset, offset + cwLen);
+          offset += cwLen;
+          dataBlocks.push(blk);
+          ecBlocks.push(rsEncode(blk, ecLen));
+        }
+      }
+
+      const interleaved = [];
+      const maxBlockLen = Math.max(...dataBlocks.map(b => b.length));
+      for (let i = 0; i < maxBlockLen; i++) {
+        for (const blk of dataBlocks) if (i < blk.length) interleaved.push(blk[i]);
+      }
+      for (let i = 0; i < ecLen; i++) {
+        for (const blk of ecBlocks) interleaved.push(blk[i]);
+      }
+
+      const codeBits = [];
+      for (const cw of interleaved) {
+        for (let k = 7; k >= 0; k--) codeBits.push((cw >>> k) & 1);
+      }
+      if (ver >= 2 && ver <= 6) {
+        for (let i = 0; i < 7; i++) codeBits.push(0);
+      }
+
+      // Matriz base + padrões fixos
+      const createMatrix = () => Array.from({ length: size }, () => new Int8Array(size).fill(-1));
+      const reserved = Array.from({ length: size }, () => new Uint8Array(size));
+
+      function drawFinder(m, r0, c0) {
+        for (let dr = -1; dr <= 7; dr++) {
+          for (let dc = -1; dc <= 7; dc++) {
+            const r = r0 + dr;
+            const c = c0 + dc;
+            if (r < 0 || r >= size || c < 0 || c >= size) continue;
+            const isBorder = dr === -1 || dr === 7 || dc === -1 || dc === 7;
+            const isRing = dr === 0 || dr === 6 || dc === 0 || dc === 6;
+            const isCenter = dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4;
+            m[r][c] = (!isBorder && (isRing || isCenter)) ? 1 : 0;
+            reserved[r][c] = 1;
+          }
+        }
+      }
+
+      function drawAlignment(m, r0, c0) {
+        for (let dr = -2; dr <= 2; dr++) {
+          for (let dc = -2; dc <= 2; dc++) {
+            const r = r0 + dr;
+            const c = c0 + dc;
+            m[r][c] = (Math.abs(dr) === 2 || Math.abs(dc) === 2 || (dr === 0 && dc === 0)) ? 1 : 0;
+            reserved[r][c] = 1;
+          }
+        }
+      }
+
+      const base = createMatrix();
+      drawFinder(base, 0, 0);
+      drawFinder(base, 0, size - 7);
+      drawFinder(base, size - 7, 0);
+
+      for (let i = 8; i < size - 8; i++) {
+        base[6][i] = i % 2 === 0 ? 1 : 0;
+        base[i][6] = i % 2 === 0 ? 1 : 0;
+        reserved[6][i] = 1;
+        reserved[i][6] = 1;
+      }
+
+      const alignPos = ALIGN[ver];
+      for (const r of alignPos) {
+        for (const c of alignPos) {
+          if (reserved[r][c] === 0) drawAlignment(base, r, c);
+        }
+      }
+
+      base[size - 8][8] = 1;
+      reserved[size - 8][8] = 1;
+
+      // Reserva áreas de Format Info e Version Info
+      for (let i = 0; i < 9; i++) {
+        if (i !== 6) {
+          reserved[8][i] = 1;
+          reserved[i][8] = 1;
+        }
+      }
+      for (let i = 0; i < 8; i++) {
+        reserved[8][size - 1 - i] = 1;
+        reserved[size - 1 - i][8] = 1;
+      }
+      if (ver >= 7) {
+        let vInfo = ver << 12;
+        for (let i = 5; i >= 0; i--) {
+          if ((vInfo >>> (i + 12)) & 1) vInfo ^= 0x1f25 << i;
+        }
+        vInfo = (ver << 12) | vInfo;
+        for (let i = 0; i < 18; i++) {
+          const bit = (vInfo >>> i) & 1;
+          const a = Math.floor(i / 3);
+          const b = size - 11 + (i % 3);
+          base[a][b] = bit;
+          base[b][a] = bit;
+          reserved[a][b] = 1;
+          reserved[b][a] = 1;
+        }
+      }
+
+      // Aloca bits de dados em zigue-zague
+      let bitIdx = 0;
+      let up = true;
+      for (let col = size - 1; col >= 1; col -= 2) {
+        if (col === 6) col--;
+        for (let step = 0; step < size; step++) {
+          const r = up ? size - 1 - step : step;
+          for (let dx = 0; dx < 2; dx++) {
+            const c = col - dx;
+            if (reserved[r][c] === 0) {
+              base[r][c] = bitIdx < codeBits.length ? codeBits[bitIdx++] : 0;
+            }
+          }
+        }
+        up = !up;
+      }
+
+      function applyMaskAndFormat(maskId) {
+        const m = base.map(row => new Int8Array(row));
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            if (reserved[r][c] === 1) continue;
+            let invert = false;
+            if (maskId === 0) invert = (r + c) % 2 === 0;
+            else if (maskId === 1) invert = r % 2 === 0;
+            else if (maskId === 2) invert = c % 3 === 0;
+            else if (maskId === 3) invert = (r + c) % 3 === 0;
+            else if (maskId === 4) invert = (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0;
+            else if (maskId === 5) invert = ((r * c) % 2 + (r * c) % 3) === 0;
+            else if (maskId === 6) invert = (((r * c) % 2 + (r * c) % 3) % 2) === 0;
+            else invert = (((r + c) % 2 + (r * c) % 3) % 2) === 0;
+            if (invert) m[r][c] ^= 1;
+          }
+        }
+
+        // Format info ECC-M (00) + maskId (3 bits) -> BCH(15,5) ^ 0x5412
+        const rawFmt = (0b00 << 3) | maskId;
+        let fmt = rawFmt << 10;
+        for (let i = 4; i >= 0; i--) {
+          if ((fmt >>> (i + 10)) & 1) fmt ^= 0x537 << i;
+        }
+        fmt = ((rawFmt << 10) | fmt) ^ 0x5412;
+
+        for (let i = 0; i < 15; i++) {
+          const bit = (fmt >>> i) & 1;
+          if (i < 6) m[i][8] = bit;
+          else if (i < 8) m[i + 1][8] = bit;
+          else m[size - 15 + i][8] = bit;
+
+          if (i < 8) m[8][size - 1 - i] = bit;
+          else if (i < 9) m[8][7] = bit;
+          else m[8][14 - i] = bit;
+        }
+        return m;
+      }
+
+      function penalty(m) {
+        let score = 0;
+        for (let r = 0; r < size; r++) {
+          let run = 1;
+          for (let c = 1; c < size; c++) {
+            if (m[r][c] === m[r][c - 1]) run++;
+            else {
+              if (run >= 5) score += run - 2;
+              run = 1;
+            }
+          }
+          if (run >= 5) score += run - 2;
+        }
+        for (let c = 0; c < size; c++) {
+          let run = 1;
+          for (let r = 1; r < size; r++) {
+            if (m[r][c] === m[r - 1][c]) run++;
+            else {
+              if (run >= 5) score += run - 2;
+              run = 1;
+            }
+          }
+          if (run >= 5) score += run - 2;
+        }
+        for (let r = 0; r < size - 1; r++) {
+          for (let c = 0; c < size - 1; c++) {
+            const v = m[r][c];
+            if (v === m[r][c + 1] && v === m[r + 1][c] && v === m[r + 1][c + 1]) score += 3;
+          }
+        }
+        return score;
+      }
+
+      let bestMatrix = null;
+      let bestScore = Infinity;
+      for (let maskId = 0; maskId < 8; maskId++) {
+        const candidate = applyMaskAndFormat(maskId);
+        const s = penalty(candidate);
+        if (s < bestScore) {
+          bestScore = s;
+          bestMatrix = candidate;
+        }
+      }
+
+      const quiet = 2;
+      const dim = size + quiet * 2;
+      const paths = [];
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (bestMatrix[r][c] === 1) {
+            paths.push(`M${c + quiet},${r + quiet}h1v1h-1z`);
+          }
+        }
+      }
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${dim} ${dim}" role="img" aria-label="QR Code de verificação pública" shape-rendering="crispEdges"><rect width="${dim}" height="${dim}" fill="#ffffff"/><path d="${paths.join('')}" fill="#0f172a"/></svg>`;
     }
 
     function showActionableError(code, message, correlationId, options = {}) {

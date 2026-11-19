@@ -15,6 +15,7 @@ class AgroTracer_Shortcodes {
         add_shortcode('agrotracer_dashboard', [__CLASS__, 'render_dashboard']);
         add_shortcode('agrotracer_farms', [__CLASS__, 'render_farms']);
         add_shortcode('agrotracer_lots', [__CLASS__, 'render_lots']);
+        add_shortcode('agrotracer_certificado_publico', [__CLASS__, 'render_public_certificate']);
     }
 
     public static function render_full_app($atts) {
@@ -57,6 +58,35 @@ class AgroTracer_Shortcodes {
         include $plugin_dir . '/templates/modals.php';
         echo '</div>';
         return ob_get_clean();
+    }
+
+    /**
+     * Renders the public certificate verification page (Sprint 5 - S5-T05 / RN-13).
+     */
+    public static function render_public_certificate($atts = []): string {
+        if (function_exists('wp_enqueue_style')) {
+            wp_enqueue_style('agrotracer-screens-css');
+        }
+
+        $has_token = isset($_GET['token']);
+        $raw_token = '';
+        if ($has_token) {
+            $raw_token = function_exists('wp_unslash')
+                ? (string) wp_unslash($_GET['token'])
+                : (string) $_GET['token'];
+        }
+
+        $agrotracer_public_lookup = [
+            'has_token' => $has_token,
+            'result'    => $has_token
+                ? AgroTracer_Bridge::consultar_certificado_publico($raw_token)
+                : null,
+        ];
+
+        ob_start();
+        $plugin_dir = dirname(__DIR__);
+        include $plugin_dir . '/templates/certificado-publico.php';
+        return (string) ob_get_clean();
     }
 
     private static function ensure_assets() {
