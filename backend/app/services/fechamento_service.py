@@ -143,14 +143,20 @@ def registrar_fechamento(
         select(LoteAnimal).where(LoteAnimal.lote_id == lote.id)
     ).all()
     periodos = []
+    fatores_por_dieta = {}
     for manejo in manejos:
         quantidade = _contar_animais_periodo(
             associacoes, manejo.inicio, manejo.fim,
         )
         try:
-            fatores = carregar_fatores_versionados(
-                db, manejo.parametro_set_id, manejo.tipo_dieta,
+            chave = (
+                manejo.parametro_set_id, manejo.tipo_dieta.strip().upper(),
             )
+            if chave not in fatores_por_dieta:
+                fatores_por_dieta[chave] = carregar_fatores_versionados(
+                    db, manejo.parametro_set_id, manejo.tipo_dieta,
+                )
+            fatores = fatores_por_dieta[chave]
         except ErroCarbono as erro:
             raise ErroFechamento(
                 422, "FATORES_INVALIDOS", str(erro),
