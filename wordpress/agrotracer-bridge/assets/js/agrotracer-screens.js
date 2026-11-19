@@ -1672,6 +1672,9 @@
     const errorMessage = document.getElementById('fechamento-error-message');
     const errorActionGuide = document.getElementById('fechamento-error-action-guide');
     const btnErrorAction = document.getElementById('btn-fechamento-error-action');
+    const btnRetrySeguro = document.getElementById('btn-fechamento-retry-seguro');
+    const spinnerRetry = document.getElementById('spinner-retry-fechamento');
+    const idempotencyStatus = document.getElementById('fechamento-idempotency-status');
     const errorCorrelation = document.getElementById('fechamento-error-correlation-id');
     const btnDismissError = document.getElementById('btn-dismiss-fechamento-error');
 
@@ -1682,6 +1685,22 @@
     const resFechamentoId = document.getElementById('res-fechamento-id');
     const resParamId = document.getElementById('res-param-id');
     const resCorrelationId = document.getElementById('res-correlation-id');
+
+    const certCard = document.getElementById('certificado-resultado-card');
+    const certResId = document.getElementById('cert-res-id');
+    const certResStatus = document.getElementById('cert-res-status');
+    const certResSnapshotSha = document.getElementById('cert-res-snapshot-sha256');
+    const certResPdfShaRow = document.getElementById('cert-res-pdf-sha256-row');
+    const certResPdfSha = document.getElementById('cert-res-pdf-sha256');
+    const certResTokenBox = document.getElementById('cert-res-token-box');
+    const certResPublicUrl = document.getElementById('cert-res-public-url');
+    const btnCopyTokenUrl = document.getElementById('btn-copy-cert-token-url');
+    const btnDownloadPdf = document.getElementById('btn-download-certificado-pdf');
+    const btnDownloadPdfText = document.getElementById('btn-download-pdf-text');
+    const spinnerDownloadPdf = document.getElementById('spinner-download-pdf');
+    const certPdfErrorBox = document.getElementById('cert-pdf-error-box');
+    const certPdfErrorMsg = document.getElementById('cert-pdf-error-message');
+    const btnRetryDownloadPdf = document.getElementById('btn-retry-download-pdf');
 
     const modalConfirm = document.getElementById('modal-confirm-fechamento');
     const modalConfirmLoteCode = document.getElementById('modal-confirm-lote-code');
@@ -1696,8 +1715,13 @@
 
     const btnOpenFromLot = document.getElementById('btn-open-fechamento-from-lot');
 
-    // Prevenção estrita de submissão dupla (Cuidado de Engenharia)
+    // Prevenção estrita de submissão dupla e preservação de Idempotency-Key (S4-T04 / S5-T04)
     let isSubmitting = false;
+    let isDownloadingPdf = false;
+    let activeAttemptFingerprint = null;
+    let activeIdempotencyKey = null;
+    let lastFailedPayload = null;
+    let currentCertificate = null;
 
     // Catálogo de dados de mock zootécnicos dos lotes
     const mockLotProfiles = {
@@ -1819,11 +1843,11 @@
         inputAnimais.max = profile.animals;
       }
 
-      if (profile.isClosed) {
+      if (profile.isClosed && profile.hasCertificate) {
         if (boxJaFechado) boxJaFechado.style.display = 'block';
         if (btnSubmit) {
           btnSubmit.disabled = true;
-          btnSubmit.title = 'Este lote já foi fechado e possui snapshot imutável.';
+          btnSubmit.title = 'Este lote já foi fechado e possui certificado válido emitido.';
         }
         if (resultadoCard && profile.closedResult) {
           resultadoCard.style.display = 'block';
@@ -1831,19 +1855,110 @@
           if (resIntensidade) resIntensidade.textContent = profile.closedResult.intensidade;
           if (resFechamentoId) resFechamentoId.textContent = profile.closedResult.id;
         }
+        if (certCard && profile.certificate) {
+          renderCertificateCard(profile.certificate);
+        } else {
+          currentCertificate = null;
+          if (certCard) certCard.style.display = 'none';
+        }
       } else {
-        if (boxJaFechado) boxJaFechado.style.display = 'none';
+        currentCertificate = null;
+        if (boxJaFechado) boxJaFechado.style.display = profile.isClosed ? 'block' : 'none';
         if (btnSubmit) {
           btnSubmit.disabled = false;
           btnSubmit.title = '';
+          if (btnSubmitText) {
+            btnSubmitText.textContent = profile.isClosed
+              ? 'Emitir Certificado do Lote Fechado'
+              : 'Fechar Lote e Emitir Certificado';
+          }
         }
-        if (resultadoCard) resultadoCard.style.display = 'none';
+        if (resultadoCard) {
+          if (profile.isClosed && profile.closedResult) {
+            resultadoCard.style.display = 'block';
+            if (resEmissaoTotal) resEmissaoTotal.textContent = profile.closedResult.emissao;
+            if (resIntensidade) resIntensidade.textContent = profile.closedResult.intensidade;
+            if (resFechamentoId) resFechamentoId.textContent = profile.closedResult.id;
+          } else {
+            resultadoCard.style.display = 'none';
+          }
+        }
+        if (certCard) certCard.style.display = 'none';
       }
 
       updateZootecnicPreview();
     }
 
-    function showActionableError(code, message, correlationId) {
+    function generateIdempotencyKey() {
+      if (typeof window !== 'undefined' && window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return `agro-${window.crypto.randomUUID()}`;
+      }
+      const rand = Math.random().toString(16).slice(2, 10);
+      return `agro-${Date.now().toString(36)}-${rand}`;
+    }
+
+    function buildAttemptFingerprint(payload) {
+      return [
+        payload.lote_id,
+        payload.data_abate,
+        payload.numero_animais_abate,
+        payload.peso_medio_abate_kg,
+        payload.rendimento_carcaca
+      ].join('|');
+    }
+
+    function getOrCreateIdempotencyKey(payload) {
+      const fingerprint = buildAttemptFingerprint(payload);
+      if (activeIdempotencyKey && activeAttemptFingerprint === fingerprint) {
+        return activeIdempotencyKey;
+      }
+      activeAttemptFingerprint = fingerprint;
+      activeIdempotencyKey = generateIdempotencyKey();
+      return activeIdempotencyKey;
+    }
+
+    function resetIdempotencyAttempt() {
+      activeAttemptFingerprint = null;
+      activeIdempotencyKey = null;
+      lastFailedPayload = null;
+      if (btnRetrySeguro) btnRetrySeguro.style.display = 'none';
+      if (idempotencyStatus) idempotencyStatus.style.display = 'none';
+    }
+
+    function invalidatePendingRetryIfChanged() {
+      if (!activeAttemptFingerprint) return;
+      const currentPayload = collectPayloadFromForm();
+      if (buildAttemptFingerprint(currentPayload) !== activeAttemptFingerprint) {
+        resetIdempotencyAttempt();
+      }
+    }
+
+    function renderCertificateCard(cert) {
+      if (!certCard || !cert) return;
+      currentCertificate = cert;
+      certCard.style.display = 'block';
+      if (certResId) certResId.textContent = `#${cert.id || '—'}`;
+      if (certResStatus) certResStatus.textContent = cert.status || 'VALIDO';
+      if (certResSnapshotSha) certResSnapshotSha.textContent = cert.snapshot_sha256 || '—';
+      if (certPdfErrorBox) certPdfErrorBox.style.display = 'none';
+      if (certResPdfShaRow) certResPdfShaRow.style.display = cert.pdf_sha256 ? 'block' : 'none';
+      if (certResPdfSha && cert.pdf_sha256) certResPdfSha.textContent = cert.pdf_sha256;
+
+      if (certResTokenBox && certResPublicUrl) {
+        if (cert.token) {
+          const baseOrigin = (typeof window !== 'undefined' && window.location && window.location.origin)
+            ? window.location.origin
+            : '';
+          const publicUrl = `${baseOrigin}/certificado/?token=${encodeURIComponent(cert.token)}`;
+          certResPublicUrl.textContent = publicUrl;
+          certResTokenBox.style.display = 'block';
+        } else {
+          certResTokenBox.style.display = 'none';
+        }
+      }
+    }
+
+    function showActionableError(code, message, correlationId, options = {}) {
       if (!errorBanner) return;
 
       const corrId = correlationId || AgroState.correlationId || generateCorrelationId();
@@ -1851,13 +1966,60 @@
       if (errorCorrelation) errorCorrelation.textContent = corrId;
       if (errorMessage) errorMessage.textContent = message || 'Ocorreu um erro ao processar o fechamento.';
 
+      const isRetryable = Boolean(options.retryable);
+      if (btnRetrySeguro) {
+        btnRetrySeguro.style.display = isRetryable ? 'inline-flex' : 'none';
+        btnRetrySeguro.disabled = false;
+      }
+      if (spinnerRetry) spinnerRetry.style.display = 'none';
+      if (idempotencyStatus) {
+        idempotencyStatus.style.display = isRetryable ? 'inline-block' : 'none';
+      }
+
       // Mapeamento semântico acionável (Critério de Aceite 2)
-      let titleText = 'Falha no Fechamento do Lote';
+      let titleText = 'Falha no Fechamento / Certificação do Lote';
       let guideText = 'Verifique os dados informados e tente novamente.';
       let actionBtnText = 'Entendido';
       let actionHandler = () => { errorBanner.style.display = 'none'; };
 
       switch (code) {
+        case 'CERTIFICACAO_JA_PROCESSADA':
+          titleText = 'Emissão Já Processada com Segurança (Idempotente)';
+          guideText = 'Esta tentativa já foi processada anteriormente para a mesma Idempotency-Key. Nenhuma emissão duplicada foi criada; verifique os certificados do lote.';
+          actionBtnText = 'Fechar Aviso';
+          break;
+
+        case 'IDEMPOTENCY_KEY_REUTILIZADA':
+          titleText = 'Chave de Idempotência Reutilizada com Dados Diferentes';
+          guideText = 'Os parâmetros foram alterados em relação à tentativa anterior. Uma nova chave foi preparada — clique em Fechar Lote e Emitir Certificado para enviar novamente.';
+          actionBtnText = 'Preparar Nova Tentativa';
+          break;
+
+        case 'CERTIFICADO_JA_EXISTENTE':
+        case 'CERTIFICACAO_CONFLITANTE':
+          titleText = 'Lote Já Possui Certificado Válido';
+          guideText = 'A regra de unicidade garante apenas um certificado VALIDO por lote. Consulte o certificado existente sem emitir outro.';
+          actionBtnText = 'Ver Painel de Lotes';
+          actionHandler = () => {
+            errorBanner.style.display = 'none';
+            switchScreen('lotes');
+          };
+          break;
+
+        case 'FECHAMENTO_DIVERGENTE':
+          titleText = 'Parâmetros Divergentes do Fechamento Imutável';
+          guideText = 'Este lote já está FECHADO com snapshot imutável. Para emitir o certificado, informe exatamente os mesmos parâmetros registrados no fechamento original.';
+          actionBtnText = 'Revisar Parâmetros';
+          break;
+
+        case 'SERVICE_UNAVAILABLE':
+        case 'ERRO_CONEXAO':
+        case 'PDF_INDISPONIVEL':
+          titleText = 'Instabilidade Temporária de Comunicação';
+          guideText = 'Sua Idempotency-Key foi preservada nesta tentativa. Você pode clicar em "Tentar Novamente (Retry Seguro)" sem risco de duplicar o certificado.';
+          actionBtnText = 'Fechar Aviso';
+          break;
+
         case 'ABATE_SUPERIOR_AOS_ANIMAIS':
           titleText = 'Quantidade Abatida Inválida (Excede o Lote)';
           guideText = 'A quantidade de animais abatidos não pode exceder o número de animais comprovado no último período de manejo. Ajuste o campo para no máximo o total de animais do lote.';
@@ -1949,13 +2111,32 @@
       isSubmitting = false;
       if (btnSubmit) {
         btnSubmit.disabled = false;
-        if (btnSubmitText) btnSubmitText.textContent = 'Fechar Lote e Calcular';
+        if (btnSubmitText) btnSubmitText.textContent = 'Fechar Lote e Emitir Certificado';
       }
       if (spinner) spinner.style.display = 'none';
       if (btnDoConfirm) {
         btnDoConfirm.disabled = false;
         btnDoConfirm.textContent = 'Sim, Confirmar e Fechar Lote';
       }
+      if (btnRetrySeguro) btnRetrySeguro.disabled = false;
+      if (spinnerRetry) spinnerRetry.style.display = 'none';
+    }
+
+    function collectPayloadFromForm() {
+      const loteId = parseInt(lotSelect ? lotSelect.value : 1, 10);
+      const dataAbate = inputDataAbate ? inputDataAbate.value : '2026-06-01';
+      const animais = parseInt(inputAnimais ? inputAnimais.value : 50, 10);
+      const peso = parseFloat(inputPeso ? inputPeso.value : 540);
+      const rendimento = parseFloat(inputRendimento ? inputRendimento.value : 53);
+      const rendimentoFrac = rendimento > 1.0 ? rendimento / 100.0 : rendimento;
+
+      return {
+        lote_id: loteId,
+        data_abate: dataAbate,
+        numero_animais_abate: animais,
+        peso_medio_abate_kg: peso.toFixed(2),
+        rendimento_carcaca: rendimentoFrac.toFixed(4)
+      };
     }
 
     function openConfirmModal(data) {
@@ -1985,79 +2166,228 @@
         ? window.agrotracerConfig.nonce
         : '';
 
-      fetch(`${restBase}/lotes/${payload.lote_id}/fechamento`, {
+      const idempotencyKey = getOrCreateIdempotencyKey(payload);
+
+      fetch(`${restBase}/lotes/${payload.lote_id}/certificar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-WP-Nonce': nonce,
-          'X-Correlation-ID': correlationId
+          'X-Correlation-ID': correlationId,
+          'Idempotency-Key': idempotencyKey
         },
         body: JSON.stringify(payload)
       })
-      .then(res => res.json().then(data => ({ status: res.status, ok: res.ok, data })))
+      .then(res => res.json().catch(() => ({})).then(data => ({ status: res.status, ok: res.ok, data })))
       .then(({ status, ok, data }) => {
         closeConfirmModal();
         resetSubmitState();
 
         if (ok && (status === 200 || status === 201)) {
-          // Sucesso comprovado
+          resetIdempotencyAttempt();
           if (errorBanner) errorBanner.style.display = 'none';
 
-          // Atualiza estado do lote
           const currentLot = payload.lote_id;
+          const certData = {
+            id: data.id,
+            lote_id: data.lote_id || currentLot,
+            status: data.status || 'VALIDO',
+            snapshot_sha256: data.snapshot_sha256 || '',
+            token: data.token || ''
+          };
+
           if (mockLotProfiles[currentLot]) {
             mockLotProfiles[currentLot].isClosed = true;
-            mockLotProfiles[currentLot].status = 'FECHADO';
-            mockLotProfiles[currentLot].statusLabel = 'Fechado';
-            mockLotProfiles[currentLot].statusBadgeClass = 'agro-badge info';
+            mockLotProfiles[currentLot].hasCertificate = true;
+            mockLotProfiles[currentLot].status = 'CERTIFICADO';
+            mockLotProfiles[currentLot].statusLabel = 'Certificado';
+            mockLotProfiles[currentLot].statusBadgeClass = 'agro-badge success';
+            mockLotProfiles[currentLot].certificate = certData;
           }
           updateSelectedLotInfo(currentLot);
 
-          // Exibe resultado oficial
           if (resultadoCard) {
             resultadoCard.style.display = 'block';
-            if (resEmissaoTotal) resEmissaoTotal.textContent = formatNumberBR(data.emissao_total_kg_co2e, 2);
-            if (resIntensidade) resIntensidade.textContent = formatNumberBR(data.intensidade_kg_co2e_kg, 3);
+            if (resEmissaoTotal) {
+              resEmissaoTotal.textContent = data.emissao_total_kg_co2e !== undefined
+                ? formatNumberBR(data.emissao_total_kg_co2e, 2)
+                : 'Consolidado (PDF)';
+            }
+            if (resIntensidade) {
+              resIntensidade.textContent = data.intensidade_kg_co2e_kg !== undefined
+                ? formatNumberBR(data.intensidade_kg_co2e_kg, 3)
+                : 'Verificado';
+            }
             if (resVersaoMetodo) resVersaoMetodo.textContent = `Método: ${data.versao_metodo || 'CARBONENGINE-MVP-1.0'}`;
             if (resFechamentoId) resFechamentoId.textContent = `#${data.id || 101}`;
             if (resParamId) resParamId.textContent = `#${data.parametro_set_id || 1} (v1.0-2026)`;
             if (resCorrelationId) resCorrelationId.textContent = correlationId;
+            renderCertificateCard(certData);
             resultadoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
 
-          showToast('Lote fechado com sucesso! Snapshot imutável gravado no PostgreSQL.', correlationId);
+          showToast('Lote fechado e certificado emitido com sucesso!', correlationId);
         } else {
-          // Erro acionável
           const err = data.error || data;
           const code = err.code || 'ERRO_FECHAMENTO';
-          const msg = err.message || 'Não foi possível concluir o fechamento do lote.';
-          showActionableError(code, msg, correlationId);
+          const msg = err.message || 'Não foi possível concluir o fechamento e certificação do lote.';
+          const isTransient = status >= 500 || status === 503 || code === 'SERVICE_UNAVAILABLE';
+
+          if (isTransient) {
+            lastFailedPayload = payload;
+            showActionableError(code, msg, correlationId, { retryable: true });
+          } else {
+            resetIdempotencyAttempt();
+            showActionableError(code, msg, correlationId, { retryable: false });
+          }
         }
       })
-      .catch(err => {
+      .catch(() => {
         closeConfirmModal();
         resetSubmitState();
-        showActionableError('ERRO_CONEXAO', 'Falha na comunicação com o servidor. Verifique a conexão e tente novamente.', correlationId);
+        lastFailedPayload = payload;
+        showActionableError(
+          'ERRO_CONEXAO',
+          'Falha na comunicação com o servidor. Sua Idempotency-Key foi preservada para retry seguro.',
+          correlationId,
+          { retryable: true }
+        );
+      });
+    }
+
+    function setPdfDownloadLoading(loading) {
+      isDownloadingPdf = loading;
+      if (btnDownloadPdf) btnDownloadPdf.disabled = loading;
+      if (btnRetryDownloadPdf) btnRetryDownloadPdf.disabled = loading;
+      if (spinnerDownloadPdf) spinnerDownloadPdf.style.display = loading ? 'inline-block' : 'none';
+      if (btnDownloadPdfText) btnDownloadPdfText.textContent = loading ? 'Gerando e baixando PDF...' : 'Baixar Certificado PDF';
+    }
+
+    function downloadCertificadoPdf() {
+      if (isDownloadingPdf || !currentCertificate || !currentCertificate.id) return;
+
+      const certId = currentCertificate.id;
+      const correlationId = AgroState.correlationId || generateCorrelationId();
+      const restBase = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.restUrl)
+        ? window.agrotracerConfig.restUrl
+        : '/wp-json/agrotracer/v1';
+      const nonce = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.nonce)
+        ? window.agrotracerConfig.nonce
+        : '';
+
+      setPdfDownloadLoading(true);
+      if (certPdfErrorBox) certPdfErrorBox.style.display = 'none';
+
+      fetch(`${restBase}/certificados/${certId}/pdf`, {
+        method: 'GET',
+        headers: {
+          'X-WP-Nonce': nonce,
+          'X-Correlation-ID': correlationId
+        }
+      })
+      .then(async res => {
+        const contentType = res.headers.get('Content-Type') || '';
+        if (!res.ok || !contentType.toLowerCase().includes('application/pdf')) {
+          const errPayload = await res.json().catch(() => ({}));
+          const err = errPayload.error || errPayload;
+          throw {
+            status: res.status,
+            message: err.message || 'O PDF do certificado está temporariamente indisponível. Tente novamente.'
+          };
+        }
+        const pdfSha = res.headers.get('X-PDF-SHA256') || '';
+        const blob = await res.blob();
+        return { blob, pdfSha };
+      })
+      .then(({ blob, pdfSha }) => {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = `certificado-${certId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+
+        if (pdfSha) {
+          currentCertificate.pdf_sha256 = pdfSha;
+          if (certResPdfSha) certResPdfSha.textContent = pdfSha;
+          if (certResPdfShaRow) certResPdfShaRow.style.display = 'block';
+        }
+        showToast(`Certificado #${certId} baixado com sucesso.`, correlationId);
+      })
+      .catch(err => {
+        if (certPdfErrorMsg) {
+          certPdfErrorMsg.textContent = (err && err.message)
+            ? err.message
+            : 'Falha temporária ao baixar o PDF. O certificado permanece válido; tente novamente.';
+        }
+        if (certPdfErrorBox) certPdfErrorBox.style.display = 'block';
+      })
+      .finally(() => {
+        setPdfDownloadLoading(false);
       });
     }
 
     // Listeners do formulário e inputs
     if (lotSelect) {
       lotSelect.addEventListener('change', (e) => {
+        invalidatePendingRetryIfChanged();
         updateSelectedLotInfo(parseInt(e.target.value, 10));
       });
     }
 
-    [inputAnimais, inputPeso, inputRendimento].forEach(el => {
+    [inputDataAbate, inputAnimais, inputPeso, inputRendimento].forEach(el => {
       if (el) {
-        el.addEventListener('input', updateZootecnicPreview);
-        el.addEventListener('change', updateZootecnicPreview);
+        el.addEventListener('input', () => {
+          invalidatePendingRetryIfChanged();
+          updateZootecnicPreview();
+        });
+        el.addEventListener('change', () => {
+          invalidatePendingRetryIfChanged();
+          updateZootecnicPreview();
+        });
       }
     });
 
     if (btnDismissError && errorBanner) {
       btnDismissError.addEventListener('click', () => {
         errorBanner.style.display = 'none';
+      });
+    }
+
+    if (btnRetrySeguro) {
+      btnRetrySeguro.addEventListener('click', () => {
+        if (isSubmitting || !lastFailedPayload) return;
+        isSubmitting = true;
+        btnRetrySeguro.disabled = true;
+        if (spinnerRetry) spinnerRetry.style.display = 'inline-block';
+        if (btnSubmit) {
+          btnSubmit.disabled = true;
+          if (btnSubmitText) btnSubmitText.textContent = 'Reenviando com Idempotency-Key...';
+        }
+        if (spinner) spinner.style.display = 'inline-block';
+        executeFechamento(lastFailedPayload);
+      });
+    }
+
+    if (btnDownloadPdf) {
+      btnDownloadPdf.addEventListener('click', downloadCertificadoPdf);
+    }
+
+    if (btnRetryDownloadPdf) {
+      btnRetryDownloadPdf.addEventListener('click', downloadCertificadoPdf);
+    }
+
+    if (btnCopyTokenUrl && certResPublicUrl) {
+      btnCopyTokenUrl.addEventListener('click', () => {
+        const text = certResPublicUrl.textContent || '';
+        if (!text || text === '—') return;
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(text).then(() => {
+            showToast('Link público do certificado copiado!');
+          });
+        }
       });
     }
 
@@ -2084,8 +2414,8 @@
         const loteId = parseInt(lotSelect ? lotSelect.value : 1, 10);
         const profile = mockLotProfiles[loteId] || mockLotProfiles[1];
 
-        if (profile.isClosed) {
-          showActionableError('LOTE_JA_FECHADO', 'Este lote já se encontra FECHADO. Não é possível fechá-lo novamente.');
+        if (profile.hasCertificate) {
+          showActionableError('CERTIFICADO_JA_EXISTENTE', 'Este lote já possui um certificado válido emitido.');
           return;
         }
 
@@ -2147,21 +2477,7 @@
         }
         if (spinner) spinner.style.display = 'inline-block';
 
-        const loteId = parseInt(lotSelect ? lotSelect.value : 1, 10);
-        const dataAbate = inputDataAbate ? inputDataAbate.value : '2026-06-01';
-        const animais = parseInt(inputAnimais ? inputAnimais.value : 50, 10);
-        const peso = parseFloat(inputPeso ? inputPeso.value : 540);
-        const rendimento = parseFloat(inputRendimento ? inputRendimento.value : 53);
-
-        const rendimentoFrac = rendimento > 1.0 ? rendimento / 100.0 : rendimento;
-
-        const payload = {
-          lote_id: loteId,
-          data_abate: dataAbate,
-          numero_animais_abate: animais,
-          peso_medio_abate_kg: peso.toFixed(2),
-          rendimento_carcaca: rendimentoFrac.toFixed(4)
-        };
+        const payload = collectPayloadFromForm();
 
         executeFechamento(payload);
       });

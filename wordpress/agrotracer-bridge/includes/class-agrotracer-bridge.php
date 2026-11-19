@@ -33,6 +33,7 @@ class AgroTracer_Bridge {
         add_action('admin_menu', [$this, 'register_admin_menu']);
         add_action('template_redirect', [$this, 'handle_standalone_preview']);
         add_action('rest_api_init', [$this, 'register_rest_routes']);
+        add_filter('rest_pre_serve_request', [$this, 'serve_binary_pdf_response'], 10, 4);
         add_filter('template_include', [$this, 'load_agrotracer_canvas_template']);
 
         if (!class_exists(AgroTracer_Http_Client::class) && defined('AGROTRACER_PLUGIN_DIR')) {
@@ -290,6 +291,33 @@ class AgroTracer_Bridge {
             [
                 'methods'             => WP_REST_Server::CREATABLE,
                 'callback'            => [$this, 'handle_create_fechamento'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ]
+        ]);
+
+        // Sprint 5 (S5-T04): Emissão atômica de certificado (Idempotency-Key) e download privado do PDF
+        register_rest_route('agrotracer/v1', '/lotes/(?P<lote_id>\d+)/certificar', [
+            [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [$this, 'handle_emitir_certificado'],
+                'permission_callback' => function (): bool {
+                    return is_user_logged_in() && (
+                        current_user_can('agrotracer_manage_farms') ||
+                        current_user_can('publish_posts')
+                    );
+                },
+            ]
+        ]);
+
+        register_rest_route('agrotracer/v1', '/certificados/(?P<certificado_id>\d+)/pdf', [
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [$this, 'handle_download_certificado_pdf'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
                         current_user_can('agrotracer_manage_farms') ||
@@ -1050,6 +1078,180 @@ class AgroTracer_Bridge {
         return new WP_REST_Response($mock_fechamentos, 200, [
             'X-Correlation-ID'       => $correlation_id,
             'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+        ]);
+    }
+
+    /**
+     * Streams binary PDF responses directly in WordPress REST server without JSON encoding.
+     *
+     * @param bool              $served  Whether the request has already been served.
+     * @param \WP_HTTP_Response $result  Response object.
+     * @param WP_REST_Request   $request Request object.
+     * @param \WP_REST_Server   $server  REST server instance.
+     * @return bool True when raw PDF bytes were served.
+     */
+    public function serve_binary_pdf_response(bool $served, $result, $request, $server): bool {
+        if ($served || !($result instanceof WP_REST_Response)) {
+            return $served;
+        }
+
+        $headers      = $result->get_headers();
+        $content_type = (string) ($headers['Content-Type'] ?? ($headers['content-type'] ?? ''));
+        $data         = $result->get_data();
+
+        if ($result->get_status() === 200 && stripos($content_type, 'application/pdf') !== false && is_string($data)) {
+            echo $data;
+            return true;
+        }
+
+        return $served;
+    }
+
+    /**
+     * Sprint 5 (S5-T04): Atomic lot closure and certificate issuance via signed HMAC bridge
+     * with mandatory `Idempotency-Key` preservation.
+     */
+    public function handle_emitir_certificado(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+
+        $idempotency_key = trim((string) ($request->get_header('idempotency-key') ?? ''));
+        if (preg_match('/^[\x21-\x7e]{1,128}$/', $idempotency_key) !== 1) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => [
+                    'code'           => 'IDEMPOTENCY_KEY_INVALIDA',
+                    'message'        => 'Cabeçalho Idempotency-Key obrigatório (1 a 128 caracteres ASCII imprimíveis sem espaços).',
+                    'field_errors'   => ['idempotency_key' => 'Chave de idempotência ausente ou inválida.'],
+                    'correlation_id' => $correlation_id,
+                ],
+            ], 422, [
+                'Cache-Control'          => 'no-store',
+                'X-Correlation-ID'       => $correlation_id,
+                'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+            ]);
+        }
+
+        $lote_id              = (int) ($request->get_param('lote_id') ?: 0);
+        $data_abate           = sanitize_text_field((string) $request->get_param('data_abate'));
+        $numero_animais_abate = (int) $request->get_param('numero_animais_abate');
+        $peso_medio_raw       = $request->get_param('peso_medio_abate_kg');
+        $rendimento_raw       = $request->get_param('rendimento_carcaca');
+
+        if ($lote_id <= 0 || $data_abate === '' || $numero_animais_abate <= 0 || !is_numeric($peso_medio_raw) || !is_numeric($rendimento_raw)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => [
+                    'code'           => 'DADOS_ABATE_INVALIDOS',
+                    'message'        => 'Parâmetros de abate inválidos para certificação. Verifique lote, data, cabeças, peso e rendimento.',
+                    'field_errors'   => [],
+                    'correlation_id' => $correlation_id,
+                ],
+            ], 422, [
+                'Cache-Control'          => 'no-store',
+                'X-Correlation-ID'       => $correlation_id,
+                'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+            ]);
+        }
+
+        $peso_medio_abate_kg = number_format((float) $peso_medio_raw, 2, '.', '');
+        $rendimento_val      = (float) $rendimento_raw;
+        if ($rendimento_val > 1.0) {
+            $rendimento_val = $rendimento_val / 100.0;
+        }
+        $rendimento_carcaca = number_format($rendimento_val, 4, '.', '');
+
+        // FechamentoEntrada uses ConfigDict(extra="forbid"): never inject produtor_id in JSON body
+        $body = [
+            'data_abate'           => $data_abate,
+            'numero_animais_abate' => $numero_animais_abate,
+            'peso_medio_abate_kg'  => $peso_medio_abate_kg,
+            'rendimento_carcaca'   => $rendimento_carcaca,
+        ];
+
+        $result = AgroTracer_Http_Client::post(
+            "/api/v1/lotes/{$lote_id}/certificar",
+            $body,
+            $current_user_id,
+            $correlation_id,
+            false,
+            null,
+            ['Idempotency-Key' => $idempotency_key]
+        );
+
+        if ($result['success'] === true) {
+            return new WP_REST_Response($result['data'], $result['status'], [
+                'Cache-Control'          => 'no-store',
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ]);
+        }
+
+        return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
+            'Cache-Control'          => 'no-store',
+            'X-Correlation-ID'       => $result['correlation_id'],
+            'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+        ]);
+    }
+
+    /**
+     * Sprint 5 (S5-T04): Private authenticated PDF certificate download proxy.
+     */
+    public function handle_download_certificado_pdf(WP_REST_Request $request): WP_REST_Response {
+        $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
+        $timestamp_utc   = time();
+        $current_user_id = (int) get_current_user_id();
+        $certificado_id  = (int) ($request->get_param('certificado_id') ?: 0);
+
+        if ($certificado_id <= 0) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => [
+                    'code'           => 'CERTIFICADO_NAO_ENCONTRADO',
+                    'message'        => AgroTracer_Http_Client::map_error_to_ui_message(404, 'CERTIFICADO_NAO_ENCONTRADO'),
+                    'field_errors'   => [],
+                    'correlation_id' => $correlation_id,
+                ],
+            ], 404, [
+                'Cache-Control'          => 'no-store',
+                'X-Correlation-ID'       => $correlation_id,
+                'X-AgroTracer-Timestamp' => (string) $timestamp_utc,
+            ]);
+        }
+
+        $result = AgroTracer_Http_Client::get_binary(
+            "/api/v1/certificados/{$certificado_id}/pdf",
+            [],
+            $current_user_id,
+            $correlation_id
+        );
+
+        if ($result['success'] === true) {
+            $disposition = $result['content_disposition'] !== ''
+                ? $result['content_disposition']
+                : sprintf('attachment; filename="certificado-%d.pdf"', $certificado_id);
+
+            $headers = [
+                'Content-Type'           => 'application/pdf',
+                'Content-Disposition'    => $disposition,
+                'Cache-Control'          => 'no-store',
+                'X-Content-Type-Options' => 'nosniff',
+                'X-Correlation-ID'       => $result['correlation_id'],
+                'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
+            ];
+
+            if (!empty($result['pdf_sha256'])) {
+                $headers['X-PDF-SHA256'] = (string) $result['pdf_sha256'];
+            }
+
+            return new WP_REST_Response($result['content'], 200, $headers);
+        }
+
+        return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
+            'Cache-Control'          => 'no-store',
+            'X-Correlation-ID'       => $result['correlation_id'],
+            'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
         ]);
     }
 
