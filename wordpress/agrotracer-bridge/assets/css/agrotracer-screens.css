@@ -531,8 +531,14 @@
   display: flex;
   align-items: flex-start;
   gap: 16px;
+  min-width: 0;
   box-shadow: var(--agro-shadow-sm);
   transition: var(--agro-transition);
+}
+
+#screen-manejo .agro-kpi-card {
+  flex-direction: column;
+  gap: 6px;
 }
 
 .agro-kpi-card:hover {
@@ -2363,5 +2369,50 @@
 .agro-toast.danger .agro-toast-icon {
   background-color: var(--agro-danger-bg);
   color: var(--agro-danger-text);
+}
+
+/* Sprint 6 (S6-T04) — Screen Header Layout & Desktop 1366x768 / 1920x1080 QA */
+.agro-screen-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.agro-screen-header-left {
+  flex: 1;
+  min-width: 320px;
+}
+
+.agro-screen-badge-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.agro-screen-title {
+  margin: 6px 0 4px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--agro-text-primary);
+  line-height: 1.25;
+}
+
+.agro-screen-subtitle {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--agro-text-secondary);
+  line-height: 1.45;
+}
+
+.agro-screen-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 

@@ -3418,16 +3418,21 @@
     setupCertificadosModule();
     setupModals();
 
-    if (window.location.hash) {
+    const applyHashScreen = () => {
+      if (!window.location.hash) return false;
       const hashScreen = window.location.hash.replace('#', '');
       if (['dashboard', 'fazendas', 'lotes', 'manejo', 'fechamento', 'certificados'].includes(hashScreen)) {
         switchScreen(hashScreen);
-      } else {
-        updateBreadcrumb();
+        return true;
       }
-    } else {
+      return false;
+    };
+
+    if (!applyHashScreen()) {
       updateBreadcrumb();
     }
+
+    window.addEventListener('hashchange', applyHashScreen);
   }
 
   // Public API
