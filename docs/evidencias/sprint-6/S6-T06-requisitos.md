@@ -16,3 +16,16 @@ Sem modificacao de dados, servidores, credenciais ou backups do usuario.
 A evidencia real de execucao deve vir do job/relatorio, nao deste plano.
 Review de outro integrante, QA Gate e validacao do ambiente homologado
 permanecem sob responsabilidade da equipe; nenhum merge automatico.
+
+## Execucao comprovada
+
+CI 132, commit d772239f3414e7a9db36a0de176ad323425c4275: job recuperacao
+aprovado. RTO academico 4,389 s. Relatorio S6-T06-restore-ci.json: origem
+desligada, login WordPress, arquivo/plugin, certificado publico e PDF
+autenticado HMAC/Redis com hash identico. Job verificacoes tambem aprovado.
+https://github.com/GrupoWinners/AgroTracer/actions/runs/44582596016
+
+Falhas iniciais do laboratorio foram corrigidas antes desta evidencia:
+invocacao explicita do WP-CLI e HOME gravavel para usuario 33:33.
+Dumps e credenciais nao foram publicados. Nenhuma homologacao humana foi
+substituida pela execucao automatizada.
