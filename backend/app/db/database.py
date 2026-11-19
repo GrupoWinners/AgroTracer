@@ -17,6 +17,7 @@ def criar_engine() -> Engine:
     return create_engine(
         database_url,
         pool_pre_ping=True,
+        hide_parameters=True,
     )
 
 
