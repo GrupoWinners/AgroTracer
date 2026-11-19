@@ -40,6 +40,14 @@ jobs:
         working-directory: backend
         run: python -m pytest -v -k "not test_s1_t01_postgresql"
 
+      - name: Publicar medicoes sinteticas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s6-performance
+          path: backend/performance-ci.json
+          if-no-files-found: ignore
+
 
     services:
       redis:
@@ -61,6 +69,13 @@ jobs:
           --health-retries 5
 
     env:
+      AGROTRACER_PERF_REPORT: performance-ci.json
       AGROTRACER_TEST_REDIS_URL: redis://127.0.0.1:16379/15
       DATABASE_URL: postgresql+psycopg://agrotracer_ci:senha_ci_temporaria@127.0.0.1:55432/agrotracer_s2_t01_teste
       AGROTRACER_TEST_DATABASE_URL: postgresql+psycopg://agrotracer_ci:senha_ci_temporaria@127.0.0.1:55432/agrotracer_s2_t01_teste
+
+      - name: Resumo de performance sintetica
+        if: always()
+        working-directory: backend
+        run: |
+          python -c "import json,pathlib; p=pathlib.Path('performance-ci.json'); r=json.loads(p.read_text()) if p.exists() else {}; print(json.dumps({k:v for k,v in r.items() if k != 'medicoes'})); print(json.dumps({k:{a:b for a,b in v.items() if a != 'amostras_ms'} for k,v in r.get('medicoes',{}).items()}))"
