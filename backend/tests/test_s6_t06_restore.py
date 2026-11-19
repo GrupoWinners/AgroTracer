@@ -48,7 +48,19 @@ class Laboratorio:
         )
         if resultado.returncode:
             # Nao imprimir argv, dumps, senhas, token ou saida do processo.
-            raise RuntimeError(f"Docker {args[0]} falhou; saida suprimida")
+            erro = resultado.stderr.decode(errors="replace").lower()
+            categorias = (
+                "permission denied", "manifest unknown", "no matching manifest",
+                "error establishing a database connection", "access denied",
+                "does not seem to be a wordpress installation", "invalid email",
+                "cannot create", "unknown user", "pull access denied",
+                "certificate verify failed", "ssl connection error",
+            )
+            categoria = next((c for c in categorias if c in erro), "outro")
+            raise RuntimeError(
+                f"Docker {args[0]} falhou ({resultado.returncode}, "
+                f"{categoria}); saida suprimida"
+            )
         return resultado.stdout
 
     def iniciar(self, nome, imagem, opcoes):
@@ -85,7 +97,8 @@ class Laboratorio:
             for nome in reversed(nomes):
                 assert nome.startswith(self.prefixo + "-")
                 try:
-                    self.run(tipo, "rm", "-f", nome)
+                    self.run(tipo, "rm", "-f",
+                             *(["-v"] if tipo == "container" else []), nome)
                 except RuntimeError:
                     pass
         self.run("network", "rm", self.prefixo)
