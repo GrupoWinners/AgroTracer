@@ -8,7 +8,7 @@
 
 3. QA Headless Real em Navegadores (Chrome + Edge via CDP em `1366x768` e `1920x1080`):
    - 32/32 combinações verificadas (`dashboard`, `fazendas`, `lotes`, `animais`, `manejo`, `fechamento`, `certificados`, `publico`) com `docOverflow <= 0` e zero clipping crítico.
-   - 28 screenshots PNG válidos gerados e auditados em `docs/evidencias/sprint-6/screenshots/`.
+   - 32 screenshots PNG válidos gerados e auditados em `docs/evidencias/sprint-6/screenshots/`.
 
 4. Suites de Testes PHP (`wordpress/agrotracer-bridge/tests/test-*.php`, PHP 8.2.12):
    - `test-agrotracer-http-client.php`: 8 passaram | 0 falharam (72 assertions)
