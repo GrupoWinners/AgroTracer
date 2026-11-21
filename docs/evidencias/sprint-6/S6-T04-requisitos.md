@@ -30,5 +30,5 @@ Critérios de Aceite:
 Capturas salvas em `docs/evidencias/sprint-6/screenshots/`:
 - **Chrome `1366x768`:** `chrome-1366x768-{dashboard,fazendas,lotes,animais,manejo,fechamento,certificados,publico}.png`
 - **Chrome `1920x1080`:** `chrome-1920x1080-{dashboard,fazendas,lotes,animais,manejo,fechamento,certificados,publico}.png`
-- **Edge `1366x768`:** `edge-1366x768-{dashboard,lotes,manejo,fechamento,certificados,publico}.png`
-- **Edge `1920x1080`:** `edge-1920x1080-{dashboard,lotes,manejo,fechamento,certificados,publico}.png`
+- **Edge `1366x768`:** `edge-1366x768-{dashboard,fazendas,lotes,animais,manejo,fechamento,certificados,publico}.png`
+- **Edge `1920x1080`:** `edge-1920x1080-{dashboard,fazendas,lotes,animais,manejo,fechamento,certificados,publico}.png`
