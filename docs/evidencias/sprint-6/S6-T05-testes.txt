@@ -1,0 +1,14 @@
+﻿=== Evidência de Lint e Testes — Task S6-T05 (Hardening & UAT) ===
+
+1. Lint (`python -m flake8 app tests`):
+   - 0 erros encontrados.
+
+2. Testes Automatizados (`python -m pytest tests/test_s6_t05_hardening.py -v`):
+   - collected 6 items
+   - tests/test_s6_t05_hardening.py::test_uat_sessao_expirada_ou_sem_assinatura_retorna_401 PASSED [ 16%]
+   - tests/test_s6_t05_hardening.py::test_uat_dados_extremos_nao_geram_erro_500[alteracoes0-True] PASSED [ 33%]
+   - tests/test_s6_t05_hardening.py::test_uat_dados_extremos_nao_geram_erro_500[alteracoes1-True] PASSED [ 50%]
+   - tests/test_s6_t05_hardening.py::test_uat_dados_extremos_nao_geram_erro_500[alteracoes2-True] PASSED [ 66%]
+   - tests/test_s6_t05_hardening.py::test_uat_dados_extremos_nao_geram_erro_500[alteracoes3-False] PASSED [ 83%]
+   - tests/test_s6_t05_hardening.py::test_uat_clique_duplo_idempotencia_nonce_hmac PASSED [100%]
+   - Resultado: 6 passed in 0.27s.
