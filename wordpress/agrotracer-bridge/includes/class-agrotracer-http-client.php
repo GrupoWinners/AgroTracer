@@ -1267,7 +1267,7 @@ class AgroTracer_Http_Client {
 
     /**
      * Determines whether TLS certificate verification should be enforced.
-     * Enabled by default in staging/production; configurable via `AGROTRACER_API_SSLVERIFY`.
+     * Always enabled; insecure configuration overrides are intentionally ignored.
      *
      * @return bool True to verify SSL certificates.
      */
