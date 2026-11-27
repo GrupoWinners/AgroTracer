@@ -30,3 +30,5 @@ mode_modules/
 # Arquivos do sistema operacional
 .DS_Store
 Thumbs.db
+# Demo local: senhas e tokens sinteticos, nunca versionar
+.demo/
