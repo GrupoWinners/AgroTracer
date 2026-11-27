@@ -1,0 +1,46 @@
+=========================================================================
+AgroTracer Sprint 7 — Evidência Oficial S7-T03 (QA Final e Release Gate)
+Ambiente: Python 3.14.5 | pytest 9.1.1 | flake8 7.4.1 | Node.js v26.13.0
+Data: 27/11/2026
+Responsável: Nadiny Martins (QA Lead)
+=========================================================================
+
+1. Linter Backend (flake8 app tests tools):
+   - Comando: python -m flake8 backend/app backend/tests tools
+   - Resultado: 0 violações de estilo / PEP 8
+
+2. Suíte de QA Final e Release Gate (Pytest):
+   - Comando: python -m pytest backend/tests/test_s7_t03_qa_final.py backend/tests/test_s7_t01_seed.py backend/tests/test_s7_t05_release.py backend/tests/test_s6_t05_hardening.py -v
+
+============================= test session starts =============================
+platform win32 -- Python 3.14.5, pytest-9.1.1, pluggy-1.7.0
+rootdir: backend, configfile: pytest.ini
+plugins: anyio-4.16.0, asyncio-1.5.0
+collected 18 items
+
+backend/tests/test_s7_t03_qa_final.py::test_pacote_evidencias_sprint7_completo PASSED [  5%]
+backend/tests/test_s7_t03_qa_final.py::test_zero_bugs_p1_p2_em_aberto PASSED [ 11%]
+backend/tests/test_s7_t03_qa_final.py::test_ci_verificada_json_contem_suites_e_sem_segredos PASSED [ 16%]
+backend/tests/test_s7_t03_qa_final.py::test_rotas_privadas_bloqueadas_sem_autenticacao PASSED [ 22%]
+backend/tests/test_s7_t01_seed.py::test_seed_completo_idempotente_e_sintetico PASSED [ 27%]
+backend/tests/test_s7_t01_seed.py::test_seed_recusa_dados_existentes_e_rollback PASSED [ 33%]
+backend/tests/test_s7_t01_seed.py::test_seed_rollback_falha_pdf PASSED [ 38%]
+backend/tests/test_s7_t05_release.py::test_proxy_irrestrito_ou_invalido_falha_fechado[0.0.0.0/0] PASSED [ 44%]
+backend/tests/test_s7_t05_release.py::test_proxy_irrestrito_ou_invalido_falha_fechado[::/0] PASSED [ 50%]
+backend/tests/test_s7_t05_release.py::test_proxy_irrestrito_ou_invalido_falha_fechado[invalido] PASSED [ 55%]
+backend/tests/test_s7_t05_release.py::test_xff_so_confia_no_peer_e_cadeia_definidos PASSED [ 61%]
+backend/tests/test_s7_t05_release.py::test_debug_desligado_e_cors_nao_libera_origem_arbitraria PASSED [ 66%]
+backend/tests/test_s6_t05_hardening.py::test_uat_sessao_expirada_ou_sem_assinatura_retorna_401 PASSED [ 72%]
+backend/tests/test_s6_t05_hardening.py::test_uat_dados_extremos_nao_geram_erro_500[datas_invertidas] PASSED [ 77%]
+backend/tests/test_s6_t05_hardening.py::test_uat_dados_extremos_nao_geram_erro_500[string_longa] PASSED [ 83%]
+backend/tests/test_s6_t05_hardening.py::test_uat_dados_extremos_nao_geram_erro_500[ids_negativos] PASSED [ 88%]
+backend/tests/test_s6_t05_hardening.py::test_uat_dados_extremos_nao_geram_erro_500[caracteres_xss] PASSED [ 94%]
+backend/tests/test_s6_t05_hardening.py::test_uat_clique_duplo_idempotencia_nonce_hmac PASSED [100%]
+
+======================== 18 passed, 1 warning in 1.15s ========================
+
+3. Validação de Integridade do Pacote:
+   - docs/evidencias/sprint-7/S7-T03.md: Matriz consolidada S0-S7, 8 vetores SEC e UAT
+   - Bugs P1/P2 em aberto: 0 (ZERO)
+   - Status da Homologação: APROVADO NO QA GATE FINAL DA RELEASE
+=========================================================================
