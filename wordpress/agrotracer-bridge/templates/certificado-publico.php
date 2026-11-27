@@ -180,9 +180,12 @@ $agro_portal_url = function_exists('home_url')
                 Certificado de Emissões de Carbono
               </h2>
             </div>
-            <span id="public-cert-status-badge" class="agro-badge <?php echo $agro_esc_attr($badge_class); ?>" style="font-size:13px; padding:6px 12px;">
-              <?php echo $agro_esc($badge_label); ?>
-            </span>
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <div id="public-cert-qr-container" class="agro-qr-preview" style="width:76px; height:76px; padding:4px;" aria-label="QR Code de verificação pública"></div>
+              <span id="public-cert-status-badge" class="agro-badge <?php echo $agro_esc_attr($badge_class); ?>" style="font-size:13px; padding:6px 12px;">
+                <?php echo $agro_esc($badge_label); ?>
+              </span>
+            </div>
           </div>
 
           <?php if (!$is_valido): ?>
