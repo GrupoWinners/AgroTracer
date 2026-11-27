@@ -18,6 +18,21 @@ if (!defined('ABSPATH')) {
 
 class AgroTracer_Bridge {
 
+    /** Preview sintetico somente por opt-in local e administrador autenticado. */
+    public static function allow_offline_preview(): bool {
+        $env = function_exists('wp_get_environment_type') ? wp_get_environment_type() : 'production';
+        return in_array($env, ['local', 'development'], true)
+            && defined('AGROTRACER_OFFLINE_PREVIEW') && AGROTRACER_OFFLINE_PREVIEW === true
+            && current_user_can('manage_options');
+    }
+
+    private static function preview_unavailable(): WP_REST_Response {
+        return new WP_REST_Response(['success' => false, 'error' => [
+            'code' => 'DEMO_ONLY_UNAVAILABLE',
+            'message' => 'Esta listagem demonstrativa nao esta disponivel neste ambiente.',
+        ]], 503);
+    }
+
     private static $instance = null;
 
     public static function get_instance(): self {
@@ -153,8 +168,7 @@ class AgroTracer_Bridge {
                 'permission_callback' => function (): bool {
                     // Exige usuário autenticado com permissão de gestão de fazendas ou publicação nativa
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
                 'args'                => [
@@ -190,8 +204,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_get_farms'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ]
@@ -204,8 +217,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_create_lot'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ],
@@ -214,8 +226,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_get_lots'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ]
@@ -228,8 +239,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_create_animal'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ],
@@ -238,8 +248,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_get_animals'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ]
@@ -252,8 +261,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_create_manejo'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ],
@@ -262,8 +270,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_get_manejos'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ]
@@ -276,8 +283,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_get_parametros'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ]
@@ -290,8 +296,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_create_fechamento'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ],
@@ -300,8 +305,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_get_fechamentos'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ]
@@ -313,8 +317,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_create_fechamento'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ]
@@ -327,8 +330,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_emitir_certificado'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ]
@@ -340,8 +342,7 @@ class AgroTracer_Bridge {
                 'callback'            => [$this, 'handle_download_certificado_pdf'],
                 'permission_callback' => function (): bool {
                     return is_user_logged_in() && (
-                        current_user_can('agrotracer_manage_farms') ||
-                        current_user_can('publish_posts')
+                        current_user_can('agrotracer_manage_farms')
                     );
                 },
             ]
@@ -479,7 +480,7 @@ class AgroTracer_Bridge {
 
         // 2. Identidade derivada exclusivamente no servidor WordPress após validação de capability
         $current_user_id = (int) get_current_user_id();
-        $has_cap = current_user_can('agrotracer_manage_farms') || current_user_can('publish_posts');
+        $has_cap = current_user_can('agrotracer_manage_farms');
 
         if ($current_user_id <= self::SYSTEM_USER_ID || !$has_cap) {
             return new WP_REST_Response([
@@ -522,7 +523,7 @@ class AgroTracer_Bridge {
             ]);
         }
 
-        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+        if (!self::allow_offline_preview() || $result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
             return new WP_REST_Response([
                 'success' => false,
                 'error'   => $result['error'],
@@ -560,7 +561,7 @@ class AgroTracer_Bridge {
         $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
         $timestamp_utc   = time();
         $current_user_id = (int) get_current_user_id();
-        $has_cap         = current_user_can('agrotracer_manage_farms') || current_user_can('publish_posts');
+        $has_cap         = current_user_can('agrotracer_manage_farms');
 
         if ($current_user_id <= self::SYSTEM_USER_ID || !$has_cap) {
             return new WP_REST_Response([
@@ -589,7 +590,7 @@ class AgroTracer_Bridge {
             ]);
         }
 
-        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+        if (!self::allow_offline_preview() || $result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
             return new WP_REST_Response([
                 'success' => false,
                 'error'   => $result['error'],
@@ -650,7 +651,7 @@ class AgroTracer_Bridge {
             ]);
         }
 
-        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+        if (!self::allow_offline_preview() || $result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
             return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
                 'X-Correlation-ID'       => $result['correlation_id'],
                 'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
@@ -687,7 +688,7 @@ class AgroTracer_Bridge {
             ]);
         }
 
-        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+        if (!self::allow_offline_preview() || $result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
             return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
                 'X-Correlation-ID'       => $result['correlation_id'],
                 'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
@@ -734,7 +735,7 @@ class AgroTracer_Bridge {
             ]);
         }
 
-        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+        if (!self::allow_offline_preview() || $result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
             return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
                 'X-Correlation-ID'       => $result['correlation_id'],
                 'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
@@ -758,6 +759,9 @@ class AgroTracer_Bridge {
      * Handles animal listing for the logged in user.
      */
     public function handle_get_animals(WP_REST_Request $request): WP_REST_Response {
+        if (!self::allow_offline_preview()) {
+            return self::preview_unavailable();
+        }
         $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
         $timestamp_utc   = time();
         $current_user_id = (int) get_current_user_id();
@@ -812,7 +816,7 @@ class AgroTracer_Bridge {
         }
 
         // Se o backend retornou 409 (MANEJO_SOBREPOSTO) ou erro de validação/domínio, propaga
-        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+        if (!self::allow_offline_preview() || $result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
             return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
                 'X-Correlation-ID'       => $result['correlation_id'],
                 'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
@@ -887,7 +891,7 @@ class AgroTracer_Bridge {
                 ]);
             }
 
-            if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+            if (!self::allow_offline_preview() || $result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
                 return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
                     'X-Correlation-ID'       => $result['correlation_id'],
                     'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
@@ -895,6 +899,9 @@ class AgroTracer_Bridge {
             }
         }
 
+        if (!self::allow_offline_preview()) {
+            return self::preview_unavailable();
+        }
         // Mock demonstrativo com dados zootécnicos e períodos contíguos sem sobreposição
         $mock_manejos = [
             ['id' => 1, 'lote_id' => 1, 'inicio' => '2026-11-01', 'fim' => '2026-11-10', 'parametro_set_id' => 1, 'tipo_dieta' => 'PASTAGEM'],
@@ -915,6 +922,9 @@ class AgroTracer_Bridge {
      * Sprint 3 (S3-T04): Lists versioned parameter sets (transparência científica - fatores sintéticos didáticos).
      */
     public function handle_get_parametros(WP_REST_Request $request): WP_REST_Response {
+        if (!self::allow_offline_preview()) {
+            return self::preview_unavailable();
+        }
         $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
         $timestamp_utc   = time();
 
@@ -988,7 +998,7 @@ class AgroTracer_Bridge {
         }
 
         // Se o backend retornou código de erro de domínio ou validação (422, 409, 404), propaga fielmente
-        if ($result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
+        if (!self::allow_offline_preview() || $result['status'] !== 503 || (isset($result['error']['code']) && $result['error']['code'] !== 'SERVICE_UNAVAILABLE')) {
             return new WP_REST_Response(['success' => false, 'error' => $result['error']], $result['status'], [
                 'X-Correlation-ID'       => $result['correlation_id'],
                 'X-AgroTracer-Timestamp' => (string) $result['timestamp'],
@@ -1082,6 +1092,9 @@ class AgroTracer_Bridge {
      * Sprint 4 (S4-T04): Lists historical lot closings.
      */
     public function handle_get_fechamentos(WP_REST_Request $request): WP_REST_Response {
+        if (!self::allow_offline_preview()) {
+            return self::preview_unavailable();
+        }
         $correlation_id  = self::resolve_correlation_id($request->get_header('x-correlation-id'));
         $timestamp_utc   = time();
         $lote_id         = (int) $request->get_param('lote_id');
@@ -1464,6 +1477,9 @@ class AgroTracer_Bridge {
     }
 
     public function handle_standalone_preview(): void {
+        if (!self::allow_offline_preview()) {
+            return;
+        }
         if (isset($_GET['agrotracer_certificado_preview']) && $_GET['agrotracer_certificado_preview'] === '1') {
             $this->register_assets();
             wp_enqueue_style('agrotracer-screens-css');

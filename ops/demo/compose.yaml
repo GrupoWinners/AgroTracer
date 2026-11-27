@@ -59,6 +59,8 @@ services:
     ports: ["127.0.0.1:${DEMO_WP_PORT:-18080}:80"]
     volumes:
       - wp:/var/www/html
+      - ./php-safe.ini:/usr/local/etc/php/conf.d/zz-agrotracer.ini:ro
+      - ./apache-safe-logs.conf:/etc/apache2/sites-enabled/000-default.conf:ro
       - ../../wordpress/agrotracer-bridge:/var/www/html/wp-content/plugins/agrotracer-bridge:ro
   cli:
     image: wordpress:cli-php8.3
@@ -70,6 +72,7 @@ services:
       HOME: /tmp
     volumes:
       - wp:/var/www/html
+      - ./php-safe.ini:/usr/local/etc/php/conf.d/zz-agrotracer.ini:ro
       - ../../wordpress/agrotracer-bridge:/var/www/html/wp-content/plugins/agrotracer-bridge:ro
 volumes:
   pg:

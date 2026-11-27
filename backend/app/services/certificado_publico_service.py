@@ -35,9 +35,15 @@ def _redes_proxies_confiaveis() -> list[
         if not candidato:
             continue
         try:
-            redes.append(ipaddress.ip_network(candidato, strict=False))
+            rede = ipaddress.ip_network(candidato, strict=False)
+            if rede.prefixlen == 0:
+                raise ValueError("Proxy irrestrito")
+            redes.append(rede)
         except ValueError:
-            continue
+            raise ErroBridge(
+                503, "PROXY_CONFIG_INVALID",
+                "Configuracao de proxy indisponivel.",
+            ) from None
     return redes
 
 

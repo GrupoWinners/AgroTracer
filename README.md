@@ -100,6 +100,7 @@ disponivel para desenvolvimento; nao e o caminho de instalacao da demo.
 
 - [Sprint 6: seguranca, performance e recuperacao](docs/evidencias/sprint-6/README.md)
 - [Sprint 7: requisitos e reproducao](docs/evidencias/sprint-7/S7-T01.md)
+- [Checklist de release](docs/operacao/release-checklist.md)
 - [Politica de logs](docs/operacao/logs-seguros.md)
 - [Backup e restore](docs/operacao/backup-restore.md)
 
