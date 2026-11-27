@@ -14,6 +14,12 @@ Ordem de review/integracao: #52 -> #53. Apos merge de #52, alterar base de
 Nenhuma tag ou merge realizado nesta entrega. Checkout inicial estava limpo.
 
 `ci-verificada.json` contem apenas resultados seguros com link/commit.
-O aceite de release S7-T05 permanece pendente de review conjunto e QA sem
+O aceite de release S7-T05 permanece pendente de QA final (S7-T03) sem
 P1/P2: em especial o impacto das listagens antes exclusivamente simuladas.
-S7-T04 e S7-T06 nao executadas, conforme orientacao de Samela.
+S7-T04 e S7-T06 nao executadas (tag `v1.0.0` aguarda QA final).
+
+## Entregas complementares (João Vitor)
+
+- **PR #52 e PR #53:** revisados e integrados na `develop` na ordem `#52 -> #53`.
+- **S7-T02:** manual curto do fluxo do usuario em `docs/operacao/manual-usuario.md` e evidencia em `docs/evidencias/sprint-7/S7-T02.md`.
+- **S7-T05 (review Bridge/UI/Proxy):** registrado em `docs/evidencias/sprint-7/S7-T05-review-joao.md`.
