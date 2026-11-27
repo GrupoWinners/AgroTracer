@@ -34,7 +34,7 @@ jobs:
         run: python -m alembic upgrade head
 
       - name: Executar lint
-        run: python -m flake8 app tests
+        run: python -m flake8 app tests ../tools/demo.py ../tools/release_check.py
 
       - name: Executar testes
         working-directory: backend
@@ -124,13 +124,26 @@ jobs:
         run: python tools/demo.py up
       - name: Reexecutar bootstrap sem duplicar dados
         run: python tools/demo.py up
+      - name: Checklist automatizado de release
+        run: python tools/release_check.py
       - name: Login, Bridge HMAC, certificado e PDF
         run: python tools/demo.py verify
       - uses: actions/upload-artifact@v4
         with:
           name: s7-demo-verificacao
-          path: .demo/verificacao.json
+          path: |
+            .demo/verificacao.json
+            .demo/release-check.json
           include-hidden-files: true
       - name: Encerrar somente projeto descartavel da CI
         if: always()
         run: docker compose --env-file .demo/.env -p agrotracer-s7-demo -f ops/demo/compose.yaml down -v
+
+  wordpress_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Sintaxe PHP e regressoes Bridge
+        run: |
+          find wordpress/agrotracer-bridge -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          for test in wordpress/agrotracer-bridge/tests/test-*.php; do php "$test"; done

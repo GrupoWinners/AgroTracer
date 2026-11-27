@@ -14,6 +14,10 @@
 declare(strict_types=1);
 
 namespace {
+    // Estes testes cobrem exclusivamente o preview local explicito.
+    define('AGROTRACER_OFFLINE_PREVIEW', true);
+    function wp_get_environment_type(): string { return 'local'; }
+
     // Stubs no namespace global do WordPress para execução CLI Standalone
     if (!function_exists('add_action')) {
         function add_action($hook, $callback, $priority = 10, $accepted_args = 1) {}
@@ -77,6 +81,7 @@ namespace AgroTracerBridge\Tests {
         public function setUp(): void {
             parent::setUp();
             AgroTracer_WP_Test_Mock_State::reset();
+            AgroTracer_WP_Test_Mock_State::$capabilities['manage_options'] = true;
             $this->templatesDir = dirname(__DIR__) . '/templates';
             $this->assetsDir = dirname(__DIR__) . '/assets';
         }

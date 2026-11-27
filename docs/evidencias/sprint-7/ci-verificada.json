@@ -1,0 +1,66 @@
+{
+  "s7_t01": {
+    "commit": "c3560c0eabd19e127edafbbb57d0742ae018d1c8",
+    "run": "https://github.com/GrupoWinners/AgroTracer/actions/runs/45930096266",
+    "testes": "336 passed, 1 skipped (restore opt-in), 1 deselected (filtro historico)",
+    "demo": {
+      "login_wordpress": true,
+      "bridge_hmac_fazenda": true,
+      "certificado_publico": true,
+      "pdf_hash": true,
+      "dados": "SYNTHETIC",
+      "sem_ajuste_manual": true
+    }
+  },
+  "s7_t05": {
+    "commit": "05bc161c860dec88c20611b32486f01a2e1052de",
+    "run": "https://github.com/GrupoWinners/AgroTracer/actions/runs/45930566288",
+    "testes": "341 passed, 1 skipped (restore opt-in), 1 deselected (filtro historico)",
+    "php": "Todas as suites aprovadas",
+    "runtime": {
+      "debug_off": true,
+      "file_edit_off": true,
+      "preview_off": true,
+      "secret_set": true,
+      "php_display_off": true,
+      "api_non_root": true,
+      "checkout_secret_patterns": true,
+      "qa_humano": "PENDENTE",
+      "tag_autorizada": false,
+      "limite": "Demo local/padroes selecionados; exclui historico Git"
+    },
+    "demo": {
+      "login_wordpress": true,
+      "bridge_hmac_fazenda": true,
+      "certificado_publico": true,
+      "pdf_hash": true,
+      "dados": "SYNTHETIC",
+      "sem_ajuste_manual": true
+    },
+    "restore": {
+      "escopo": "Dados SYNTHETIC; ambientes Docker descartaveis",
+      "backups_bytes": {
+        "postgresql_inclui_pdfs": 55259,
+        "wordpress_sql": 99985,
+        "wp_content": 15527878
+      },
+      "rto_academico_segundos": 2.841,
+      "rto_inicio": "pg_restore em destino vazio pre-provisionado",
+      "rto_fim": "login WP, arquivo/plugin, PDF HMAC e publico OK",
+      "origem_desligada": true,
+      "login_wp_restaurado": true,
+      "wp_content_restaurado": true,
+      "bridge_ativo": true,
+      "pdf_sha256_igual": true,
+      "consulta_publica_ok": true,
+      "hmac_redis_real": true,
+      "imagens": [
+        "postgres:16",
+        "mariadb:11.4",
+        "wordpress:6.8.3-php8.3-apache",
+        "wordpress:cli-php8.3"
+      ],
+      "limites": "Exclui provisionamento/download, DNS, TLS e producao"
+    }
+  }
+}

@@ -366,8 +366,7 @@ class AgroTracer_Http_Client {
         }
 
         $has_capability = function_exists('current_user_can') && (
-            current_user_can($required_capability) ||
-            current_user_can('publish_posts')
+            current_user_can($required_capability)
         );
 
         if (!$has_capability) {
@@ -1268,16 +1267,12 @@ class AgroTracer_Http_Client {
 
     /**
      * Determines whether TLS certificate verification should be enforced.
-     * Enabled by default in staging/production; configurable via `AGROTRACER_API_SSLVERIFY`.
+     * Always enabled; insecure configuration overrides are intentionally ignored.
      *
      * @return bool True to verify SSL certificates.
      */
     private static function should_verify_ssl(): bool {
-        if (defined('AGROTRACER_API_SSLVERIFY')) {
-            return (bool) AGROTRACER_API_SSLVERIFY;
-        }
-
-        $app_env = defined('WP_ENVIRONMENT_TYPE') ? (string) WP_ENVIRONMENT_TYPE : (string) getenv('APP_ENV');
-        return in_array($app_env, ['production', 'staging'], true);
+        // TLS verificado em todos os ambientes, inclusive sem configuracao.
+        return true;
     }
 }
