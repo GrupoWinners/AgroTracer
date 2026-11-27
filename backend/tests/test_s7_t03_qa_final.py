@@ -4,11 +4,12 @@ Valida programaticamente os criterios de aceite do gate final:
 - Integridade do pacote de evidencias de release em docs/evidencias/sprint-7/
 - Zero bugs P1/P2 em aberto registrados na documentacao
 - Cobertura dos 8 vetores de seguranca (SEC-01 a SEC-08)
-- Conformidade dos contratos de erro fail-closed e ausencia de segredos
+- Distincao estrita entre autenticacao 401 (POST/GET) e indisponibilidade 503
 """
 
 import json
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 from app.core.bridge_dependency import exigir_usuario_wordpress
 from app.main import app
@@ -75,20 +76,56 @@ def test_ci_verificada_json_contem_suites_e_sem_segredos():
         assert termo not in texto_serializado
 
 
-def test_rotas_privadas_bloqueadas_sem_autenticacao(request):
-    """Garante rejeicao controlada e fail-closed em rotas criticas."""
+def test_rotas_privadas_bloqueadas_sem_autenticacao(request, monkeypatch):
+    """Garante rejeicao estrita com 401 usando o metodo HTTP correto."""
     cenario = request.getfixturevalue("ambiente_api")
     cliente = cenario[0]
 
     app.dependency_overrides.pop(exigir_usuario_wordpress, None)
+    monkeypatch.setenv("AGROTRACER_BRIDGE_SECRET", "s" * 32)
+    redis_mock = AsyncMock()
+    redis_mock.set.return_value = True
+    app.state.redis_cliente = redis_mock
 
+    # 1. Rotas GET privadas sem HMAC devem retornar exatamente 401
     for rota in [
         "/api/v1/fazendas",
         "/api/v1/lotes",
-        "/api/v1/lotes/1/certificar",
         "/api/v1/certificados/1/pdf",
     ]:
         resp = cliente.get(rota)
-        assert resp.status_code in (401, 403, 405, 503), (
-            f"Rota {rota} deve rejeitar requisicao sem autenticacao"
+        assert resp.status_code == 401, (
+            f"GET {rota} sem HMAC deve retornar 401"
         )
+        assert resp.json()["error"]["code"] == "AUTH_INVALID_REQUEST"
+
+    # 2. Rota de certificacao usa POST: deve ser chamada com POST e dar 401
+    payload_cert = {
+        "data_abate": "2026-02-02",
+        "numero_animais_abate": 1,
+        "peso_medio_abate_kg": "540",
+        "rendimento_carcaca": "0.53",
+    }
+    resp_post = cliente.post(
+        "/api/v1/lotes/1/certificar",
+        json=payload_cert,
+        headers={"Idempotency-Key": "teste-auth-sem-hmac"},
+    )
+    assert resp_post.status_code == 401, (
+        "POST /api/v1/lotes/1/certificar sem HMAC deve retornar 401"
+    )
+    assert resp_post.json()["error"]["code"] == "AUTH_INVALID_REQUEST"
+
+
+def test_rotas_privadas_falham_fechado_sem_servico_autenticacao(request):
+    """Cenario isolado de indisponibilidade: falha fechada com 503."""
+    cenario = request.getfixturevalue("ambiente_api")
+    cliente = cenario[0]
+
+    app.dependency_overrides.pop(exigir_usuario_wordpress, None)
+    if hasattr(app.state, "redis_cliente"):
+        delattr(app.state, "redis_cliente")
+
+    resp = cliente.get("/api/v1/fazendas")
+    assert resp.status_code == 503
+    assert resp.json()["error"]["code"] == "AUTH_SERVICE_UNAVAILABLE"
