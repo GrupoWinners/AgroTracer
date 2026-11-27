@@ -347,13 +347,13 @@ if (!defined('ABSPATH')) {
           </label>
           <select id="modal-manejo-lote-select" class="agro-select" style="width:100%;" required>
             <option value="1">LT-2026-001 (Fazenda Modelo)</option>
-            <option value="2">LT-2026-003 (Fazenda Santa Fé)</option>
-            <option value="3">LT-2025-090 (Fazenda Esperança)</option>
+            <option value="2">LT-2026-003 (Fazenda São Bento)</option>
+            <option value="3">LT-2025-090 (Fazenda Boa Vista)</option>
           </select>
         </div>
 
         <!-- Linha de Datas (Início e Fim) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div class="agro-modal-grid-2">
           <div class="agro-form-group">
             <label for="modal-manejo-data-inicio" style="display:block; font-size:12.5px; font-weight:600; color:var(--agro-text-primary); margin-bottom:5px;">
               Data de Início <span style="color:#ef4444;">*</span>
@@ -372,7 +372,7 @@ if (!defined('ABSPATH')) {
         </div>
 
         <!-- Tipo de Dieta & Conjunto de Parâmetros -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div class="agro-modal-grid-2">
           <div class="agro-form-group">
             <label for="modal-manejo-tipo-dieta" style="display:block; font-size:12.5px; font-weight:600; color:var(--agro-text-primary); margin-bottom:5px;">
               Tipo de Dieta <span style="color:#ef4444;">*</span>

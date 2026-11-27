@@ -49,16 +49,16 @@ if (!defined('ABSPATH')) {
 
   <!-- Barra de Filtros e Seleção do Lote -->
   <div class="agro-filter-bar" style="margin-bottom: 20px; background: #fff; padding: 16px 20px; border: 1px solid var(--agro-border); border-radius: var(--agro-radius-md);">
-    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;">
-      <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 280px;">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; width: 100%;">
+      <div class="agro-filter-lot-picker">
         <label for="select-manejo-lote" style="font-size: 13px; font-weight: 600; color: var(--agro-text-primary); white-space: nowrap;">
           Selecionar Lote de Manejo:
         </label>
-        <select id="select-manejo-lote" class="agro-select" style="min-width: 220px;">
-          <option value="1" data-code="LT-2026-001" data-farm="Fazenda Modelo" data-animals="28">LT-2026-001 (Fazenda Modelo — 28 animais)</option>
-          <option value="2" data-code="LT-2026-003" data-farm="Fazenda Santa Fé" data-animals="45">LT-2026-003 (Fazenda Santa Fé — 45 animais)</option>
-          <option value="3" data-code="LT-2025-090" data-farm="Fazenda Esperança" data-animals="12">LT-2025-090 (Fazenda Esperança — 12 animais)</option>
-          <option value="4" data-code="LT-2024-087" data-farm="Fazenda Alvorada" data-animals="0">LT-2024-087 (Fazenda Alvorada — Vazio)</option>
+        <select id="select-manejo-lote" class="agro-select">
+          <option value="1" data-code="LT-2026-001" data-farm="Fazenda Modelo" data-animals="50">LT-2026-001 (Fazenda Modelo — 50 animais)</option>
+          <option value="2" data-code="LT-2026-003" data-farm="Fazenda São Bento" data-animals="45">LT-2026-003 (Fazenda São Bento — 45 animais)</option>
+          <option value="3" data-code="LT-2025-090" data-farm="Fazenda Boa Vista" data-animals="75">LT-2025-090 (Fazenda Boa Vista — 75 animais)</option>
+          <option value="4" data-code="LT-2024-087" data-farm="Fazenda Estrela do Sul" data-animals="0">LT-2024-087 (Fazenda Estrela do Sul — Vazio)</option>
         </select>
       </div>
 

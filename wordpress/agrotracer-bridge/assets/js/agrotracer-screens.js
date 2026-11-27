@@ -25,7 +25,7 @@
         uf: 'MS',
         car: 'MS-5002708-1234.5678.9ABC.DEF0.1234.5678',
         coordinates: '-20.4683, -55.7847',
-        carHasConflict: true,
+        carHasConflict: false,
         paddocks: [
           { id: '01', name: 'Piquete 01', area: '25,50', pasture: 'Braquiária', updated: '12/09/2026 14:32' },
           { id: '02', name: 'Piquete 02', area: '18,75', pasture: 'Mombaça', updated: '10/09/2026 09:15' },
@@ -2102,7 +2102,7 @@
       },
       3: {
         code: 'LT-2025-090',
-        farm: 'Fazenda Esperança (Miranda/MS)',
+        farm: 'Fazenda Boa Vista (Miranda/MS)',
         animals: 12,
         status: 'EM_MANEJO',
         statusLabel: 'Em manejo',
@@ -2114,7 +2114,7 @@
       },
       4: {
         code: 'LT-2024-087',
-        farm: 'Fazenda Alvorada (Bodoquena/MS)',
+        farm: 'Fazenda Estrela do Sul (Bodoquena/MS)',
         animals: 0,
         status: 'RASCUNHO',
         statusLabel: 'Rascunho (Vazio)',
@@ -2202,6 +2202,12 @@
         if (profile.status === 'RASCUNHO') {
           checkStatus.innerHTML = '✗ Status do lote é <strong>RASCUNHO</strong> — cadastre animais e manejo primeiro (RN-04)';
           checkManejo.innerHTML = '✗ Nenhum período de manejo registrado (RN-08)';
+        } else if (profile.status === 'CERTIFICADO') {
+          checkStatus.innerHTML = '✓ Status do lote é <strong>CERTIFICADO</strong> — fechamento e emissão concluídos (RN-04)';
+          checkManejo.innerHTML = '✓ Manejo nutricional consolidado no snapshot imutável (RN-08 / RN-11)';
+        } else if (profile.status === 'FECHADO') {
+          checkStatus.innerHTML = '✓ Status do lote é <strong>FECHADO</strong> — apto para emissão de certificado (RN-04)';
+          checkManejo.innerHTML = '✓ Manejo nutricional presente e consolidado (RN-08)';
         } else {
           checkStatus.innerHTML = '✓ Status do lote é <strong>EM_MANEJO</strong> (RN-04)';
           checkManejo.innerHTML = '✓ Manejo nutricional presente e contínuo (RN-08)';

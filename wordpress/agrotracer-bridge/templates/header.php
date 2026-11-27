@@ -29,7 +29,7 @@ $agro_logout_url = function_exists('wp_logout_url')
         ? AGROTRACER_PLUGIN_URL . 'assets/images/logo-agrotracer-emblem.png' 
         : plugin_dir_url(dirname(__DIR__)) . 'assets/images/logo-agrotracer-emblem.png';
     ?>
-    <img src="<?php echo esc_url($logo_url); ?>" alt="AgroTracer" class="agro-brand-logo-img">
+    <img src="<?php echo esc_url($logo_url); ?>" alt="AgroTracer" class="agro-brand-logo-img" width="42" height="42">
     <span>AGROTRACER</span>
   </div>
 

@@ -2416,3 +2416,246 @@
   flex-shrink: 0;
 }
 
+/* ==========================================================================
+   URGENT UX/UI & RESPONSIVE FIXES (WCAG FOCUS, WPADMINBAR, OVERFLOW, PUBLIC)
+   ========================================================================== */
+
+/* Acessibilidade WCAG 2.2 AA — foco visível em teclado */
+.agrotracer-app :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--agro-primary);
+  outline-offset: 2px;
+}
+
+.agro-header :is(button, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--agro-accent-light);
+  outline-offset: 2px;
+}
+
+/* Offset seguro para a barra administrativa do WordPress (#wpadminbar) */
+body.admin-bar .agrotracer-app {
+  min-height: calc(100vh - 32px);
+}
+
+body.admin-bar .agro-header {
+  top: 32px;
+}
+
+body.admin-bar .agro-drawer {
+  top: 32px;
+  height: calc(100vh - 32px);
+}
+
+body.admin-bar .agro-modal-backdrop {
+  padding-top: 52px;
+}
+
+/* Prevenção de estouro em CSS Grid (1fr) e Cards de Métricas Públicas */
+.agro-master-detail-grid > *,
+.agro-detail-main,
+.agro-sidebar-card,
+.agro-card,
+.agro-public-metric-box,
+.agro-public-details-list > div {
+  min-width: 0;
+}
+
+.agro-fechamento-grid {
+  grid-template-columns: 1fr 1.25fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.agro-filter-lot-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.agro-filter-lot-picker .agro-select {
+  flex: 1 1 240px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.agro-modal-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.agro-modal {
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+}
+
+.agro-modal-body {
+  overflow-y: auto;
+}
+
+.agro-public-metric-value strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.agro-public-details-list dd {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.agro-table-responsive {
+  -webkit-overflow-scrolling: touch;
+}
+
+.agro-detail-meta {
+  flex-wrap: wrap;
+}
+
+.agro-timeline-header {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Responsividade consolidada no final da cascata (<= 1180px, <= 900px, <= 782px, <= 640px) */
+@media (max-width: 1180px) {
+  .agro-header {
+    height: auto;
+    min-height: 64px;
+    flex-wrap: wrap;
+    padding: 10px 16px;
+    gap: 8px 14px;
+  }
+
+  .agro-nav {
+    order: 3;
+    width: 100%;
+    height: auto;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .agro-nav-item {
+    white-space: nowrap;
+    flex-shrink: 0;
+    height: 38px;
+    padding: 6px 12px;
+  }
+
+  .agro-nav-item.active::after {
+    bottom: -2px;
+  }
+}
+
+@media (max-width: 900px) {
+  .agro-master-detail-grid,
+  .agro-fechamento-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agro-screen-header-left {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .agro-action-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .agro-detail-header-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .agro-detail-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .agro-filter-bar {
+    padding: 12px 14px;
+  }
+
+  .agro-filter-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .agro-filter-select,
+  .agro-filter-input,
+  .agro-filter-search-box {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .agro-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px 16px;
+  }
+
+  .agro-footer-right {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+}
+
+@media (max-width: 782px) {
+  body.admin-bar .agrotracer-app {
+    min-height: calc(100vh - 46px);
+  }
+
+  body.admin-bar .agro-header {
+    top: 46px;
+  }
+
+  body.admin-bar .agro-drawer {
+    top: 46px;
+    height: calc(100vh - 46px);
+  }
+
+  body.admin-bar .agro-modal-backdrop {
+    padding-top: 62px;
+  }
+}
+
+@media (max-width: 640px) {
+  .agro-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agro-modal-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .agro-subnav-tabs {
+    flex-wrap: wrap;
+  }
+
+  .agro-tab-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .agro-header-popover {
+    width: min(310px, calc(100vw - 24px));
+  }
+
+  .agro-public-main {
+    padding: 20px 14px 36px;
+  }
+
+  .agro-public-card {
+    padding: 18px 16px;
+  }
+}
+

@@ -43,11 +43,20 @@ if (function_exists('wp_enqueue_style')) {
             padding: 0 !important;
             background-color: #f8f9fa !important;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            overflow-x: clip;
             min-height: 100vh !important;
+        }
+        body.admin-bar {
+            padding-top: 32px !important;
+        }
+        @media screen and (max-width: 782px) {
+            body.admin-bar {
+                padding-top: 46px !important;
+            }
         }
     </style>
 </head>
-<body class="agrotracer-public-body">
+<body <?php if (function_exists('body_class')) { body_class('agrotracer-public-body'); } else { echo 'class="agrotracer-public-body"'; } ?>>
 <?php
     $plugin_dir = dirname(__DIR__);
     include $plugin_dir . '/templates/certificado-publico.php';
