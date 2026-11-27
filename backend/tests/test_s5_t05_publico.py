@@ -55,6 +55,13 @@ def test_consulta_publica_dto_minimizado_sem_autenticacao(request):
     assert resposta.headers["x-robots-tag"] == "noindex, nofollow"
 
     corpo = resposta.json()
+    # Identidade nao pode ser um campo do DTO; "42" pode ocorrer em hora/hash.
+    assert set(corpo) == {
+        "certificado_id", "lote_id", "status", "emitido_em", "versao_metodo",
+        "versao_parametros", "source_types", "synthetic", "aviso_proveniencia",
+        "data_abate", "numero_animais_abate", "resultados", "snapshot_sha256",
+        "pdf_sha256",
+    }
     assert corpo["certificado_id"] == cert["id"]
     assert corpo["lote_id"] == cert["lote_id"]
     assert corpo["status"] == "VALIDO"
@@ -88,7 +95,6 @@ def test_consulta_publica_dto_minimizado_sem_autenticacao(request):
         "planilha-privada",
         "source_uri",
         "BR-001",
-        "42",
     ):
         assert proibido not in texto
 

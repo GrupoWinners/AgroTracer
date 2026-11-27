@@ -63,7 +63,7 @@ def preparar():
         salvar(STATE / ".env", "\n".join(
             f"{k}={v}" for k, v in valores.items()) + "\n")
     env = carregar()
-    print("Preparando containers isolados da demo (primeiro build pode demorar).",
+    print("Preparando demo isolada (primeiro build pode demorar).",
           flush=True)
     compose("up", "-d", "--build", "--wait", "--wait-timeout", "180")
     compose("exec", "-T", "api", "python", "-m", "alembic", "upgrade", "head")
@@ -90,7 +90,7 @@ def preparar():
         raise RuntimeError(
             "DEMO_ACESSO_AUSENTE: token nao e recuperavel do banco")
     print("Demo pronta: " + wp + "/agrotracer/")
-    print("Acesso e token sinteticos somente no arquivo privado .demo/acesso.json")
+    print("Acesso/token sinteticos no arquivo privado .demo/acesso.json")
 
 
 def verificar():
