@@ -257,10 +257,10 @@ if (function_exists('wp_get_current_user')) {
                   <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('lotes')">
                     Ver detalhes
                   </button>
-                  <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('certificados')">
+                  <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('certificados'); AgroTracer.downloadCertificatePdfById(1);">
                     Baixar PDF
                   </button>
-                  <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.switchScreen('certificados')">
+                  <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" onclick="AgroTracer.openLotInFechamento(3)">
                     Ver QR
                   </button>
                 </div>

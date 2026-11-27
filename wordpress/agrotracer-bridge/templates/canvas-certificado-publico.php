@@ -20,6 +20,9 @@ if (!headers_sent()) {
 if (function_exists('wp_enqueue_style')) {
     wp_enqueue_style('agrotracer-screens-css');
 }
+if (function_exists('wp_enqueue_script')) {
+    wp_enqueue_script('agrotracer-screens-js');
+}
 ?>
 <!DOCTYPE html>
 <html <?php if (function_exists('language_attributes')) { language_attributes(); } else { echo 'lang="pt-BR"'; } ?>>
