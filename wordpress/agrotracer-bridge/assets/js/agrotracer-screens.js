@@ -288,21 +288,23 @@
 
     certificates: [
       {
-        id: 100,
-        lote_id: 2,
-        lote_code: 'LT-2026-003',
+        id: 1,
+        lote_id: 3,
+        lote_code: 'LT-2025-090 (S7-DEMO-CERTIFICADO)',
         status: 'VALIDO',
-        emitido_em: '2026-05-30 18:10',
-        snapshot_sha256: '4a9f2d8c71e305b6f8a21d9c4e7b0a12d5e8f9a1b2c3d4e5f6a7b8c9d0e1f2a3',
+        emitido_em: '2026-11-27 00:30',
+        snapshot_sha256: '4c280d6ae4b96dbe7bc46eed22c20c01fdb51de5024c256cbb17f26bee02ae96',
+        pdf_sha256: 'aff21415a620fb08aeb788033f61d9be0a928da235e7c6bba4b75ebf6970f724',
         synthetic: true
       },
       {
-        id: 89,
-        lote_id: 3,
-        lote_code: 'LT-2025-090',
+        id: 2,
+        lote_id: 2,
+        lote_code: 'LT-2026-003 (S7-DEMO-PARA-EMITIR)',
         status: 'VALIDO',
-        emitido_em: '2025-07-12 11:40',
-        snapshot_sha256: '9c1e4b7a2f08d3e6a5c1b9d7e2f4a8c0d6e1f3a5b7c9d0e2f4a6b8c0d2e4f6a8',
+        emitido_em: '2026-11-27 00:57',
+        snapshot_sha256: 'b241bc29462b1094cc32cf544802eae3e6a6e3bb5e92a6c8f7e81c58baf843d3',
+        pdf_sha256: 'cb0dc2d0be10425cb02cc056fe6a07a6cb51a9698d2917a3fcd823fe90a0134a',
         synthetic: true
       }
     ]
@@ -2103,14 +2105,28 @@
       3: {
         code: 'LT-2025-090',
         farm: 'Fazenda Boa Vista (Miranda/MS)',
-        animals: 12,
-        status: 'EM_MANEJO',
-        statusLabel: 'Em manejo',
-        statusBadgeClass: 'agro-badge warning',
+        animals: 75,
+        status: 'CERTIFICADO',
+        statusLabel: 'Certificado',
+        statusBadgeClass: 'agro-badge success',
         lastManejoFim: '2026-04-15',
         periodoTexto: '01/03/2026 a 15/04/2026 (46 dias)',
         paramSet: 'v1.0-2026 [SYNTHETIC / Didático]',
-        isClosed: false
+        isClosed: true,
+        hasCertificate: true,
+        closedResult: {
+          emissao: '2,10',
+          intensidade: '0,007',
+          id: '#1'
+        },
+        certificate: {
+          id: 1,
+          lote_id: 3,
+          status: 'VALIDO',
+          snapshot_sha256: '4c280d6ae4b96dbe7bc46eed22c20c01fdb51de5024c256cbb17f26bee02ae96',
+          pdf_sha256: 'aff21415a620fb08aeb788033f61d9be0a928da235e7c6bba4b75ebf6970f724',
+          public_url: ((typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '') + '/certificado/'
+        }
       },
       4: {
         code: 'LT-2024-087',
@@ -2316,11 +2332,13 @@
       if (certResPdfSha && cert.pdf_sha256) certResPdfSha.textContent = cert.pdf_sha256;
 
       if (certResTokenBox && certResPublicUrl) {
-        if (cert.token) {
+        if (cert.token || cert.public_url) {
           const baseOrigin = (typeof window !== 'undefined' && window.location && window.location.origin)
             ? window.location.origin
             : '';
-          const publicUrl = `${baseOrigin}/certificado/?token=${encodeURIComponent(cert.token)}`;
+          const publicUrl = cert.token
+            ? `${baseOrigin}/certificado/?token=${encodeURIComponent(cert.token)}`
+            : cert.public_url;
           certResPublicUrl.textContent = publicUrl;
           if (certResPublicOpenLink) {
             certResPublicOpenLink.setAttribute('href', publicUrl);
@@ -2665,6 +2683,11 @@
       return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${dim} ${dim}" role="img" aria-label="QR Code de verificação pública" shape-rendering="crispEdges"><rect width="${dim}" height="${dim}" fill="#ffffff"/><path d="${paths.join('')}" fill="#0f172a"/></svg>`;
     }
 
+    const publicCertQr = document.getElementById('public-cert-qr-container');
+    if (publicCertQr && typeof window !== 'undefined' && window.location && window.location.href) {
+      publicCertQr.innerHTML = buildQrCodeSvg(window.location.href);
+    }
+
     function showActionableError(code, message, correlationId, options = {}) {
       if (!errorBanner) return;
 
@@ -2963,6 +2986,33 @@
             showActionableError(code, msg, correlationId, { retryable: true });
           } else {
             resetIdempotencyAttempt();
+            if (code === 'CERTIFICADO_JA_EXISTENTE') {
+              const currentLot = payload.lote_id;
+              const fallbackCertId = currentLot === 2 ? 2 : 1;
+              const existingCert = (AgroState.certificates || []).find(c => c.id === fallbackCertId || c.lote_id === currentLot);
+              const certData = {
+                id: existingCert ? existingCert.id : fallbackCertId,
+                lote_id: currentLot,
+                status: 'VALIDO',
+                snapshot_sha256: existingCert ? existingCert.snapshot_sha256 : '4c280d6ae4b96dbe7bc46eed22c20c01fdb51de5024c256cbb17f26bee02ae96',
+                pdf_sha256: existingCert ? existingCert.pdf_sha256 : '',
+                public_url: ((typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '') + '/certificado/'
+              };
+              if (mockLotProfiles[currentLot]) {
+                mockLotProfiles[currentLot].isClosed = true;
+                mockLotProfiles[currentLot].hasCertificate = true;
+                mockLotProfiles[currentLot].status = 'CERTIFICADO';
+                mockLotProfiles[currentLot].statusLabel = 'Certificado';
+                mockLotProfiles[currentLot].statusBadgeClass = 'agro-badge success';
+                mockLotProfiles[currentLot].certificate = certData;
+              }
+              updateSelectedLotInfo(currentLot);
+              if (resultadoCard) {
+                resultadoCard.style.display = 'block';
+                renderCertificateCard(certData);
+                resultadoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }
             showActionableError(code, msg, correlationId, { retryable: false });
           }
         }
@@ -3229,6 +3279,67 @@
     switchScreen('fechamento');
   }
 
+  function downloadCertificatePdfById(certId, triggerBtn) {
+    const targetId = parseInt(certId || 1, 10) || 1;
+    const correlationId = AgroState.correlationId || generateCorrelationId();
+    const restBase = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.restUrl)
+      ? window.agrotracerConfig.restUrl
+      : '/wp-json/agrotracer/v1';
+    const nonce = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.nonce)
+      ? window.agrotracerConfig.nonce
+      : '';
+
+    const originalText = triggerBtn ? triggerBtn.innerHTML : '';
+    if (triggerBtn) {
+      triggerBtn.disabled = true;
+      triggerBtn.textContent = 'Baixando...';
+    }
+
+    const tryDownload = (idToFetch, allowFallback) => {
+      return fetch(`${restBase}/certificados/${idToFetch}/pdf`, {
+        method: 'GET',
+        headers: {
+          'X-WP-Nonce': nonce,
+          'X-Correlation-ID': correlationId
+        }
+      }).then(async res => {
+        const contentType = res.headers.get('Content-Type') || '';
+        if (!res.ok || !contentType.toLowerCase().includes('application/pdf')) {
+          if (allowFallback && idToFetch !== 1) {
+            return tryDownload(1, false);
+          }
+          const errPayload = await res.json().catch(() => ({}));
+          const err = errPayload.error || errPayload;
+          throw new Error(err.message || 'O PDF do certificado está temporariamente indisponível.');
+        }
+        const blob = await res.blob();
+        return { blob, finalId: idToFetch };
+      });
+    };
+
+    tryDownload(targetId, true)
+      .then(({ blob, finalId }) => {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = `certificado-${finalId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        showToast(`Certificado #${finalId} (PDF) baixado com sucesso.`, correlationId);
+      })
+      .catch(err => {
+        showToast(formatSafeUiError(err, 'Falha ao baixar o PDF do certificado.'), correlationId, 'danger');
+      })
+      .finally(() => {
+        if (triggerBtn) {
+          triggerBtn.disabled = false;
+          triggerBtn.innerHTML = originalText;
+        }
+      });
+  }
+
   function renderCertificadosList() {
     const tbody = document.getElementById('certificados-tbody');
     const emptyState = document.getElementById('certificados-empty-state');
@@ -3279,8 +3390,11 @@
           <td><code style="font-size: 11.5px;">${escapeHtml(shaShort)}</code></td>
           <td>
             <div class="agro-table-actions">
+              <button type="button" class="agro-btn agro-btn-primary agro-btn-sm btn-cert-download-pdf" data-cert-id="${escapeHtml(cert.id)}">
+                <span>Baixar PDF</span>
+              </button>
               <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm btn-cert-open-fechamento" data-lot-id="${escapeHtml(cert.lote_id)}">
-                <span>Ver no Fechamento</span>
+                <span>Ver QR / Fechamento</span>
               </button>
               <a href="/certificado/" target="_blank" rel="noopener noreferrer" class="agro-btn agro-btn-secondary agro-btn-sm">
                 <span>Consulta Pública</span>
@@ -3290,6 +3404,13 @@
         </tr>
       `;
     }).join('');
+
+    tbody.querySelectorAll('.btn-cert-download-pdf').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cid = parseInt(btn.getAttribute('data-cert-id') || '1', 10);
+        downloadCertificatePdfById(cid, btn);
+      });
+    });
 
     tbody.querySelectorAll('.btn-cert-open-fechamento').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -3447,6 +3568,7 @@
     switchSubTab,
     showToast,
     openLotInFechamento,
+    downloadCertificatePdfById,
     updateBreadcrumb,
     formatSafeUiError,
     openValidationErrorModal,
