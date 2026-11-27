@@ -27,12 +27,20 @@ wp_enqueue_script('agrotracer-screens-js');
             padding: 0 !important;
             background-color: #f8f9fa !important;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-            overflow-x: hidden;
+            overflow-x: clip;
             width: 100% !important;
             min-height: 100vh !important;
         }
         #wpadminbar {
-            opacity: 0.95;
+            opacity: 0.98;
+        }
+        body.admin-bar {
+            padding-top: 32px !important;
+        }
+        @media screen and (max-width: 782px) {
+            body.admin-bar {
+                padding-top: 46px !important;
+            }
         }
     </style>
 </head>

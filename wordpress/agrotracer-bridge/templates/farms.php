@@ -396,7 +396,7 @@
               <button type="button" class="agro-pagination-btn" disabled>&lt;</button>
               <button type="button" class="agro-pagination-btn active">1</button>
               <button type="button" class="agro-pagination-btn" disabled>&gt;</button>
-              <select class="agro-input" style="padding: 3px 8px; font-size: 12px; width: 68px; margin-left: 6px;">
+              <select id="paddock-page-size" name="paddock_page_size" aria-label="Talh&otilde;es por p&aacute;gina" class="agro-input" style="padding: 3px 8px; font-size: 12px; width: 68px; margin-left: 6px;">
                 <option value="10" selected>10</option>
                 <option value="25">25</option>
                 <option value="50">50</option>

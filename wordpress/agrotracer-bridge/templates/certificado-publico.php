@@ -27,6 +27,45 @@ $agro_esc_attr = static function ($value): string {
         : htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
 };
 
+$agro_fmt_metric = static function ($value, int $max_decimals = 6): string {
+    if ($value === null || $value === '') {
+        return '—';
+    }
+    $raw = trim((string) $value);
+    if (!preg_match('/^-?\d+(?:\.(\d+))?$/', $raw, $m)) {
+        return $raw;
+    }
+    $decimals = $m[1] ?? '';
+    if (strlen($decimals) <= $max_decimals) {
+        return $raw;
+    }
+    $trimmed = rtrim($decimals, '0');
+    if (strlen($trimmed) < 2) {
+        $trimmed = str_pad($trimmed, 2, '0');
+    }
+    if (strlen($trimmed) <= $max_decimals) {
+        $int_part = explode('.', $raw, 2)[0];
+        return $int_part . '.' . $trimmed;
+    }
+    return number_format((float) $raw, $max_decimals, '.', '');
+};
+
+$agro_fmt_date = static function ($value): string {
+    $raw = trim((string) ($value ?? ''));
+    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $raw, $m)) {
+        return $m[3] . '/' . $m[2] . '/' . $m[1];
+    }
+    return $raw !== '' ? $raw : '—';
+};
+
+$agro_fmt_datetime = static function ($value): string {
+    $raw = trim((string) ($value ?? ''));
+    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/', $raw, $m)) {
+        return $m[3] . '/' . $m[2] . '/' . $m[1] . ' ' . $m[4] . ':' . $m[5] . ' UTC';
+    }
+    return $raw !== '' ? $raw : '—';
+};
+
 if (!isset($agrotracer_public_lookup) || !is_array($agrotracer_public_lookup)) {
     $has_token = isset($_GET['token']);
     $raw_token = '';
@@ -66,7 +105,7 @@ $agro_portal_url = function_exists('home_url')
   <header class="agro-header agro-public-header">
     <div class="agro-brand" style="cursor: default;">
       <?php if ($logo_url !== ''): ?>
-        <img src="<?php echo $agro_esc_attr($logo_url); ?>" alt="AgroTracer" class="agro-brand-logo-img">
+        <img src="<?php echo $agro_esc_attr($logo_url); ?>" alt="AgroTracer" class="agro-brand-logo-img" width="42" height="42">
       <?php endif; ?>
       <span>AGROTRACER</span>
     </div>
@@ -160,11 +199,20 @@ $agro_portal_url = function_exists('home_url')
             </div>
           <?php endif; ?>
 
+          <?php
+            $raw_emissao     = (string) ($resultados['emissao_total_kg_co2e'] ?? '');
+            $raw_intensidade = (string) ($resultados['intensidade_kg_co2e_kg'] ?? '');
+            $fmt_emissao     = $agro_fmt_metric($raw_emissao);
+            $fmt_intensidade = $agro_fmt_metric($raw_intensidade);
+            $animais_abate   = (int) ($dto['numero_animais_abate'] ?? 0);
+            $animais_label   = $animais_abate === 1 ? 'cabeça' : 'cabeças';
+            $raw_emitido_em  = (string) ($dto['emitido_em'] ?? '');
+          ?>
           <div class="agro-public-metrics-grid">
             <div class="agro-public-metric-box">
               <span class="agro-public-metric-label">Emissão Total Consolidada</span>
               <div class="agro-public-metric-value">
-                <strong id="public-cert-emissao-total"><?php echo $agro_esc($resultados['emissao_total_kg_co2e'] ?? '—'); ?></strong>
+                <strong id="public-cert-emissao-total" title="<?php echo $agro_esc_attr($raw_emissao); ?>"><?php echo $agro_esc($fmt_emissao); ?></strong>
                 <span><?php echo $agro_esc($resultados['unidade_emissao'] ?? 'kg CO2e'); ?></span>
               </div>
             </div>
@@ -172,7 +220,7 @@ $agro_portal_url = function_exists('home_url')
             <div class="agro-public-metric-box highlight">
               <span class="agro-public-metric-label">Intensidade de Carbono</span>
               <div class="agro-public-metric-value">
-                <strong id="public-cert-intensidade"><?php echo $agro_esc($resultados['intensidade_kg_co2e_kg'] ?? '—'); ?></strong>
+                <strong id="public-cert-intensidade" title="<?php echo $agro_esc_attr($raw_intensidade); ?>"><?php echo $agro_esc($fmt_intensidade); ?></strong>
                 <span><?php echo $agro_esc($resultados['unidade_intensidade'] ?? 'kg CO2e/kg de carcaça'); ?></span>
               </div>
             </div>
@@ -193,15 +241,15 @@ $agro_portal_url = function_exists('home_url')
             </div>
             <div>
               <dt>Data de Abate</dt>
-              <dd id="public-cert-data-abate"><?php echo $agro_esc($dto['data_abate'] ?? '—'); ?></dd>
+              <dd id="public-cert-data-abate"><?php echo $agro_esc($agro_fmt_date($dto['data_abate'] ?? '')); ?></dd>
             </div>
             <div>
               <dt>Animais no Abate</dt>
-              <dd id="public-cert-animais"><?php echo $agro_esc($dto['numero_animais_abate'] ?? 0); ?> cabeças</dd>
+              <dd id="public-cert-animais"><?php echo $agro_esc($animais_abate); ?> <?php echo $agro_esc($animais_label); ?></dd>
             </div>
             <div>
               <dt>Emitido em</dt>
-              <dd id="public-cert-emitido-em"><?php echo $agro_esc($dto['emitido_em'] ?? '—'); ?></dd>
+              <dd id="public-cert-emitido-em" title="<?php echo $agro_esc_attr($raw_emitido_em); ?>"><?php echo $agro_esc($agro_fmt_datetime($raw_emitido_em)); ?></dd>
             </div>
           </dl>
 
@@ -262,4 +310,15 @@ $agro_portal_url = function_exists('home_url')
       <?php endif; ?>
     </section>
   </main>
+
+  <footer class="agro-footer agro-public-footer">
+    <div class="agro-footer-left">
+      <span>&copy; 2026 AgroTracer &middot; Plataforma de Rastreabilidade Acad&ecirc;mica</span>
+    </div>
+    <div class="agro-footer-right">
+      <span>Motor de Estimativa: <strong>CARBONENGINE-MVP-1.0</strong></span>
+      <span>&verbar;</span>
+      <span>Consulta P&uacute;blica (RN-13)</span>
+    </div>
+  </footer>
 </div>

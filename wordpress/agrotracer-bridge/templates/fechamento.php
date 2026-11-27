@@ -104,23 +104,23 @@ if (!defined('ABSPATH')) {
 
   <!-- Barra de Filtros e Seleção do Lote -->
   <div class="agro-filter-bar" style="margin-bottom: 24px; background: #fff; padding: 16px 20px; border: 1px solid var(--agro-border); border-radius: var(--agro-radius-md);">
-    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;">
-      <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 300px;">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; width: 100%;">
+      <div class="agro-filter-lot-picker">
         <label for="select-fechamento-lote" style="font-size: 13px; font-weight: 600; color: var(--agro-text-primary); white-space: nowrap;">
           Selecionar Lote para Fechamento:
         </label>
-        <select id="select-fechamento-lote" class="agro-select" style="min-width: 260px;">
+        <select id="select-fechamento-lote" class="agro-select">
           <option value="1" data-code="LT-2026-001" data-farm="Fazenda Modelo" data-animals="50" data-status="EM_MANEJO" data-days="90">
             LT-2026-001 (Fazenda Modelo — 50 animais · Em manejo)
           </option>
           <option value="2" data-code="LT-2026-003" data-farm="Fazenda São Bento" data-animals="45" data-status="FECHADO" data-days="150">
             LT-2026-003 (Fazenda São Bento — 45 animais · Fechado)
           </option>
-          <option value="3" data-code="LT-2025-090" data-farm="Fazenda Esperança" data-animals="12" data-status="EM_MANEJO" data-days="45">
-            LT-2025-090 (Fazenda Esperança — 12 animais · Em manejo)
+          <option value="3" data-code="LT-2025-090" data-farm="Fazenda Boa Vista" data-animals="12" data-status="EM_MANEJO" data-days="45">
+            LT-2025-090 (Fazenda Boa Vista — 12 animais · Em manejo)
           </option>
-          <option value="4" data-code="LT-2024-087" data-farm="Fazenda Alvorada" data-animals="0" data-status="RASCUNHO" data-days="0">
-            LT-2024-087 (Fazenda Alvorada — Vazio · Rascunho)
+          <option value="4" data-code="LT-2024-087" data-farm="Fazenda Estrela do Sul" data-animals="0" data-status="RASCUNHO" data-days="0">
+            LT-2024-087 (Fazenda Estrela do Sul — Vazio · Rascunho)
           </option>
         </select>
       </div>
@@ -133,7 +133,7 @@ if (!defined('ABSPATH')) {
   </div>
 
   <!-- Layout em 2 Colunas: Resumo do Lote vs Formulário de Fechamento -->
-  <div class="agro-master-detail-grid" style="grid-template-columns: 1fr 1.25fr; gap: 24px; align-items: start;">
+  <div class="agro-master-detail-grid agro-fechamento-grid">
 
     <!-- Coluna Esquerda: Resumo Pré-Fechamento e Verificação de Pré-condições -->
     <div class="agro-sidebar-card" style="background:#fff; border:1px solid var(--agro-border); border-radius:var(--agro-radius-md); padding:20px;">
