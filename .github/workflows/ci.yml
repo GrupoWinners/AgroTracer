@@ -2,7 +2,7 @@ name: AgroTracer CI
 
 on:
   pull_request:
-    branches: [develop, main, 'feature/S3-*', 'feature/S4-*', 'feature/S5-*', 'feature/S6-*']
+    branches: [develop, main, 'feature/S3-*', 'feature/S4-*', 'feature/S5-*', 'feature/S6-*', 'feature/S7-*']
   push:
     branches: [develop, main]
 
@@ -111,3 +111,26 @@ jobs:
           name: s6-restore
           path: backend/restore-ci.json
           if-no-files-found: ignore
+
+  demo_limpa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.7'
+      - name: Do clone a demo (migrations reais e WordPress)
+        run: python tools/demo.py up
+      - name: Reexecutar bootstrap sem duplicar dados
+        run: python tools/demo.py up
+      - name: Login, Bridge HMAC, certificado e PDF
+        run: python tools/demo.py verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: s7-demo-verificacao
+          path: .demo/verificacao.json
+          include-hidden-files: true
+      - name: Encerrar somente projeto descartavel da CI
+        if: always()
+        run: docker compose --env-file .demo/.env -p agrotracer-s7-demo -f ops/demo/compose.yaml down -v

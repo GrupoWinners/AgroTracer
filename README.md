@@ -1,208 +1,108 @@
 # AgroTracer
-Projeto desenvolvido pelo Grupo Winners.
 
-## Objetivo
-Sistema AgroTracer.
+Rastreabilidade pecuaria e demonstracao didatica de calculo de emissoes.
+Sprint 7: instalacao reproduzivel, revisao e preparacao para QA da release.
+Os fatores e dados de demo sao **SYNTHETIC**: nao constituem inventario real,
+validacao cientifica ou certificacao ambiental independente.
 
-## Status
-Sprint 0 - Preparação do ambiente.
+## Do clone a demo local
 
-## Dados de demonstração e proveniência
+Requisitos: Git, Python 3.12+ (CI 3.14.7), Docker com containers Linux e
+Docker Compose v2 com `up --wait`. No Windows, abrir Docker Desktop antes.
+O primeiro build baixa imagens e dependencias; reserve alguns minutos.
+Os mesmos comandos funcionam em PowerShell, Git Bash e Linux:
 
-Os valores exibidos no dashboard são sintéticos e ilustrativos; não representam
-inventário real de emissões ou fatores oficiais. O exemplo de fatores em
-[`backend/examples/parametros_demo.json`](backend/examples/parametros_demo.json)
-usa `source_type: SYNTHETIC`, sem atribuição ao IPCC, Embrapa ou aprovação
-científica. Consulte a [revisão de proveniência da S3-T06](docs/evidencias/sprint-3/S3-T06-proveniencia-demo.md).
-
-## Requisitos
-Python 3.12+ (ambiente testado com Python 3.14.7).
-Docker Desktop com Docker Compose.
-
-## Configuração do ambiente
-```bash
-cd backend
-python -m venv .venv
-source .venv/Scripts/activate
-python -m pip install -r requirements-dev.txt
-```
-
-## Verificação de código
-O Flake8 é utilizado para verificar problemas de qualidade e formatação.
-
-```bash
-python -m flake8 app tests
-```
-
-## Testes automatizados
-O projeto AgroTracer utiliza Pytest para executar verificações automatizadas.
-
-```bash
-python -m pytest -v
-```
-
-## Inicialização do ambiente completo
-
-As instruções abaixo consideram Windows com Git Bash
-e Docker Desktop instalado.
-
-### 1. Clonar o projeto
-
-```bash
-git clone https://github.com/GrupoWinners/AgroTracer.git
+```sh
+git clone --branch develop https://github.com/GrupoWinners/AgroTracer.git
 cd AgroTracer
+python tools/demo.py up
+python tools/demo.py verify
 ```
 
-### 2. Configurar as variáveis de ambiente
+Enquanto o PR S7-T01 estiver em review, apos clonar use
+`git switch feature/S7-T01` (ou a branch encadeada S7-T05 para sua revisao).
+A demo e um projeto Compose independente, sem reutilizar banco/volumes do
+`docker-compose.yaml` anterior. Nao exige editar wp-config, executar SQL manual,
+instalar plugin pela interface ou copiar chave HMAC entre servicos.
 
-Copie o arquivo de exemplo:
+Abra http://127.0.0.1:18080/agrotracer/ e faca login com o usuario e senha de
+`.demo/acesso.json`. O bootstrap gera credenciais aleatorias e as guarda
+somente em `.demo/` (ignorado no Git). Nao compartilhe esses arquivos ou
+publique sua saida; no Windows, mantenha a pasta restrita a sua conta.
+A API local fica em http://127.0.0.1:18000/health.
 
-```bash
-cp .env.example .env
+O bootstrap aplica `alembic upgrade head`, instala WordPress e Bridge,
+provisiona as paginas, vincula o produtor ao ID real do usuario WP e cria:
+
+- Fazenda SYNTHETIC S7, talhao, dois animais e dois lotes com manejo.
+- Conjunto ativo S7-DEMO-SYNTHETIC-1, publicado apos inserir os fatores.
+- Lote S7-DEMO-CERTIFICADO: snapshot, certificado, token e PDF persistidos.
+- Lote S7-DEMO-PARA-EMITIR: pronto para demonstrar fechamento/emissao.
+
+Para emitir o segundo lote: abate 2026-02-02, 1 animal, peso medio 540 kg,
+rendimento 0.53. O arquivo de acesso tambem informa os IDs e o token do
+primeiro certificado para consultar na pagina publica `/certificado/`.
+`verify` valida login WP real, Bridge PHP -> HMAC -> API -> banco,
+consulta publica e hash do PDF. Publica somente um resumo sem credenciais.
+
+Reexecutar `up` preserva senhas e dados, nao duplica o seed nem recupera token
+do banco. Se perder `.demo/acesso.json`, o token original nao pode ser
+reconstituido; preserve o arquivo privado junto ao ambiente de demonstracao.
+O seed exige opt-in e banco chamado `agrotracer_demo`; recusa banco com dados
+preexistentes e nao apaga registros. A transacao inteira reverte em falha.
+Nenhuma migration nova foi necessaria: as migrations existentes sao testadas
+em instalacao limpa, inclusive triggers, constraints e PDFs.
+
+Para encerrar preservando os dados:
+
+```sh
+python tools/demo.py stop
 ```
 
-No arquivo `.env`, defina uma senha local para
-POSTGRES_PASSWORD e utilize a mesma senha na DATABASE_URL.
+Para iniciar novamente, executar `up`. Nao executar `down -v` em ambientes
+com dados a preservar. O job CI utiliza volumes novos e descartaveis.
 
-A DATABASE_URL utiliza a porta 55432, correspondente à
-porta publicada pelo Docker Compose.
+### Diagnostico local
 
-Nunca envie o arquivo `.env` ao GitHub.
+- Docker indisponivel: iniciar Docker Desktop em modo Linux e verificar
+  `docker info`. Se o build falhar, verificar acesso aos registries e PyPI.
+- Portas 18000/18080 ocupadas: liberar essas portas antes da primeira execucao.
+- `DEMO_COMPOSE_FALHOU`: verificar `docker compose --env-file .demo/.env
+  -p agrotracer-s7-demo -f ops/demo/compose.yaml ps` (comando em uma linha).
+  Nao publicar `docker compose config`, dumps ou .demo, pois contem segredos.
+- Falha no seed: nao limpar banco automaticamente. Conferir opt-in, migrations
+  e uso exclusivo do projeto demo; dados de outro ambiente devem ser preservados.
 
+## Desenvolvimento e testes
 
-A aplicação também utiliza Redis para proteção anti-replay
-das requisições autenticadas pela Bridge.
-
-No arquivo `.env`, configure:
-
-- `AGROTRACER_REDIS_URL=redis://127.0.0.1:16379/0`
-- `AGROTRACER_BRIDGE_SECRET` com uma chave aleatória e segura.
-
-Para gerar uma chave HMAC de desenvolvimento:
-
-```bash
-python -c "import secrets; print(secrets.token_hex(32))"
-```
-
-Copie o resultado para `AGROTRACER_BRIDGE_SECRET`
-no `.env` local.
-
-A chave HMAC nunca deve ser incluída no código-fonte,
-enviada ao navegador ou publicada no GitHub.
-
-### 3. Iniciar o PostgreSQL e o Redis
-
-Com o Docker Desktop aberto, na raiz do projeto:
-
-```bash
-docker compose up -d db redis
-docker compose ps
-```
-
-Aguarde os dois serviços apresentarem o estado healthy.
-
-Portas utilizadas no ambiente local:
-
-- PostgreSQL: 127.0.0.1:55432
-- Redis: 127.0.0.1:16379
-
-O FastAPI utiliza o Redis para controlar os nonces
-e impedir a reutilização de requisições autenticadas.
-
-### 4. Preparar o Python
-
-```bash
+```sh
 cd backend
 python -m venv .venv
-source .venv/Scripts/activate
+```
+
+Ativar no PowerShell: `.venv\Scripts\Activate.ps1`; no Git Bash:
+`source .venv/Scripts/activate`; no Linux: `source .venv/bin/activate`.
+
+```sh
 python -m pip install -r requirements-dev.txt
-```
-
-### 5. Carregar as variáveis de ambiente
-
-```bash
-set -a
-source ../.env
-set +a
-```
-
-### 6. Aplicar as migrations
-
-```bash
-python -m alembic upgrade head
-python -m alembic current
-```
-
-A migration inicial habilita a extensão btree_gist
-no PostgreSQL.
-
-Todas as alterações de estrutura do banco deverão
-ser realizadas por migrations.
-
-### 7. Iniciar a API FastAPI
-
-Antes de iniciar a API, confirme que PostgreSQL e Redis
-estão disponíveis e que as variáveis de ambiente foram
-carregadas conforme a etapa 5.
-
-O Redis deve estar acessível durante a inicialização
-do FastAPI.
-
-```bash
-python -m uvicorn app.main:app --reload
-```
-
-A API ficará disponível em:
-
-- Health: http://127.0.0.1:8000/health
-- Swagger/OpenAPI: http://127.0.0.1:8000/docs
-- Especificação JSON: http://127.0.0.1:8000/openapi.json
-
-O endpoint /health deve responder HTTP 200 com:
-
-```json
-{"status": "ok"}
-```
-
-### 8. Executar os testes
-
-Em outro terminal, dentro da pasta backend,
-com o ambiente virtual ativado:
-
-```bash
-python -m pytest -v
 python -m flake8 app tests
+python -m pytest -v -k "not test_s1_t01_postgresql"
 ```
 
-Os testes devem passar e o Flake8 não deve
-apresentar erros.
+Alguns testes exigem PostgreSQL/Redis exclusivos de teste; a CI fornece essas
+bases e valida todas as migrations. O teste legado S1-T01 depende de configuracao
+local e permanece fora do filtro historico da CI; nao usar base real para testes.
+Para API manual, carregar variaveis conforme `.env.example`, migrar o banco e
+usar `python -m app.run` (logs seguros, sem reload). O compose antigo segue
+disponivel para desenvolvimento; nao e o caminho de instalacao da demo.
 
-### 9. Encerrar o ambiente
+## Evidencias e operacao
 
-Interrompa o FastAPI com Ctrl+C.
+- [Sprint 6: seguranca, performance e recuperacao](docs/evidencias/sprint-6/README.md)
+- [Sprint 7: requisitos e reproducao](docs/evidencias/sprint-7/S7-T01.md)
+- [Politica de logs](docs/operacao/logs-seguros.md)
+- [Backup e restore](docs/operacao/backup-restore.md)
 
-Na raiz do projeto:
-
-```bash
-docker compose down
-```
-
-O volume do PostgreSQL será preservado.
-
-Não utilize `docker compose down -v` para
-encerrar normalmente, pois isso remove o
-volume de dados.
-# Sprint 5 — certificacao e PDF
-
-Fluxo backend: `POST /api/v1/lotes/{id}/certificar` com autenticacao HMAC,
-`Idempotency-Key` e o mesmo corpo do fechamento. Resposta 201 inclui token
-opaco uma unica vez; repeticoes recebem 409 controlado. O token original
-nao e salvo. `GET /api/v1/certificados/{id}/pdf` retorna arquivo autenticado
-e `X-PDF-SHA256`, gerando/persistindo o PDF no primeiro download.
-
-Aplicar `python -m alembic upgrade head` antes do deploy. Migrações:
-`s5t03_tokens` → `s5t01_certificados` → `s5t02_pdf`. Instalar as dependencias
-atualizadas do backend. Detalhes, contratos e limites de integracao em
-`docs/adr/S5-T01-certificacao-atomica.md` e `docs/evidencias/sprint-5/`.
-Servico de consulta publica com rate limit disponivel para integracao
-na S5-T05; pagina publica/DTO nao fazem parte destas tres tarefas.
+A demo e local e usa HTTP em loopback/rede Docker. Nao e configuracao de
+producao: TLS, proxy, segredos, backups e homologacao exigem o checklist de
+release e revisao conjunta. Nao publicar tag ou integrar PR antes de QA/review.
