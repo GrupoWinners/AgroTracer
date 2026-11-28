@@ -2,11 +2,12 @@
 *.png binary
 
 # GitHub Linguist — Classificacao precisa das linguagens do projeto
-docs/** linguist-documentation
+docs/* linguist-documentation
+docs/**/* linguist-documentation
 wordpress/preview.html linguist-generated=true
-wordpress/agrotracer-plugin/** linguist-generated=true
-wordpress/agrotracer-bridge/**/*.php linguist-detectable=true
-wordpress/agrotracer-bridge/**/*.js linguist-detectable=true
-wordpress/agrotracer-bridge/**/*.css linguist-detectable=true
-backend/**/*.py linguist-detectable=true
-tools/**/*.py linguist-detectable=true
+wordpress/agrotracer-plugin/* linguist-generated=true
+wordpress/agrotracer-plugin/**/* linguist-generated=true
+*.py linguist-detectable=true linguist-vendored=false
+*.php linguist-detectable=true linguist-vendored=false
+*.js linguist-detectable=true linguist-vendored=false
+*.css linguist-detectable=true linguist-vendored=false
