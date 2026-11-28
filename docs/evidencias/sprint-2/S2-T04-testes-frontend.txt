@@ -1,0 +1,26 @@
+﻿=========================================================================
+AgroTracer Sprint 2 Test Suite: Task S2-T04 (Lotes, Animais & Zero Hover)
+Ambiente: PHP 8.2.29 | WordPress Test Harness
+=========================================================================
+ [PASS] test_templates_exist_and_contain_required_identifiers
+ [PASS] test_design_system_and_semantic_badges_applied
+ [PASS] test_important_actions_are_visible_without_hover_dependency
+ [PASS] test_expected_domain_error_codes_are_defined_and_mapped
+ [PASS] test_filter_controls_are_present_for_lots_and_animals
+ [PASS] test_bridge_controller_has_sprint2_handlers
+-------------------------------------------------------------------------
+Resultado: 6 passaram | 0 falharam | Tempo: 48.08 ms
+=========================================================================
+
+PHPUnit / AgroTracer Bridge Security & Contract Test Runner (PHP 8.2.29)
+=========================================================================
+ [PASS] test_happy_path_get_request_with_valid_headers_and_signature_is_approved
+ [PASS] test_happy_path_post_request_and_official_vector_match
+ [PASS] test_rejection_when_actor_id_in_header_is_tampered
+ [PASS] test_rejection_when_request_body_is_modified_after_signing
+ [PASS] test_rejection_when_timestamp_is_outside_tolerance_window
+ [PASS] test_rejection_when_nonce_is_reused_in_replay_attack
+ [PASS] test_identity_and_capability_enforcement
+ [PASS] test_ui_error_mapping_for_400_401_403_404_422_500_without_leaking_internals
+-------------------------------------------------------------------------
+Time: 5.22 ms | Tests: 8 | Passed: 8 | Failed: 0 | Assertions: 72

@@ -1,0 +1,27 @@
+{
+  "escopo": "Dados SYNTHETIC; ambientes Docker descartaveis",
+  "backups_bytes": {
+    "postgresql_inclui_pdfs": 55260,
+    "wordpress_sql": 99985,
+    "wp_content": 15525538
+  },
+  "rto_academico_segundos": 4.389,
+  "rto_inicio": "pg_restore em destino vazio pre-provisionado",
+  "rto_fim": "login WP, arquivo/plugin, PDF HMAC e publico OK",
+  "origem_desligada": true,
+  "login_wp_restaurado": true,
+  "wp_content_restaurado": true,
+  "bridge_ativo": true,
+  "pdf_sha256_igual": true,
+  "consulta_publica_ok": true,
+  "hmac_redis_real": true,
+  "imagens": [
+    "postgres:16",
+    "mariadb:11.4",
+    "wordpress:6.8.3-php8.3-apache",
+    "wordpress:cli-php8.3"
+  ],
+  "limites": "Exclui provisionamento/download, DNS, TLS e producao",
+  "run": "https://github.com/GrupoWinners/AgroTracer/actions/runs/44582596016",
+  "commit": "d772239f3414e7a9db36a0de176ad323425c4275"
+}

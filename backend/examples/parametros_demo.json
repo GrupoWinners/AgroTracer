@@ -1,0 +1,15 @@
+{
+  "versao": "DEMO-SYNTHETIC-2026-01",
+  "status": "RASCUNHO",
+  "vigencia_inicio": "2026-01-01",
+  "aviso": "Dados sintéticos para demonstração. Sem validação científica, atribuição institucional ou uso em inventários reais.",
+  "fatores": [
+    {
+      "chave": "DEMO_FATOR_DIDATICO",
+      "unidade": "kg CO2e/cabeca/dia",
+      "valor": "2.100000000000",
+      "source_type": "SYNTHETIC",
+      "source_uri": null
+    }
+  ]
+}

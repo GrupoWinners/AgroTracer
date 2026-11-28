@@ -1,0 +1,18 @@
+=========================================================================
+AgroTracer Sprint 5 — Evidencia S5-T04 (WordPress Bridge, JS & PHP)
+Ambiente: PHP 8.2.29 | Node.js v24.19.0
+=========================================================================
+1. PHP Syntax Lint (php -l): 20/20 arquivos em wordpress/agrotracer-bridge -> 0 erros
+2. JS Syntax Check (node --check agrotracer-screens.js) -> OK
+3. Suite PHPUnit Emulation Runner:
+   - test-agrotracer-http-client.php: 8/8 passed (72 assertions)
+   - test-s2-t04-lotes-animais.php: 6/6 passed
+   - test-s3-t04-timeline-manejo.php: 5/5 passed
+   - test-s4-t04-fechamento-tela.php: 5/5 passed
+   - test-s5-t04-certificacao-download.php: 6/6 passed
+4. Simulacao comportamental V8 (agrotracer-screens.js):
+   - Duplo clique durante POST /certificar bloqueado (1 requisicao)
+   - Retry Seguro apos 503 preserva exatamente a mesma Idempotency-Key
+   - Download PDF bloqueia duplo clique e recupera apos 503 PDF_INDISPONIVEL
+   - Alteracao de payload rotaciona Idempotency-Key na tentativa seguinte
+=========================================================================

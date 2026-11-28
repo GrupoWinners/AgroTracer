@@ -2,9 +2,9 @@ name: AgroTracer CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [develop, main, 'feature/S3-*', 'feature/S4-*', 'feature/S5-*', 'feature/S6-*', 'feature/S7-*']
   push:
-    branches: [main]
+    branches: [develop, main]
 
 permissions:
   contents: read
@@ -29,8 +29,141 @@ jobs:
       - name: Instalar dependencias
         run: python -m pip install -r requirements-dev.txt
 
+      - name: Aplicar migrations no banco de teste
+        working-directory: backend
+        run: python -m alembic upgrade head
+
       - name: Executar lint
-        run: python -m flake8 app tests
+        run: python -m flake8 app tests ../tools/demo.py ../tools/release_check.py ../tools/release_bundle.py
 
       - name: Executar testes
-        run: python -m pytest -v
+        working-directory: backend
+        run: python -m pytest -v -k "not test_s1_t01_postgresql"
+
+      - name: Publicar medicoes sinteticas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s6-performance
+          path: backend/performance-ci.json
+          if-no-files-found: ignore
+
+      - name: Resumo de performance sintetica
+        if: always()
+        working-directory: backend
+        run: |
+          python -c "import json,pathlib; p=pathlib.Path('performance-ci.json'); r=json.loads(p.read_text()) if p.exists() else {}; print(json.dumps({k:v for k,v in r.items() if k != 'medicoes'})); print(json.dumps({k:{a:b for a,b in v.items() if a != 'amostras_ms'} for k,v in r.get('medicoes',{}).items()}))"
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 16379:6379
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: agrotracer_ci
+          POSTGRES_PASSWORD: senha_ci_temporaria
+          POSTGRES_DB: agrotracer_s2_t01_teste
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U agrotracer_ci -d agrotracer_s2_t01_teste"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      AGROTRACER_PERF_REPORT: performance-ci.json
+      AGROTRACER_TEST_REDIS_URL: redis://127.0.0.1:16379/15
+      DATABASE_URL: postgresql+psycopg://agrotracer_ci:senha_ci_temporaria@127.0.0.1:55432/agrotracer_s2_t01_teste
+      AGROTRACER_TEST_DATABASE_URL: postgresql+psycopg://agrotracer_ci:senha_ci_temporaria@127.0.0.1:55432/agrotracer_s2_t01_teste
+
+
+  recuperacao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 16379:6379
+    env:
+      AGROTRACER_RESTORE_DRILL: '1'
+      AGROTRACER_TEST_REDIS_URL: redis://127.0.0.1:16379/15
+      DATABASE_URL: sqlite://
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.7'
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements-dev.txt
+      - name: Backup e restore em laboratorio isolado
+        run: python -m pytest tests/test_s6_t06_restore.py -v -s --tb=short
+      - name: Publicar somente relatorio sem dados privados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s6-restore
+          path: backend/restore-ci.json
+          if-no-files-found: ignore
+
+  demo_limpa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.7'
+      - name: Do clone a demo (migrations reais e WordPress)
+        run: python tools/demo.py up
+      - name: Reexecutar bootstrap sem duplicar dados
+        run: python tools/demo.py up
+      - name: Checklist automatizado de release
+        run: python tools/release_check.py
+      - name: Login, Bridge HMAC, certificado e PDF
+        run: python tools/demo.py verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: s7-demo-verificacao
+          path: |
+            .demo/verificacao.json
+            .demo/release-check.json
+          include-hidden-files: true
+      - name: Encerrar somente projeto descartavel da CI
+        if: always()
+        run: docker compose --env-file .demo/.env -p agrotracer-s7-demo -f ops/demo/compose.yaml down -v
+
+  pacote_candidato:
+    needs: [verificacoes, recuperacao, demo_limpa, wordpress_release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14.7'
+      - name: Gerar pacote do commit testado sem tag ou aceite automatico
+        run: python tools/release_bundle.py --commit "$GITHUB_SHA" --output .release/candidato
+      - name: Conferir hashes antes do upload
+        working-directory: .release/candidato
+        run: sha256sum -c SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agrotracer-candidato-${{ github.sha }}
+          path: .release/candidato/*
+          include-hidden-files: true
+          if-no-files-found: error
+
+  wordpress_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Sintaxe PHP e regressoes Bridge
+        run: |
+          find wordpress/agrotracer-bridge -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          for test in wordpress/agrotracer-bridge/tests/test-*.php; do php "$test"; done

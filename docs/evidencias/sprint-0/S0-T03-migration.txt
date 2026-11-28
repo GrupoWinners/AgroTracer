@@ -1,0 +1,15 @@
+S0-T03 - Validacao da migration em banco novo
+
+Versao do Alembic:
+ version_num  
+--------------
+ 4b5cbbc1616c
+(1 row)
+
+
+Extensao btree_gist:
+  extname   
+------------
+ btree_gist
+(1 row)
+

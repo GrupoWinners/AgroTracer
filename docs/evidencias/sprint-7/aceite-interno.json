@@ -1,0 +1,20 @@
+{
+  "issue": "AG-113",
+  "versao_alvo": "v1.0.0",
+  "status": "APROVADO",
+  "commit_candidato": "6c932bb4c4e99960a2a6b2ce84a1e4a1db30ca78",
+  "ensaios": "Concluidos e homologados pela equipe (AG-111 / S7-T04)",
+  "review_independente": "docs/evidencias/sprint-7/S7-T05-review-joao.md (PRs #52, #53, #54, #58, #60)",
+  "qa_final": "docs/evidencias/sprint-7/S7-T03.md (PR #58 - 0 P1/P2 em aberto)",
+  "ci_candidato": "https://github.com/GrupoWinners/AgroTracer/actions/runs/46093629485",
+  "artefatos_e_hashes": {
+    "agrotracer-candidato.zip": "a6110626483b49c86613c53a78f694dfa90f3ac8d263107f3c463cba5fcb07fa",
+    "agrotracer-documentacao.zip": "5f49bd9d689f899a4f4a551ad644eb02124c87e0436ac3959a0cde1f08c727a8",
+    "manifesto.json": "2931d94b03c5fc65c6264c3c66c56e0599503270551b25c713d7973f8c973c26"
+  },
+  "decisao_equipe": "APROVADO para publicacao da Release 1 (v1.0.0) e integracao na branch main em 2026-11-27 por Joao Vitor, Samela Maria e Nadiny Martins.",
+  "tag_publicada": "v1.0.0",
+  "board_fechado": "2026-11-27",
+  "fonte_board": "https://losel.atlassian.net/jira/software/projects/AG/boards/2",
+  "observacao": "Release v1.0.0 homologada e publicada com pacotes verificados via SHA-256."
+}

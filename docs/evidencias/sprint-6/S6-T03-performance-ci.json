@@ -1,0 +1,51 @@
+{
+  "run": "https://github.com/GrupoWinners/AgroTracer/actions/runs/44580975135",
+  "commit": "e14b338d63dc4de1bdf05d87c69bf73f87706b7d",
+  "banco": "postgresql",
+  "python": "3.14.7",
+  "transporte": "ASGI TestClient; HMAC/Redis substituidos pela fixture",
+  "carga": "1 cliente sequencial, 3 aquecimentos + 30 amostras",
+  "dataset": "34 fazendas sinteticas, 1 lote/animal/manejo/certificado",
+  "limites": "Nao mede rede, proxy, WP, autenticacao nem carga simultanea",
+  "indices_banco_migrado": {
+    "fatores": [
+      "uq_fatores_set_chave"
+    ],
+    "manejos_nutricionais": [
+      "ex_manejos_nutricionais_periodo"
+    ],
+    "certificados": [
+      "uq_certificado_idempotencia",
+      "uq_certificado_token",
+      "uq_certificado_valido_por_lote"
+    ]
+  },
+  "medicoes": {
+    "criar_fazenda": {
+      "p95_ms": 6.801,
+      "meta_ms": 800,
+      "meta_atendida": true
+    },
+    "listar_fazendas": {
+      "p95_ms": 5.156,
+      "meta_ms": 800,
+      "meta_atendida": true
+    },
+    "editar_fazenda": {
+      "p95_ms": 7.3,
+      "meta_ms": 800,
+      "meta_atendida": true
+    },
+    "pdf_gerar_persistir": {
+      "p95_ms": 9.865,
+      "meta_ms": 3000,
+      "meta_atendida": true
+    },
+    "pdf_download": {
+      "p95_ms": 5.47,
+      "meta_ms": 3000,
+      "meta_atendida": true
+    }
+  },
+  "testes": "327 passed, 1 deselected"
+}

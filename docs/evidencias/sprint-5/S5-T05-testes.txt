@@ -1,0 +1,27 @@
+=========================================================================
+AgroTracer Sprint 5 — Evidencia S5-T05 (Consulta Publica, DTO & QR Local)
+Ambiente: Python 3.14.7 | PHP 8.2.12 | Node.js v24.19.0
+=========================================================================
+1. Backend Lint & Pytest (SQLite in-memory + Redis mock):
+   - python -m flake8 app tests -> 0 erros
+   - python -m pytest tests/test_s5_t01_certificacao.py tests/test_s5_t02_pdf.py tests/test_s5_t03_tokens.py tests/test_s5_t05_publico.py -v -> 36/36 passed
+     * tests/test_s5_t05_publico.py: 10/10 passed
+       - DTO minimizado sem autenticacao e zero vazamento de PII/source_uri/token
+       - pdf_sha256 opcional quando PDF ja gerado
+       - Status REVOGADO retornado com seguranca
+       - Resposta generica 404 RN-13 para token vazio/malformado/inexistente
+       - Rate limit 429 e falha fechada 503 com Redis indisponivel
+       - Rejeicao 409 para snapshot adulterado
+       - Resolucao de IP ignora X-Forwarded-For sem AGROTRACER_TRUSTED_PROXIES
+2. WordPress Bridge Lint & Testes (PHP 8.2.12):
+   - php -l em todos os arquivos PHP de wordpress/agrotracer-bridge -> 0 erros
+   - test-agrotracer-http-client.php: 8/8 passed (72 assertions)
+   - test-s2-t04-lotes-animais.php: 6/6 passed
+   - test-s3-t04-timeline-manejo.php: 5/5 passed
+   - test-s4-t04-fechamento-tela.php: 5/5 passed
+   - test-s5-t04-certificacao-download.php: 6/6 passed
+   - test-s5-t05-consulta-publica.php: 5/5 passed
+3. Frontend JS & QR Local (Node v24.19.0):
+   - node --check wordpress/agrotracer-bridge/assets/js/agrotracer-screens.js -> OK
+   - Verificacao buildQrCodeSvg(): SVG gerado localmente em memoria sem chamadas externas
+=========================================================================

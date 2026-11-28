@@ -1,0 +1,3588 @@
+/**
+ * AgroTracer Interactive Frontend Engine
+ * Version: 3.2.0 (Sprint 2 - Task S2-T04: Gestão de Lotes, Animais, Filtros e Zero Hover Dependency)
+ * Equipe: Grupo Winners | DEV Front-end & PO: João Vitor | Back-End: Samela Maria | QA Lead: Nadiny Martins
+ */
+
+(function () {
+  'use strict';
+
+  // Master State Store
+  const AgroState = {
+    currentScreen: 'dashboard',
+    currentSubTab: 'lotes',
+    selectedFarmId: 1,
+    selectedLotId: 'LT-2026-001',
+    correlationId: (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.correlationId)
+      ? window.agrotracerConfig.correlationId
+      : '123e4567-e89b-42d3-a456-426614174000',
+
+    farms: [
+      {
+        id: 1,
+        name: 'Fazenda Modelo',
+        city: 'Aquidauana',
+        uf: 'MS',
+        car: 'MS-5002708-1234.5678.9ABC.DEF0.1234.5678',
+        coordinates: '-20.4683, -55.7847',
+        carHasConflict: false,
+        paddocks: [
+          { id: '01', name: 'Piquete 01', area: '25,50', pasture: 'Braquiária', updated: '12/09/2026 14:32' },
+          { id: '02', name: 'Piquete 02', area: '18,75', pasture: 'Mombaça', updated: '10/09/2026 09:15' },
+          { id: '03', name: 'Piquete 03', area: '32,00', pasture: 'Andropogon', updated: '08/09/2026 16:47' },
+          { id: '04', name: 'Piquete 04', area: '12,30', pasture: 'Tifton 85', updated: '05/09/2026 11:20' }
+        ]
+      },
+      {
+        id: 2,
+        name: 'Fazenda São Bento',
+        city: 'Corumbá',
+        uf: 'MS',
+        car: 'MS-5003201-9876.5432.1FED.CBA9.8765.4321',
+        coordinates: '-19.0061, -57.6533',
+        carHasConflict: false,
+        paddocks: [
+          { id: '01', name: 'Piquete A1', area: '45,00', pasture: 'Braquiária', updated: '15/09/2026 10:10' },
+          { id: '02', name: 'Piquete A2', area: '38,20', pasture: 'Panicum', updated: '14/09/2026 16:00' }
+        ]
+      },
+      {
+        id: 3,
+        name: 'Fazenda Boa Vista',
+        city: 'Miranda',
+        uf: 'MS',
+        car: 'MS-5001905-1122.3344.5566.7788.9900.1122',
+        coordinates: '-20.2412, -56.3789',
+        carHasConflict: false,
+        paddocks: [
+          { id: '01', name: 'Pastagem Norte', area: '50,00', pasture: 'Mombaça', updated: '01/09/2026 08:30' }
+        ]
+      },
+      {
+        id: 4,
+        name: 'Fazenda Estrela do Sul',
+        city: 'Bodoquena',
+        uf: 'MS',
+        car: 'MS-5004509-4433.2211.8877.6655.2211.3344',
+        coordinates: '-20.5367, -56.7161',
+        carHasConflict: false,
+        paddocks: []
+      },
+      {
+        id: 5,
+        name: 'Fazenda Recanto Verde',
+        city: 'Coxim',
+        uf: 'MS',
+        car: 'MS-5008901-7788.9900.1122.3344.5566.7788',
+        coordinates: '-18.5067, -54.7600',
+        carHasConflict: false,
+        paddocks: []
+      }
+    ],
+
+    lots: [
+      {
+        code: 'LT-2026-001',
+        status: 'Em manejo',
+        statusType: 'warning',
+        farm: 'Fazenda Modelo - Aquidauana/MS',
+        farmShort: 'Fazenda Modelo (Aquidauana/MS)',
+        animalsCount: 50,
+        entryDate: '20/06/2026',
+        daysInManagement: 72,
+        readiness: 90,
+        lastManagement: 'Pastagem v1.0 · termina 30/09'
+      },
+      {
+        code: 'LT-2026-003',
+        status: 'Fechado',
+        statusType: 'info',
+        farm: 'Fazenda São Bento - Corumbá/MS',
+        farmShort: 'Fazenda São Bento (Corumbá/MS)',
+        animalsCount: 100,
+        entryDate: '15/04/2026',
+        daysInManagement: 110,
+        readiness: 100,
+        lastManagement: 'Dieta base v1.0 · fim 15/09'
+      },
+      {
+        code: 'LT-2025-090',
+        status: 'Certificado',
+        statusType: 'success',
+        farm: 'Fazenda Boa Vista - Miranda/MS',
+        farmShort: 'Fazenda Boa Vista (Miranda/MS)',
+        animalsCount: 75,
+        entryDate: '10/01/2025',
+        daysInManagement: 180,
+        readiness: 100,
+        lastManagement: '—'
+      },
+      {
+        code: 'LT-2024-087',
+        status: 'Abatido',
+        statusType: 'neutral',
+        farm: 'Fazenda Estrela do Sul - Bodoquena/MS',
+        farmShort: 'Fazenda Estrela do Sul (Bodoquena/MS)',
+        animalsCount: 0,
+        entryDate: '01/08/2024',
+        daysInManagement: 210,
+        readiness: 100,
+        lastManagement: 'Finalizado'
+      }
+    ],
+
+    manejos: [
+      {
+        id: 1,
+        lote_id: 1,
+        inicio: '2026-11-01',
+        fim: '2026-11-10',
+        parametro_set_id: 1,
+        tipo_dieta: 'PASTAGEM',
+        tipo_dieta_label: 'Pastagem (Brachiaria brizantha)',
+        cms: '9.50',
+        ym: '6.50',
+        fe: '56.00',
+        status: 'Concluído',
+        statusType: 'success'
+      },
+      {
+        id: 2,
+        lote_id: 1,
+        inicio: '2026-11-11',
+        fim: '2026-11-30',
+        parametro_set_id: 1,
+        tipo_dieta: 'SUPLEMENTACAO_MINERAL',
+        tipo_dieta_label: 'Suplementação Mineral a Pasto',
+        cms: '10.20',
+        ym: '6.20',
+        fe: '54.50',
+        status: 'Em Andamento',
+        statusType: 'warning'
+      }
+    ],
+
+    animals: [
+      {
+        identifier: 'BR-123456789-0',
+        rfid: '982000365892101',
+        category: 'Bovino Macho',
+        birthDate: '12/03/2022',
+        farm: 'Fazenda Modelo',
+        lotCode: 'LT-2026-001',
+        associatedAt: '20/06/2026 10:24',
+        status: 'Em Lote',
+        timeline: [
+          { date: '20/06/2026 10:24', title: 'Associação Ativa ao Lote LT-2026-001', meta: 'Fazenda Modelo (Aquidauana/MS) · Em manejo intensivo (72 dias)', active: true },
+          { date: '15/02/2026 09:00', title: 'Manejo de Pastagem / Piquete 02', meta: 'Transferido para forrageira Mombaça após pesagem de 480 kg', active: false },
+          { date: '10/01/2026 a 20/03/2026', title: 'Associação Encerrada - Lote LT-2025-090', meta: '69 dias de permanência regular · Preservação histórica RN-06', active: false },
+          { date: '12/03/2022', title: 'Nascimento e Identificação SISBOV', meta: 'Cadastro inicial na Fazenda Modelo · Brinco oficial aplicado', active: false }
+        ]
+      },
+      {
+        identifier: 'BR-123456790-1',
+        rfid: '982000365892102',
+        category: 'Bovino Fêmea',
+        birthDate: '05/05/2022',
+        farm: 'Fazenda Modelo',
+        lotCode: 'LT-2026-001',
+        associatedAt: '21/06/2026 14:32',
+        status: 'Em Lote',
+        timeline: [
+          { date: '21/06/2026 14:32', title: 'Associação Ativa ao Lote LT-2026-001', meta: 'Fazenda Modelo (Aquidauana/MS) · 71 dias em lote', active: true },
+          { date: '05/05/2022', title: 'Nascimento e Registro Genealógico', meta: 'Fazenda Modelo · Categoria Matriz Nelore', active: false }
+        ]
+      },
+      {
+        identifier: 'BR-123456791-2',
+        rfid: '982000365892103',
+        category: 'Bovino Macho',
+        birthDate: '18/07/2022',
+        farm: 'Fazenda Modelo',
+        lotCode: 'LT-2026-001',
+        associatedAt: '22/06/2026 09:12',
+        status: 'Em Lote',
+        timeline: [
+          { date: '22/06/2026 09:12', title: 'Associação Ativa ao Lote LT-2026-001', meta: 'Fazenda Modelo · 70 dias em manejo', active: true },
+          { date: '18/07/2022', title: 'Nascimento e Brincagem SISBOV', meta: 'Fazenda Modelo', active: false }
+        ]
+      },
+      {
+        identifier: 'BR-123456792-3',
+        rfid: '982000365892104',
+        category: 'Bovino Fêmea',
+        birthDate: '20/08/2022',
+        farm: 'Fazenda Modelo',
+        lotCode: 'LT-2026-001',
+        associatedAt: '22/06/2026 11:45',
+        status: 'Em Lote',
+        timeline: [
+          { date: '22/06/2026 11:45', title: 'Associação Ativa ao Lote LT-2026-001', meta: 'Fazenda Modelo · 70 dias em manejo', active: true },
+          { date: '20/08/2022', title: 'Nascimento e Identificação', meta: 'Fazenda Modelo', active: false }
+        ]
+      },
+      {
+        identifier: 'BR-123456800-7',
+        rfid: '982000365892105',
+        category: 'Bovino Macho',
+        birthDate: '10/01/2023',
+        farm: 'Fazenda Modelo',
+        lotCode: null,
+        associatedAt: null,
+        status: 'Disponível',
+        timeline: [
+          { date: '10/01/2023', title: 'Nascimento e Identificação', meta: 'Fazenda Modelo · Animal livre para alocação', active: false }
+        ]
+      },
+      {
+        identifier: 'BR-123456801-8',
+        rfid: '982000365892106',
+        category: 'Bovino Fêmea',
+        birthDate: '14/02/2023',
+        farm: 'Fazenda São Bento',
+        lotCode: null,
+        associatedAt: null,
+        status: 'Disponível',
+        timeline: [
+          { date: '14/02/2023', title: 'Nascimento e Identificação', meta: 'Fazenda São Bento · Animal sem lote vinculado', active: false }
+        ]
+      },
+      {
+        identifier: 'BR-123456802-9',
+        rfid: '982000365892107',
+        category: 'Bovino Macho',
+        birthDate: '20/03/2023',
+        farm: 'Fazenda Boa Vista',
+        lotCode: null,
+        associatedAt: null,
+        status: 'Disponível',
+        timeline: [
+          { date: '20/03/2023', title: 'Nascimento e Identificação', meta: 'Fazenda Boa Vista · Pronto para manejo', active: false }
+        ]
+      },
+      {
+        identifier: 'BR-987654321-0',
+        rfid: '982000365892108',
+        category: 'Bovino Macho',
+        birthDate: '15/09/2021',
+        farm: 'Fazenda Modelo',
+        lotCode: 'LT-2026-003',
+        associatedAt: '15/04/2026 08:30',
+        status: 'Em Lote',
+        timeline: [
+          { date: '15/04/2026 08:30', title: 'Associação Ativa ao Lote LT-2026-003', meta: 'Fazenda São Bento · Confinamento', active: true },
+          { date: '10/01/2026 a 20/03/2026', title: 'Associação Encerrada ao Lote LT-2026-001', meta: '69 dias de permanência · Desassociado por transferência', active: false },
+          { date: '15/09/2021', title: 'Cadastro Inicial e SISBOV', meta: 'Fazenda Modelo', active: false }
+        ]
+      }
+    ],
+
+    drawerAnimals: [
+      { id: 'BR-123456800-7', category: 'Bovino Macho', available: true, status: 'Disponível' },
+      { id: 'BR-123456801-8', category: 'Bovino Fêmea', available: true, status: 'Disponível' },
+      { id: 'BR-123456802-9', category: 'Bovino Macho', available: true, status: 'Disponível' },
+      { id: 'BR-123456790-1', category: 'Bovino Fêmea', available: false, status: 'Já em outro lote' },
+      { id: 'BR-123456803-0', category: 'Bovino Fêmea', available: true, status: 'Disponível' },
+      { id: 'BR-123456804-1', category: 'Bovino Macho', available: true, status: 'Disponível' }
+    ],
+
+    certificates: [
+      {
+        id: 1,
+        lote_id: 3,
+        lote_code: 'LT-2025-090 (S7-DEMO-CERTIFICADO)',
+        status: 'VALIDO',
+        emitido_em: '2026-11-27 00:30',
+        snapshot_sha256: '4c280d6ae4b96dbe7bc46eed22c20c01fdb51de5024c256cbb17f26bee02ae96',
+        pdf_sha256: 'aff21415a620fb08aeb788033f61d9be0a928da235e7c6bba4b75ebf6970f724',
+        synthetic: true
+      },
+      {
+        id: 2,
+        lote_id: 2,
+        lote_code: 'LT-2026-003 (S7-DEMO-PARA-EMITIR)',
+        status: 'VALIDO',
+        emitido_em: '2026-11-27 00:57',
+        snapshot_sha256: 'b241bc29462b1094cc32cf544802eae3e6a6e3bb5e92a6c8f7e81c58baf843d3',
+        pdf_sha256: 'cb0dc2d0be10425cb02cc056fe6a07a6cb51a9698d2917a3fcd823fe90a0134a',
+        synthetic: true
+      }
+    ]
+  };
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Garante que nenhum JSON cru, traceback ou mensagem tecnica chegue a UI
+  function formatSafeUiError(rawError, fallbackMessage) {
+    const fallback = fallbackMessage || 'Não foi possível concluir a operação no momento. Tente novamente em instantes.';
+    if (!rawError) return fallback;
+
+    let msg = typeof rawError === 'string'
+      ? rawError
+      : (rawError.message || rawError.detail || '');
+
+    if (typeof msg !== 'string') return fallback;
+    msg = msg.trim();
+    if (!msg) return fallback;
+
+    const looksLikeJson = (msg.startsWith('{') && msg.endsWith('}')) || (msg.startsWith('[') && msg.endsWith(']'));
+    const looksTechnical = /(traceback|psycopg|sqlalchemy|select\s+\*|syntaxerror|exception)/i.test(msg);
+    if (looksLikeJson || looksTechnical) {
+      return fallback;
+    }
+    return msg;
+  }
+
+  // Helper: UUID v4 Correlation ID
+  function generateCorrelationId() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID().toLowerCase();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  // Toast Notification System (Design System Semantic Variants)
+  function showToast(message, correlationId, type = 'success') {
+    const corrId = correlationId || generateCorrelationId();
+    const validType = ['success', 'info', 'warning', 'danger'].includes(type) ? type : 'success';
+    const safeMessage = escapeHtml(formatSafeUiError(message, 'Operação concluída.'));
+    const safeCorrId = escapeHtml(corrId);
+
+    let container = document.getElementById('agro-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'agro-toast-container';
+      container.className = 'agro-toast-container';
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `agro-toast ${validType}`;
+    toast.innerHTML = `
+      <div class="agro-toast-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <div class="agro-toast-content">
+        <p class="agro-toast-title">${safeMessage}</p>
+        <div class="agro-toast-correlation">X-Correlation-ID: ${safeCorrId}</div>
+      </div>
+      <button type="button" class="agro-toast-close" aria-label="Fechar">&times;</button>
+    `;
+
+    toast.querySelector('.agro-toast-close').addEventListener('click', () => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(10px)';
+      setTimeout(() => toast.remove(), 200);
+    });
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      if (toast.parentElement) {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 200);
+      }
+    }, 6000);
+  }
+
+  function closeHeaderPopovers() {
+    ['agro-notifications-popover', 'agro-user-dropdown'].forEach(id => {
+      const pop = document.getElementById(id);
+      if (pop) pop.hidden = true;
+    });
+    ['btn-header-notifications', 'btn-header-user-menu'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  function updateBreadcrumb() {
+    const nav = document.getElementById('agro-breadcrumb');
+    if (!nav) return;
+    const list = nav.querySelector('.agro-breadcrumb-list');
+    if (!list) return;
+
+    const screen = AgroState.currentScreen || 'dashboard';
+    const crumbs = [{ label: 'AgroTracer', screen: 'dashboard' }];
+
+    if (screen === 'dashboard') {
+      crumbs.push({ label: 'Dashboard' });
+    } else if (screen === 'fazendas') {
+      crumbs.push({ label: 'Fazendas', screen: 'fazendas' });
+      const farm = (AgroState.farms || []).find(f => f.id === AgroState.selectedFarmId);
+      crumbs.push({ label: farm ? farm.name : 'Propriedade' });
+    } else if (screen === 'lotes') {
+      crumbs.push({ label: 'Lotes e Animais', screen: 'lotes' });
+      if (AgroState.currentSubTab === 'animais') {
+        crumbs.push({ label: 'Inventário do Rebanho' });
+      } else {
+        crumbs.push({ label: 'Lotes de Manejo', subTab: 'lotes' });
+        if (AgroState.selectedLotId) {
+          crumbs.push({ label: AgroState.selectedLotId });
+        }
+      }
+    } else if (screen === 'manejo') {
+      crumbs.push({ label: 'Manejo Nutricional', screen: 'manejo' });
+      const manejoSel = document.getElementById('select-manejo-lote');
+      const opt = manejoSel && manejoSel.options[manejoSel.selectedIndex];
+      const code = opt ? (opt.getAttribute('data-code') || opt.text.split(' ')[0]) : 'LT-2026-001';
+      crumbs.push({ label: code });
+    } else if (screen === 'fechamento') {
+      crumbs.push({ label: 'Fechamento & CarbonEngine', screen: 'fechamento' });
+      const fechSel = document.getElementById('select-fechamento-lote');
+      const opt = fechSel && fechSel.options[fechSel.selectedIndex];
+      const code = opt ? (opt.getAttribute('data-code') || opt.text.split(' ')[0]) : 'LT-2026-001';
+      crumbs.push({ label: code });
+    } else if (screen === 'certificados') {
+      crumbs.push({ label: 'Certificados' });
+    }
+
+    list.innerHTML = '';
+    crumbs.forEach((crumb, idx) => {
+      if (idx > 0) {
+        const sep = document.createElement('li');
+        sep.className = 'agro-breadcrumb-sep';
+        sep.setAttribute('aria-hidden', 'true');
+        sep.textContent = '/';
+        list.appendChild(sep);
+      }
+
+      const li = document.createElement('li');
+      const isLast = idx === crumbs.length - 1;
+      if (isLast) {
+        li.className = 'agro-breadcrumb-item agro-breadcrumb-current';
+        li.setAttribute('aria-current', 'page');
+        li.textContent = crumb.label;
+      } else {
+        li.className = 'agro-breadcrumb-item';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'agro-breadcrumb-link';
+        btn.textContent = crumb.label;
+        btn.addEventListener('click', () => {
+          if (crumb.subTab) {
+            switchScreen('lotes');
+            switchSubTab(crumb.subTab);
+          } else if (crumb.screen) {
+            switchScreen(crumb.screen);
+          }
+        });
+        li.appendChild(btn);
+      }
+      list.appendChild(li);
+    });
+  }
+
+  // Navigation between screens
+  function switchScreen(screenName) {
+    if (!['dashboard', 'fazendas', 'lotes', 'manejo', 'fechamento', 'certificados'].includes(screenName)) return;
+    AgroState.currentScreen = screenName;
+    closeHeaderPopovers();
+
+    document.querySelectorAll('.agro-nav-item').forEach(btn => {
+      const target = btn.getAttribute('data-screen');
+      if (target === screenName) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-current', 'page');
+      } else {
+        btn.classList.remove('active');
+        btn.removeAttribute('aria-current');
+      }
+    });
+
+    document.querySelectorAll('.agro-screen').forEach(scr => {
+      if (scr.id === `screen-${screenName}`) {
+        scr.classList.add('active');
+      } else {
+        scr.classList.remove('active');
+      }
+    });
+
+    updateBreadcrumb();
+    window.location.hash = screenName;
+  }
+
+  // Switch Sub-tabs in Lotes/Animais screen
+  function switchSubTab(subTabName) {
+    if (!['lotes', 'animais'].includes(subTabName)) return;
+    AgroState.currentSubTab = subTabName;
+
+    const btnLotes = document.getElementById('tab-btn-lotes');
+    const btnAnimais = document.getElementById('tab-btn-animais');
+    const viewLotes = document.getElementById('view-lotes-container');
+    const viewAnimais = document.getElementById('view-animais-container');
+
+    if (subTabName === 'lotes') {
+      if (btnLotes) { btnLotes.classList.add('active'); btnLotes.setAttribute('aria-selected', 'true'); }
+      if (btnAnimais) { btnAnimais.classList.remove('active'); btnAnimais.setAttribute('aria-selected', 'false'); }
+      if (viewLotes) viewLotes.style.display = 'block';
+      if (viewAnimais) viewAnimais.style.display = 'none';
+    } else {
+      if (btnLotes) { btnLotes.classList.remove('active'); btnLotes.setAttribute('aria-selected', 'false'); }
+      if (btnAnimais) { btnAnimais.classList.add('active'); btnAnimais.setAttribute('aria-selected', 'true'); }
+      if (viewLotes) viewLotes.style.display = 'none';
+      if (viewAnimais) viewAnimais.style.display = 'block';
+      renderAllAnimalsTable();
+    }
+    updateBreadcrumb();
+  }
+
+  // =========================================================================
+  // SETUP LOTS & HERD MODULE (TASK S2-T04)
+  // =========================================================================
+  function setupLotsModule() {
+    // 1. Sub-nav tab switching
+    const tabBtnLotes = document.getElementById('tab-btn-lotes');
+    const tabBtnAnimais = document.getElementById('tab-btn-animais');
+
+    if (tabBtnLotes) {
+      tabBtnLotes.addEventListener('click', () => switchSubTab('lotes'));
+    }
+    if (tabBtnAnimais) {
+      tabBtnAnimais.addEventListener('click', () => switchSubTab('animais'));
+    }
+
+    // 2. Select lot from sidebar
+    setupLotListClicks();
+
+    // 3. Search and filter lots in sidebar
+    setupLotFilters();
+
+    // 4. Collapsible historical table
+    const collapseHeader = document.getElementById('historical-collapse-header');
+    const collapseContent = document.getElementById('historical-collapse-content');
+    if (collapseHeader && collapseContent) {
+      collapseHeader.addEventListener('click', () => {
+        const isCollapsed = collapseContent.classList.contains('collapsed');
+        if (isCollapsed) {
+          collapseContent.classList.remove('collapsed');
+          collapseHeader.classList.remove('collapsed');
+        } else {
+          collapseContent.classList.add('collapsed');
+          collapseHeader.classList.add('collapsed');
+        }
+      });
+    }
+
+    // 5. Drawer de associação
+    setupAssociateDrawer();
+
+    // 6. Configurar Modais de Cadastro de Lote e Animal
+    setupCreateLotModal();
+    setupCreateAnimalModal();
+    setupAnimalHistoryModal();
+
+    // 7. Configurar Filtros do Inventário Geral de Animais
+    setupAnimalInventoryFilters();
+
+    // 8. Renderizar tabela inicial de animais
+    renderAllAnimalsTable();
+    renderCurrentLotAnimalsTable(AgroState.selectedLotId);
+  }
+
+  function setupLotListClicks() {
+    document.querySelectorAll('.agro-list-item[data-lot-code]').forEach(item => {
+      item.addEventListener('click', () => {
+        const lotCode = item.getAttribute('data-lot-code');
+        selectLot(lotCode);
+      });
+    });
+  }
+
+  function setupLotFilters() {
+    const searchLotInput = document.getElementById('search-lot-input');
+    const filterLotFarm = document.getElementById('filter-lot-farm');
+    const filterLotStatus = document.getElementById('filter-lot-status');
+
+    function applyLotFilters() {
+      const query = searchLotInput ? searchLotInput.value.toLowerCase().trim() : '';
+      const farmFilter = filterLotFarm ? filterLotFarm.value : 'all';
+      const statusFilter = filterLotStatus ? filterLotStatus.value : 'all';
+
+      let visibleCount = 0;
+      document.querySelectorAll('.agro-list-item[data-lot-code]').forEach(card => {
+        const lotCode = card.getAttribute('data-lot-code') || '';
+        const farmName = card.getAttribute('data-farm-name') || '';
+        const lotStatus = card.getAttribute('data-lot-status') || '';
+        const text = card.textContent.toLowerCase();
+
+        const matchesQuery = !query || text.includes(query) || lotCode.toLowerCase().includes(query);
+        const matchesFarm = farmFilter === 'all' || farmName.includes(farmFilter);
+        const matchesStatus = statusFilter === 'all' || lotStatus === statusFilter;
+
+        if (matchesQuery && matchesFarm && matchesStatus) {
+          card.style.display = 'flex';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      const footer = document.getElementById('lots-sidebar-footer-count');
+      if (footer) footer.textContent = `Total de lotes: ${visibleCount}`;
+
+      const emptyLots = document.getElementById('lots-empty-state');
+      if (emptyLots) emptyLots.style.display = visibleCount === 0 ? 'flex' : 'none';
+    }
+
+    if (searchLotInput) searchLotInput.addEventListener('input', applyLotFilters);
+    if (filterLotFarm) filterLotFarm.addEventListener('change', applyLotFilters);
+    if (filterLotStatus) filterLotStatus.addEventListener('change', applyLotFilters);
+
+    const btnClearLots = document.getElementById('btn-clear-lot-filters');
+    if (btnClearLots) {
+      btnClearLots.addEventListener('click', () => {
+        if (searchLotInput) searchLotInput.value = '';
+        if (filterLotFarm) filterLotFarm.value = 'all';
+        if (filterLotStatus) filterLotStatus.value = 'all';
+        applyLotFilters();
+      });
+    }
+  }
+
+  function selectLot(lotCode) {
+    AgroState.selectedLotId = lotCode;
+    const lot = AgroState.lots.find(l => l.code === lotCode);
+    if (!lot) return;
+
+    // Highlight item
+    document.querySelectorAll('.agro-list-item[data-lot-code]').forEach(card => {
+      if (card.getAttribute('data-lot-code') === lotCode) {
+        card.classList.add('selected');
+      } else {
+        card.classList.remove('selected');
+      }
+    });
+
+    // Update lot detail view header
+    const headerTitle = document.getElementById('lot-detail-title');
+    const headerBadge = document.getElementById('lot-detail-badge');
+    const headerFarm = document.getElementById('lot-detail-farm');
+    const headerEntry = document.getElementById('lot-detail-entry');
+    const headerDays = document.getElementById('lot-detail-days');
+    const subtitle = document.getElementById('lot-active-animals-subtitle');
+
+    if (headerTitle) headerTitle.textContent = `Lote: ${lot.code}`;
+    if (headerBadge) {
+      headerBadge.textContent = lot.status;
+      headerBadge.className = `agro-badge ${lot.statusType}`;
+    }
+    if (headerFarm) headerFarm.textContent = lot.farmShort;
+    if (headerEntry) headerEntry.textContent = `Entrada: ${lot.entryDate}`;
+    if (headerDays) headerDays.textContent = `Dias em manejo: ${lot.daysInManagement}`;
+    if (subtitle) subtitle.textContent = `${lot.animalsCount} animais ativos associados a este lote.`;
+
+    renderCurrentLotAnimalsTable(lotCode);
+    updateBreadcrumb();
+  }
+
+  function renderCurrentLotAnimalsTable(lotCode) {
+    const tbody = document.getElementById('current-animals-tbody');
+    const countLabel = document.getElementById('current-lot-animals-count');
+    if (!tbody) return;
+
+    const lotAnimals = AgroState.animals.filter(a => a.lotCode === lotCode);
+
+    if (lotAnimals.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align:center; padding:32px 16px;">
+            <div class="agro-empty-state" style="padding:10px;">
+              <p class="agro-empty-title" style="font-size:14px;">Nenhum animal associado a este lote</p>
+              <p class="agro-empty-text" style="font-size:12px; margin-bottom:12px;">Utilize o botão acima para associar animais disponíveis.</p>
+              <button type="button" class="agro-btn agro-btn-primary agro-btn-sm" onclick="document.getElementById('associate-animals-drawer').classList.add('active')">
+                + Associar Animais Agora
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+      if (countLabel) countLabel.textContent = 'Mostrando 0 animais';
+      return;
+    }
+
+    let rowsHtml = '';
+    lotAnimals.forEach(a => {
+      rowsHtml += `
+        <tr>
+          <td><strong>${a.identifier}</strong></td>
+          <td><span style="font-family:monospace; color:var(--agro-text-secondary);">${a.rfid || '—'}</span></td>
+          <td>${a.category}</td>
+          <td>${a.birthDate}</td>
+          <td>${a.associatedAt || '20/06/2026 10:24'}</td>
+          <td>
+            <div class="agro-table-actions">
+              <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm btn-view-animal-history" data-animal-id="${a.identifier}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>Ver Histórico</span>
+              </button>
+              <button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal" data-animal-id="${a.identifier}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <span>Desassociar</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = rowsHtml;
+    if (countLabel) countLabel.textContent = `Mostrando 1 a ${lotAnimals.length} de ${lotAnimals.length} animais`;
+
+    // Bind action events
+    bindAnimalTableActions(tbody);
+  }
+
+  function bindAnimalTableActions(container) {
+    container.querySelectorAll('.btn-view-animal-history').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const animalId = btn.getAttribute('data-animal-id');
+        openAnimalHistoryModal(animalId);
+      });
+    });
+
+    container.querySelectorAll('.btn-disassociate-animal').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const animalId = btn.getAttribute('data-animal-id');
+        openConfirmModal(
+          'Confirmar Desassociação Temporal',
+          `Deseja realmente desassociar o animal ${animalId} do lote ${AgroState.selectedLotId}? A linha histórica será preservada com data de encerramento (RN-06).`,
+          () => {
+            const animal = AgroState.animals.find(a => a.identifier === animalId);
+            if (animal) {
+              animal.lotCode = null;
+              animal.status = 'Disponível';
+              animal.associatedAt = null;
+              animal.timeline.unshift({
+                date: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                title: `Desassociação do Lote ${AgroState.selectedLotId}`,
+                meta: 'Desassociação temporal registrada com integridade. O histórico anterior foi mantido.',
+                active: false
+              });
+            }
+            renderCurrentLotAnimalsTable(AgroState.selectedLotId);
+            renderAllAnimalsTable();
+            showToast(`Animal ${animalId} desassociado do lote ${AgroState.selectedLotId} com sucesso.`);
+          }
+        );
+      });
+    });
+  }
+
+  // =========================================================================
+  // GESTÃO DO INVENTÁRIO DO REBANHO (TELA DE ANIMAIS)
+  // =========================================================================
+  function renderAllAnimalsTable() {
+    const tbody = document.getElementById('all-animals-tbody');
+    const footerCount = document.getElementById('animals-inventory-footer-count');
+    if (!tbody) return;
+
+    const searchInput = document.getElementById('search-animals-input');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const catSelect = document.getElementById('filter-animal-category');
+    const catFilter = catSelect ? catSelect.value : 'all';
+    const statusSelect = document.getElementById('filter-animal-status');
+    const statusFilter = statusSelect ? statusSelect.value : 'all';
+    const farmSelect = document.getElementById('filter-animal-farm');
+    const farmFilter = farmSelect ? farmSelect.value : 'all';
+
+    const filtered = AgroState.animals.filter(a => {
+      const matchQuery = !query || a.identifier.toLowerCase().includes(query) || (a.rfid && a.rfid.includes(query));
+      const matchCat = catFilter === 'all' || a.category === catFilter;
+      const matchStatus = statusFilter === 'all' || a.status === statusFilter;
+      const matchFarm = farmFilter === 'all' || a.farm === farmFilter;
+      return matchQuery && matchCat && matchStatus && matchFarm;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align:center; padding:32px 16px;">
+            <div class="agro-empty-state" style="padding:10px;">
+              <p class="agro-empty-title" style="font-size:14px;">Nenhum animal encontrado com os filtros aplicados</p>
+              <p class="agro-empty-text" style="font-size:12px; margin-bottom:10px;">Altere os parâmetros de pesquisa ou clique em "Limpar Filtros".</p>
+              <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm" id="btn-reset-filters-empty">
+                Limpar Filtros
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+      const btnReset = document.getElementById('btn-reset-filters-empty');
+      if (btnReset) {
+        btnReset.addEventListener('click', () => {
+          if (searchInput) searchInput.value = '';
+          if (catSelect) catSelect.value = 'all';
+          if (statusSelect) statusSelect.value = 'all';
+          if (farmSelect) farmSelect.value = 'all';
+          renderAllAnimalsTable();
+        });
+      }
+      if (footerCount) footerCount.textContent = 'Mostrando 0 animais';
+      return;
+    }
+
+    let html = '';
+    filtered.forEach(a => {
+      const isAvailable = a.status === 'Disponível';
+      const statusBadge = isAvailable
+        ? `<span class="agro-badge success" style="font-size:11px;">Disponível</span>`
+        : `<span class="agro-badge info" style="font-size:11px;">Em Lote</span>`;
+
+      const lotBadge = a.lotCode
+        ? `<strong>${a.lotCode}</strong>`
+        : `<span class="agro-badge neutral" style="font-size:10.5px;">Sem Lote</span>`;
+
+      // Ações contextualizadas e visíveis sem hover
+      const actionButton = isAvailable
+        ? `<button type="button" class="agro-btn agro-btn-primary agro-btn-sm btn-quick-associate" data-animal-id="${a.identifier}">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+             <span>Alocar em Lote</span>
+           </button>`
+        : `<button type="button" class="agro-btn agro-btn-danger agro-btn-sm btn-disassociate-animal" data-animal-id="${a.identifier}">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+             <span>Desassociar</span>
+           </button>`;
+
+      html += `
+        <tr>
+          <td><strong>${a.identifier}</strong></td>
+          <td><span style="font-family:monospace; color:var(--agro-text-secondary);">${a.rfid || '—'}</span></td>
+          <td>${a.category}</td>
+          <td>${statusBadge}</td>
+          <td>${lotBadge}</td>
+          <td>${a.farm}</td>
+          <td>${a.birthDate}</td>
+          <td>
+            <!-- AÇÕES SEM HOVER -->
+            <div class="agro-table-actions">
+              <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm btn-view-animal-history" data-animal-id="${a.identifier}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>Ver Histórico</span>
+              </button>
+              ${actionButton}
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    if (footerCount) footerCount.textContent = `Mostrando 1 a ${filtered.length} de ${AgroState.animals.length} animais`;
+
+    // Eventos nos botões gerados
+    bindAnimalTableActions(tbody);
+
+    tbody.querySelectorAll('.btn-quick-associate').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const animalId = btn.getAttribute('data-animal-id');
+        const drawer = document.getElementById('associate-animals-drawer');
+        if (drawer) {
+          drawer.classList.add('active');
+          const searchInput = document.getElementById('drawer-search-input');
+          if (searchInput) searchInput.value = animalId;
+          showToast(`Animal ${animalId} pronto para associação. Escolha o lote de destino.`);
+        }
+      });
+    });
+  }
+
+  function setupAnimalInventoryFilters() {
+    const searchInput = document.getElementById('search-animals-input');
+    const catSelect = document.getElementById('filter-animal-category');
+    const statusSelect = document.getElementById('filter-animal-status');
+    const farmSelect = document.getElementById('filter-animal-farm');
+    const clearBtn = document.getElementById('btn-clear-animal-filters');
+
+    if (searchInput) searchInput.addEventListener('input', renderAllAnimalsTable);
+    if (catSelect) catSelect.addEventListener('change', renderAllAnimalsTable);
+    if (statusSelect) statusSelect.addEventListener('change', renderAllAnimalsTable);
+    if (farmSelect) farmSelect.addEventListener('change', renderAllAnimalsTable);
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        if (catSelect) catSelect.value = 'all';
+        if (statusSelect) statusSelect.value = 'all';
+        if (farmSelect) farmSelect.value = 'all';
+        renderAllAnimalsTable();
+        showToast('Filtros do inventário de animais resetados.');
+      });
+    }
+  }
+
+  // =========================================================================
+  // MODAL DE CADASTRO DE NOVO LOTE
+  // =========================================================================
+  function setupCreateLotModal() {
+    const modal = document.getElementById('modal-create-lot');
+    const btnOpen = document.getElementById('btn-open-create-lot-modal');
+    const btnClose = document.getElementById('btn-close-create-lot-modal');
+    const btnCancel = document.getElementById('btn-cancel-create-lot');
+    const form = document.getElementById('form-create-lot');
+    const inputCode = document.getElementById('new-lot-code');
+    const errorCode = document.getElementById('error-lot-code');
+    const errorMsg = document.getElementById('error-lot-code-msg');
+
+    if (btnOpen && modal) {
+      btnOpen.addEventListener('click', () => {
+        if (errorCode) errorCode.style.display = 'none';
+        if (form) form.reset();
+        modal.classList.add('active');
+      });
+    }
+
+    function closeModal() {
+      if (modal) modal.classList.remove('active');
+    }
+
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const codeVal = inputCode ? inputCode.value.trim().toUpperCase() : '';
+
+        if (!codeVal) return;
+
+        // Validação de Duplicidade (Regra RN-04 / Erro esperado LOTE_CODIGO_DUPLICADO)
+        const exists = AgroState.lots.some(l => l.code.toUpperCase() === codeVal);
+        if (exists) {
+          if (errorCode && errorMsg) {
+            errorCode.style.display = 'block';
+            errorMsg.textContent = `Código já cadastrado (Erro: LOTE_CODIGO_DUPLICADO - HTTP 409).`;
+          }
+          return;
+        }
+
+        // Estado loading e prevenção de clique duplo
+        const submitBtn = document.getElementById('btn-submit-create-lot');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          const spinner = submitBtn.querySelector('.agro-spinner');
+          const btnText = submitBtn.querySelector('.btn-text');
+          if (spinner) spinner.style.display = 'inline-block';
+          if (btnText) btnText.textContent = 'Salvando...';
+        }
+
+        setTimeout(() => {
+          // Inserção no estado
+          const farmSelect = document.getElementById('new-lot-farm-id');
+          const farmText = farmSelect ? farmSelect.options[farmSelect.selectedIndex].text : 'Fazenda Modelo';
+          const newLot = {
+            code: codeVal,
+            status: 'Rascunho',
+            statusType: 'neutral',
+            farm: farmText,
+            farmShort: farmText.split('(')[0].trim(),
+            animalsCount: 0,
+            entryDate: new Date().toLocaleDateString('pt-BR'),
+            daysInManagement: 0,
+            readiness: 0,
+            lastManagement: '—'
+          };
+
+          AgroState.lots.unshift(newLot);
+
+          // Atualiza lista lateral
+          const listContainer = document.getElementById('lots-list-items-container');
+          if (listContainer) {
+            const newItemHtml = `
+              <div class="agro-list-item" data-lot-code="${newLot.code}" data-farm-name="${newLot.farmShort}" data-lot-status="${newLot.status}">
+                <div class="agro-list-item-left">
+                  <div class="agro-list-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                      <circle cx="12" cy="11" r="5"></circle>
+                    </svg>
+                  </div>
+                  <div class="agro-list-item-info">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <span class="agro-list-item-title">${newLot.code}</span>
+                      <span class="agro-badge neutral" style="font-size:10px; padding:2px 6px;">Rascunho</span>
+                    </div>
+                    <div class="agro-list-item-sub">${newLot.farm}</div>
+                    <div style="font-size:11px; color:var(--agro-text-muted); margin-top:2px;">0 animais ativos</div>
+                  </div>
+                </div>
+                <div class="agro-list-item-chevron">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </div>
+              </div>
+            `;
+            listContainer.insertAdjacentHTML('afterbegin', newItemHtml);
+            setupLotListClicks();
+          }
+
+          // Atualiza contador do tab
+          const tabCounter = document.getElementById('tab-counter-lots');
+          if (tabCounter) tabCounter.textContent = AgroState.lots.length;
+
+          // Restaura botão e fecha modal
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            const spinner = submitBtn.querySelector('.agro-spinner');
+            const btnText = submitBtn.querySelector('.btn-text');
+            if (spinner) spinner.style.display = 'none';
+            if (btnText) btnText.textContent = 'Salvar Lote';
+          }
+
+          closeModal();
+          selectLot(codeVal);
+          showToast(`Lote ${codeVal} criado com sucesso no estado Rascunho.`);
+        }, 350);
+      });
+    }
+  }
+
+  // =========================================================================
+  // MODAL DE CADASTRO DE NOVO ANIMAL
+  // =========================================================================
+  function setupCreateAnimalModal() {
+    const modal = document.getElementById('modal-create-animal');
+    const btnOpen = document.getElementById('btn-open-create-animal-modal');
+    const btnClose = document.getElementById('btn-close-create-animal-modal');
+    const btnCancel = document.getElementById('btn-cancel-create-animal');
+    const form = document.getElementById('form-create-animal');
+    const inputIdentifier = document.getElementById('new-animal-identifier');
+    const errorIdentifier = document.getElementById('error-animal-identifier');
+    const errorIdentifierMsg = document.getElementById('error-animal-identifier-msg');
+
+    if (btnOpen && modal) {
+      btnOpen.addEventListener('click', () => {
+        if (errorIdentifier) errorIdentifier.style.display = 'none';
+        if (form) form.reset();
+        modal.classList.add('active');
+      });
+    }
+
+    function closeModal() {
+      if (modal) modal.classList.remove('active');
+    }
+
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const identVal = inputIdentifier ? inputIdentifier.value.trim().toUpperCase() : '';
+
+        if (!identVal) return;
+
+        // Validação de Duplicidade (Regra RN-05 / Erro esperado ANIMAL_IDENTIFICADOR_DUPLICADO)
+        const exists = AgroState.animals.some(a => a.identifier.toUpperCase() === identVal);
+        if (exists) {
+          if (errorIdentifier && errorIdentifierMsg) {
+            errorIdentifier.style.display = 'block';
+            errorIdentifierMsg.textContent = `Identificador já cadastrado (Erro: ANIMAL_IDENTIFICADOR_DUPLICADO - HTTP 409).`;
+          }
+          return;
+        }
+
+        // Estado loading e prevenção de duplo clique
+        const submitBtn = document.getElementById('btn-submit-create-animal');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          const spinner = submitBtn.querySelector('.agro-spinner');
+          const btnText = submitBtn.querySelector('.btn-text');
+          if (spinner) spinner.style.display = 'inline-block';
+          if (btnText) btnText.textContent = 'Cadastrando...';
+        }
+
+        setTimeout(() => {
+          const rfidVal = document.getElementById('new-animal-rfid') ? document.getElementById('new-animal-rfid').value.trim() : '';
+          const catVal = document.getElementById('new-animal-category') ? document.getElementById('new-animal-category').value : 'Bovino Macho';
+          const farmVal = document.getElementById('new-animal-farm') ? document.getElementById('new-animal-farm').value : 'Fazenda Modelo';
+          const birthVal = document.getElementById('new-animal-birthdate') ? document.getElementById('new-animal-birthdate').value : '2023-04-15';
+
+          const newAnimal = {
+            identifier: identVal,
+            rfid: rfidVal || null,
+            category: catVal,
+            birthDate: birthVal ? birthVal.split('-').reverse().join('/') : '15/04/2023',
+            farm: farmVal.split('(')[0].trim(),
+            lotCode: null,
+            associatedAt: null,
+            status: 'Disponível',
+            timeline: [
+              {
+                date: new Date().toLocaleDateString('pt-BR'),
+                title: 'Nascimento e Cadastro SISBOV',
+                meta: `${farmVal} · Categoria ${catVal} · Animal disponível para associação`,
+                active: false
+              }
+            ]
+          };
+
+          AgroState.animals.unshift(newAnimal);
+
+          // Atualiza drawer animals se necessário
+          AgroState.drawerAnimals.unshift({
+            id: identVal,
+            category: catVal,
+            available: true,
+            status: 'Disponível'
+          });
+
+          // Atualiza tabela geral de animais
+          renderAllAnimalsTable();
+          populateDrawerAnimals();
+
+          // Atualiza contador do tab
+          const tabCounter = document.getElementById('tab-counter-animals');
+          if (tabCounter) tabCounter.textContent = AgroState.animals.length;
+
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            const spinner = submitBtn.querySelector('.agro-spinner');
+            const btnText = submitBtn.querySelector('.btn-text');
+            if (spinner) spinner.style.display = 'none';
+            if (btnText) btnText.textContent = 'Salvar Animal';
+          }
+
+          closeModal();
+          showToast(`Animal ${identVal} cadastrado com sucesso com identificação oficial.`);
+        }, 350);
+      });
+    }
+  }
+
+  // =========================================================================
+  // MODAL DE HISTÓRICO TEMPORAL DO ANIMAL
+  // =========================================================================
+  function setupAnimalHistoryModal() {
+    const modal = document.getElementById('modal-animal-history');
+    const btnClose = document.getElementById('btn-close-animal-history-modal');
+    const btnFooter = document.getElementById('btn-close-history-footer');
+
+    function closeModal() {
+      if (modal) modal.classList.remove('active');
+    }
+
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnFooter) btnFooter.addEventListener('click', closeModal);
+  }
+
+  function openAnimalHistoryModal(animalIdentifier) {
+    const modal = document.getElementById('modal-animal-history');
+    if (!modal) return;
+
+    const animal = AgroState.animals.find(a => a.identifier === animalIdentifier) || {
+      identifier: animalIdentifier,
+      rfid: '982000365892100',
+      category: 'Bovino Macho',
+      status: 'Desassociado (Histórico)',
+      timeline: [
+        { date: '10/01/2026 a 20/03/2026', title: 'Associação Encerrada - Lote LT-2025-090', meta: '69 dias de permanência regular · Preservação histórica RN-06', active: false },
+        { date: '15/09/2021', title: 'Cadastro Inicial e Brincagem', meta: 'Fazenda Modelo', active: false }
+      ]
+    };
+
+    const titleElem = document.getElementById('history-modal-title');
+    const subElem = document.getElementById('history-modal-subtitle');
+    const badgeContainer = document.getElementById('history-current-status-badge');
+    const rfidElem = document.getElementById('history-current-rfid');
+    const timelineContainer = document.getElementById('animal-history-timeline-container');
+
+    if (titleElem) titleElem.textContent = `Histórico Temporal: ${animal.identifier}`;
+    if (subElem) subElem.textContent = `${animal.identifier} · ${animal.category} · ${animal.farm || 'Fazenda Modelo'}`;
+    if (rfidElem) rfidElem.textContent = animal.rfid || 'Sem chip RFID';
+
+    if (badgeContainer) {
+      if (animal.lotCode) {
+        badgeContainer.innerHTML = `<span class="agro-badge info" style="font-size:11.5px;">Ativo no Lote ${animal.lotCode}</span>`;
+      } else {
+        badgeContainer.innerHTML = `<span class="agro-badge success" style="font-size:11.5px;">Disponível (Sem Lote)</span>`;
+      }
+    }
+
+    if (timelineContainer && animal.timeline) {
+      let timelineHtml = '';
+      animal.timeline.forEach(event => {
+        const dotClass = event.active ? 'active' : 'closed';
+        timelineHtml += `
+          <div class="agro-timeline-item">
+            <div class="agro-timeline-dot ${dotClass}"></div>
+            <div class="agro-timeline-content">
+              <div class="agro-timeline-header">
+                <span class="agro-timeline-title">${event.title}</span>
+                <span class="agro-timeline-date">${event.date}</span>
+              </div>
+              <div class="agro-timeline-meta">${event.meta}</div>
+            </div>
+          </div>
+        `;
+      });
+      timelineContainer.innerHTML = timelineHtml;
+    }
+
+    modal.classList.add('active');
+  }
+
+  // =========================================================================
+  // GAVETA DE ASSOCIAÇÃO (DRAWER LATERAL)
+  // =========================================================================
+  function setupAssociateDrawer() {
+    const btnOpenDrawer = document.getElementById('btn-open-associate-drawer');
+    const drawerOverlay = document.getElementById('associate-animals-drawer');
+    const btnCloseDrawer = document.getElementById('btn-close-associate-drawer');
+    const searchInput = document.getElementById('drawer-search-input');
+    const filterCat = document.getElementById('drawer-filter-cat');
+    const selectAll = document.getElementById('select-all-drawer');
+    const btnAddToList = document.getElementById('btn-add-animals-to-list');
+
+    if (btnOpenDrawer && drawerOverlay) {
+      btnOpenDrawer.addEventListener('click', () => {
+        populateDrawerAnimals();
+        drawerOverlay.classList.add('active');
+      });
+    }
+
+    if (btnCloseDrawer && drawerOverlay) {
+      btnCloseDrawer.addEventListener('click', () => {
+        drawerOverlay.classList.remove('active');
+      });
+    }
+
+    if (drawerOverlay) {
+      drawerOverlay.addEventListener('click', (e) => {
+        if (e.target === drawerOverlay) drawerOverlay.classList.remove('active');
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', filterDrawerList);
+    }
+    if (filterCat) {
+      filterCat.addEventListener('change', filterDrawerList);
+    }
+
+    if (selectAll) {
+      selectAll.addEventListener('change', () => {
+        const checkboxes = document.querySelectorAll('.drawer-animal-checkbox:not(:disabled)');
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        updateDrawerSelectedCount();
+      });
+    }
+
+    if (btnAddToList) {
+      btnAddToList.addEventListener('click', () => {
+        const selectedCheckboxes = Array.from(document.querySelectorAll('.drawer-animal-checkbox:checked'));
+        if (selectedCheckboxes.length === 0) {
+          openValidationErrorModal(
+            'Nenhum Animal Selecionado',
+            'Selecione ao menos um animal disponível na lista antes de confirmar a associação ao lote.',
+            'SELECAO_OBRIGATORIA',
+            'Marque uma ou mais caixas de seleção de animais com status <strong>Disponível</strong>.'
+          );
+          return;
+        }
+
+        const conflictItem = selectedCheckboxes.find(cb => cb.getAttribute('data-conflict') === 'true');
+        if (conflictItem) {
+          const animalId = conflictItem.getAttribute('data-animal-id') || 'BR-123456790-1';
+          openValidationErrorModal(
+            'Erro de Validação: Conflito de Associação Ativa',
+            `Animal ${animalId} já possui associação ativa em outro lote. A regra de negócio (RN-06) impede a duplicidade de vínculo simultâneo.`,
+            'ANIMAL_JA_ASSOCIADO_CONFLITO (HTTP 409)',
+            `Animal ${animalId} está ativo no lote LT-2026-003.`
+          );
+          return;
+        }
+
+        // Sucesso na associação
+        selectedCheckboxes.forEach(cb => {
+          const animalId = cb.getAttribute('data-animal-id');
+          const animal = AgroState.animals.find(a => a.identifier === animalId);
+          if (animal) {
+            animal.lotCode = AgroState.selectedLotId;
+            animal.status = 'Em Lote';
+            animal.associatedAt = new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            animal.timeline.unshift({
+              date: animal.associatedAt,
+              title: `Associação Ativa ao Lote ${AgroState.selectedLotId}`,
+              meta: `Associação realizada no sistema com integridade e auditoria transacional.`,
+              active: true
+            });
+          }
+        });
+
+        drawerOverlay.classList.remove('active');
+        renderCurrentLotAnimalsTable(AgroState.selectedLotId);
+        renderAllAnimalsTable();
+        showToast(`${selectedCheckboxes.length} animais associados com sucesso ao lote ${AgroState.selectedLotId}!`);
+      });
+    }
+  }
+
+  function populateDrawerAnimals() {
+    const tbody = document.getElementById('drawer-animals-tbody');
+    if (!tbody) return;
+
+    let rowsHtml = '';
+    AgroState.drawerAnimals.forEach(item => {
+      const isConflict = !item.available;
+      const statusBadge = isConflict
+        ? `<span class="agro-badge danger" style="font-size:11px;">Já em outro lote</span>`
+        : `<span class="agro-badge success" style="font-size:11px;">Disponível</span>`;
+
+      const idStyle = isConflict ? 'color:#991b1b;' : '';
+      const rowBg = isConflict ? 'background-color:#fff9fa;' : '';
+
+      rowsHtml += `
+        <tr style="${rowBg}">
+          <td>
+            <input type="checkbox" class="agro-checkbox drawer-animal-checkbox" data-animal-id="${item.id}" data-conflict="${isConflict}">
+          </td>
+          <td><strong style="${idStyle}">${item.id}</strong></td>
+          <td>${item.category}</td>
+          <td>${statusBadge}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = rowsHtml;
+
+    tbody.querySelectorAll('.drawer-animal-checkbox').forEach(cb => {
+      cb.addEventListener('change', updateDrawerSelectedCount);
+    });
+
+    updateDrawerSelectedCount();
+  }
+
+  function filterDrawerList() {
+    const searchInput = document.getElementById('drawer-search-input');
+    const catSelect = document.getElementById('drawer-filter-cat');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const cat = catSelect ? catSelect.value : 'all';
+
+    document.querySelectorAll('#drawer-animals-tbody tr').forEach(row => {
+      const text = row.textContent.toLowerCase();
+      const matchQuery = !query || text.includes(query);
+      const matchCat = cat === 'all' || text.includes(cat.toLowerCase());
+      row.style.display = (matchQuery && matchCat) ? '' : 'none';
+    });
+  }
+
+  function updateDrawerSelectedCount() {
+    const count = document.querySelectorAll('.drawer-animal-checkbox:checked').length;
+    const countLabel = document.getElementById('drawer-selected-count');
+    if (countLabel) countLabel.textContent = `Selecionados: ${count}`;
+  }
+
+  // =========================================================================
+  // SETUP FARMS MODULE (LEGADO S1 PRESERVADO + S6-T01 ESTADOS COMPLETOS)
+  // =========================================================================
+  function renderPaddocksTable(farm) {
+    const tbody = document.getElementById('paddocks-tbody');
+    const emptyState = document.getElementById('paddocks-empty-state');
+    const countLabel = document.getElementById('paddocks-count-label');
+    if (!tbody || !farm) return;
+
+    const paddocks = Array.isArray(farm.paddocks) ? farm.paddocks : [];
+    if (paddocks.length === 0) {
+      tbody.innerHTML = '';
+      if (emptyState) emptyState.style.display = 'flex';
+      if (countLabel) countLabel.textContent = 'Mostrando 0 de 0 talhões';
+      return;
+    }
+
+    if (emptyState) emptyState.style.display = 'none';
+    tbody.innerHTML = paddocks.map(p => `
+      <tr data-paddock-id="${escapeHtml(p.id)}">
+        <td style="font-weight: 500;">${escapeHtml(p.name)}</td>
+        <td>${escapeHtml(p.area)}</td>
+        <td>${escapeHtml(p.pasture)}</td>
+        <td style="color: var(--agro-text-muted); font-size: 12.5px;">${escapeHtml(p.updated)}</td>
+        <td>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="agro-btn agro-btn-secondary agro-btn-icon-only btn-edit-paddock" title="Editar Talhão" data-paddock-name="${escapeHtml(p.name)}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:#10b981;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
+            <button type="button" class="agro-btn agro-btn-danger agro-btn-icon-only btn-delete-paddock" title="Excluir Talhão" data-paddock-name="${escapeHtml(p.name)}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    if (countLabel) {
+      countLabel.textContent = `Mostrando 1 a ${paddocks.length} de ${paddocks.length} talhões`;
+    }
+
+    tbody.querySelectorAll('.btn-edit-paddock').forEach(btn => {
+      btn.addEventListener('click', () => {
+        showToast(`Edição do ${btn.getAttribute('data-paddock-name')} selecionada.`, null, 'info');
+      });
+    });
+    tbody.querySelectorAll('.btn-delete-paddock').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pname = btn.getAttribute('data-paddock-name');
+        openConfirmModal('Excluir Talhão', `Deseja remover ${pname} da propriedade?`, () => {
+          farm.paddocks = (farm.paddocks || []).filter(item => item.name !== pname);
+          renderPaddocksTable(farm);
+          showToast(`${pname} removido com sucesso.`);
+        });
+      });
+    });
+  }
+
+  function setupFarmsModule() {
+    document.querySelectorAll('.agro-list-item[data-farm-id]').forEach(card => {
+      card.addEventListener('click', () => {
+        const farmId = parseInt(card.getAttribute('data-farm-id'), 10);
+        selectFarm(farmId);
+      });
+    });
+
+    const searchInput = document.getElementById('search-farms-input');
+    const farmsEmpty = document.getElementById('farms-empty-state');
+    const btnClearSearch = document.getElementById('btn-clear-farms-search');
+
+    const applyFarmFilter = () => {
+      const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      let visible = 0;
+      document.querySelectorAll('.agro-list-item[data-farm-id]').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        const show = !query || text.includes(query);
+        card.style.display = show ? 'flex' : 'none';
+        if (show) visible++;
+      });
+      if (farmsEmpty) farmsEmpty.style.display = visible === 0 ? 'flex' : 'none';
+    };
+
+    if (searchInput) searchInput.addEventListener('input', applyFarmFilter);
+    if (btnClearSearch && searchInput) {
+      btnClearSearch.addEventListener('click', () => {
+        searchInput.value = '';
+        applyFarmFilter();
+      });
+    }
+
+    const formEditFarm = document.getElementById('form-edit-farm');
+    if (formEditFarm) {
+      formEditFarm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const farm = AgroState.farms.find(f => f.id === AgroState.selectedFarmId);
+        if (!farm) return;
+        const inputName = document.getElementById('farm-input-name');
+        const inputCar = document.getElementById('farm-input-car');
+        const selectCity = document.getElementById('farm-select-city');
+        const selectUf = document.getElementById('farm-select-uf');
+        const inputCoord = document.getElementById('farm-input-coord');
+
+        if (inputName && inputName.value.trim()) farm.name = inputName.value.trim();
+        if (inputCar && inputCar.value.trim()) farm.car = inputCar.value.trim();
+        if (selectCity) farm.city = selectCity.value;
+        if (selectUf) farm.uf = selectUf.value;
+        if (inputCoord) farm.coordinates = inputCoord.value.trim();
+        farm.carHasConflict = false;
+        selectFarm(farm.id);
+        showToast(`Fazenda "${farm.name}" atualizada com sucesso!`);
+      });
+    }
+
+    const btnCancelFarm = document.getElementById('btn-cancel-farm');
+    const btnEditFarm = document.getElementById('btn-edit-farm');
+    const btnDeleteFarm = document.getElementById('btn-delete-farm');
+    const btnNewFarm = document.getElementById('btn-new-farm');
+    const btnAddPaddock = document.getElementById('btn-add-paddock');
+    const btnEmptyAddPaddock = document.getElementById('btn-empty-add-paddock');
+
+    if (btnCancelFarm) btnCancelFarm.addEventListener('click', () => selectFarm(AgroState.selectedFarmId));
+    if (btnEditFarm) {
+      btnEditFarm.addEventListener('click', () => {
+        const inputName = document.getElementById('farm-input-name');
+        if (inputName) inputName.focus();
+      });
+    }
+    if (btnDeleteFarm) {
+      btnDeleteFarm.addEventListener('click', () => {
+        const farm = AgroState.farms.find(f => f.id === AgroState.selectedFarmId);
+        openConfirmModal('Excluir Fazenda', `Tem certeza que deseja excluir "${farm ? farm.name : 'esta fazenda'}"?`, () => {
+          showToast('Exclusão bloqueada por integridade histórica (RN-01 / ON DELETE RESTRICT).', null, 'warning');
+        });
+      });
+    }
+    if (btnNewFarm) {
+      btnNewFarm.addEventListener('click', () => {
+        showToast('Preencha os dados da nova propriedade no formulário ao lado.', null, 'info');
+        const inputName = document.getElementById('farm-input-name');
+        if (inputName) { inputName.value = ''; inputName.focus(); }
+      });
+    }
+    const addDraftPaddock = () => {
+      const farm = AgroState.farms.find(f => f.id === AgroState.selectedFarmId);
+      if (!farm) return;
+      const nextNum = (farm.paddocks ? farm.paddocks.length : 0) + 1;
+      farm.paddocks = farm.paddocks || [];
+      farm.paddocks.push({
+        id: String(nextNum).padStart(2, '0'),
+        name: `Piquete ${String(nextNum).padStart(2, '0')}`,
+        area: '15,00',
+        pasture: 'Braquiária',
+        updated: 'Agora'
+      });
+      renderPaddocksTable(farm);
+      showToast(`Piquete ${String(nextNum).padStart(2, '0')} adicionado em ${farm.name}.`);
+    };
+    if (btnAddPaddock) btnAddPaddock.addEventListener('click', addDraftPaddock);
+    if (btnEmptyAddPaddock) btnEmptyAddPaddock.addEventListener('click', addDraftPaddock);
+
+    selectFarm(AgroState.selectedFarmId || 1);
+  }
+
+  function selectFarm(farmId) {
+    AgroState.selectedFarmId = farmId;
+    const farm = AgroState.farms.find(f => f.id === farmId);
+    if (!farm) return;
+
+    document.querySelectorAll('.agro-list-item[data-farm-id]').forEach(card => {
+      if (parseInt(card.getAttribute('data-farm-id'), 10) === farmId) {
+        card.classList.add('selected');
+      } else {
+        card.classList.remove('selected');
+      }
+    });
+
+    const detailTitle = document.getElementById('farm-detail-name');
+    const detailLocation = document.getElementById('farm-detail-location');
+    if (detailTitle) detailTitle.textContent = farm.name;
+    if (detailLocation) detailLocation.textContent = `${farm.city} - ${farm.uf}`;
+
+    const inputName = document.getElementById('farm-input-name');
+    const inputCar = document.getElementById('farm-input-car');
+    const carError = document.getElementById('farm-car-error');
+    const carErrorIcon = document.getElementById('farm-car-error-icon');
+    const selectCity = document.getElementById('farm-select-city');
+    const selectUf = document.getElementById('farm-select-uf');
+    const inputCoord = document.getElementById('farm-input-coord');
+
+    if (inputName) inputName.value = farm.name;
+    if (inputCar) {
+      inputCar.value = farm.car;
+      inputCar.classList.toggle('error', Boolean(farm.carHasConflict));
+    }
+    if (carError) carError.style.display = farm.carHasConflict ? 'block' : 'none';
+    if (carErrorIcon) carErrorIcon.style.display = farm.carHasConflict ? 'flex' : 'none';
+    if (selectCity) selectCity.value = farm.city;
+    if (selectUf) selectUf.value = farm.uf;
+    if (inputCoord) inputCoord.value = farm.coordinates;
+
+    renderPaddocksTable(farm);
+    updateBreadcrumb();
+  }
+
+  // =========================================================================
+  // MODALS GLOBAIS DE VALIDAÇÃO E CONFIRMAÇÃO
+  // =========================================================================
+  function setupModals() {
+    const valModal = document.getElementById('modal-validation-error');
+    const btnCloseVal = document.getElementById('btn-close-validation-modal');
+    const btnUnderVal = document.getElementById('btn-understand-validation');
+
+    if (btnCloseVal && valModal) {
+      btnCloseVal.addEventListener('click', () => valModal.classList.remove('active'));
+    }
+    if (btnUnderVal && valModal) {
+      btnUnderVal.addEventListener('click', () => {
+        valModal.classList.remove('active');
+        document.querySelectorAll('.drawer-animal-checkbox[data-conflict="true"]').forEach(cb => cb.checked = false);
+        updateDrawerSelectedCount();
+      });
+    }
+
+    const confModal = document.getElementById('modal-confirm-action');
+    const btnCloseConf = document.getElementById('btn-close-confirm-modal');
+    const btnCancelConf = document.getElementById('btn-cancel-confirm');
+
+    if (btnCloseConf && confModal) {
+      btnCloseConf.addEventListener('click', () => confModal.classList.remove('active'));
+    }
+    if (btnCancelConf && confModal) {
+      btnCancelConf.addEventListener('click', () => confModal.classList.remove('active'));
+    }
+  }
+
+  function openValidationErrorModal(title, description, errorCode, detail) {
+    const modal = document.getElementById('modal-validation-error');
+    if (!modal) return;
+
+    const headlineElem = document.getElementById('val-modal-headline');
+    const descElem = document.getElementById('val-modal-description');
+    const codeElem = document.getElementById('val-modal-conflict-code');
+    const detailElem = document.getElementById('val-modal-conflict-detail');
+
+    if (headlineElem && title) headlineElem.textContent = title;
+    if (descElem && description) descElem.textContent = description;
+    if (codeElem && errorCode) codeElem.textContent = `Código de Erro: ${errorCode}`;
+    if (detailElem && detail) detailElem.innerHTML = detail;
+
+    modal.classList.add('active');
+  }
+
+  function openConfirmModal(title, message, onConfirmCallback) {
+    const modal = document.getElementById('modal-confirm-action');
+    if (!modal) return;
+
+    const modalTitle = document.getElementById('confirm-modal-title');
+    const modalText = document.getElementById('confirm-modal-text');
+    const confirmBtn = document.getElementById('btn-confirm-action');
+
+    if (modalTitle) modalTitle.textContent = title;
+    if (modalText) modalText.textContent = message;
+
+    modal.classList.add('active');
+
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    newConfirmBtn.addEventListener('click', () => {
+      modal.classList.remove('active');
+      if (typeof onConfirmCallback === 'function') {
+        onConfirmCallback();
+      }
+    });
+  }
+
+  // =========================================================================
+  // MÓDULO DE MANEJO NUTRICIONAL & TIMELINE (SPRINT 3 - S3-T04)
+  // =========================================================================
+  function setupManejoModule() {
+    const lotSelect = document.getElementById('select-manejo-lote');
+    const timelineContainer = document.getElementById('manejo-timeline-container');
+    const emptyState = document.getElementById('manejo-empty-state');
+    const timelineCard = document.getElementById('manejo-timeline-card');
+    const conflictBanner = document.getElementById('manejo-conflict-banner');
+    const conflictPeriodRange = document.getElementById('conflict-period-range');
+    const conflictLotCode = document.getElementById('conflict-lot-code');
+    const btnDismissConflict = document.getElementById('btn-dismiss-conflict-banner');
+
+    const modalCreateManejo = document.getElementById('modal-create-manejo');
+    const btnOpenModal = document.getElementById('btn-open-create-manejo-modal');
+    const btnEmptyCreate = document.getElementById('btn-empty-create-manejo');
+    const btnCloseModal = document.getElementById('btn-close-create-manejo-modal');
+    const btnCancelModal = document.getElementById('btn-cancel-create-manejo');
+    const formCreateManejo = document.getElementById('form-create-manejo');
+
+    const inputInicio = document.getElementById('modal-manejo-data-inicio');
+    const inputFim = document.getElementById('modal-manejo-data-fim');
+    const selectModalLote = document.getElementById('modal-manejo-lote-select');
+    const selectDieta = document.getElementById('modal-manejo-tipo-dieta');
+    const selectParamSet = document.getElementById('modal-manejo-parametro-set');
+    const inputCms = document.getElementById('modal-manejo-cms-input');
+    const conflictBox = document.getElementById('modal-manejo-conflict-box');
+    const conflictDetail = document.getElementById('modal-manejo-conflict-detail');
+    const btnSubmitManejo = document.getElementById('btn-submit-create-manejo');
+
+    const kpiDias = document.getElementById('kpi-manejo-dias');
+    const kpiIntegrity = document.getElementById('kpi-timeline-integrity-badge');
+    const countBadge = document.getElementById('manejo-count-badge');
+
+    function formatDateBR(isoStr) {
+      if (!isoStr || typeof isoStr !== 'string') return '—';
+      const parts = isoStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return isoStr;
+    }
+
+    function calculateDays(inicioIso, fimIso) {
+      if (!inicioIso || !fimIso) return 0;
+      const d1 = new Date(inicioIso + 'T00:00:00Z');
+      const d2 = new Date(fimIso + 'T00:00:00Z');
+      const diffMs = d2 - d1;
+      if (isNaN(diffMs) || diffMs < 0) return 0;
+      return Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+    function findOverlappingPeriod(loteId, inicioIso, fimIso, ignoreManejoId = null) {
+      if (!inicioIso || !fimIso || fimIso < inicioIso) return null;
+      const idNum = parseInt(loteId, 10);
+      const lotManejos = (AgroState.manejos || []).filter(m => m.lote_id === idNum && m.id !== ignoreManejoId);
+
+      for (const m of lotManejos) {
+        if (inicioIso <= m.fim && m.inicio <= fimIso) {
+          return m;
+        }
+      }
+      return null;
+    }
+
+    function validateModalDates() {
+      if (!inputInicio || !inputFim || !conflictBox || !btnSubmitManejo) return;
+      const inicio = inputInicio.value;
+      const fim = inputFim.value;
+      const loteId = selectModalLote ? selectModalLote.value : (lotSelect ? lotSelect.value : 1);
+
+      if (!inicio || !fim) {
+        conflictBox.style.display = 'none';
+        btnSubmitManejo.disabled = false;
+        btnSubmitManejo.title = '';
+        return;
+      }
+
+      if (fim < inicio) {
+        conflictBox.style.display = 'flex';
+        conflictDetail.innerHTML = 'A data de término não pode ser anterior à data de início.';
+        btnSubmitManejo.disabled = true;
+        btnSubmitManejo.title = 'Ajuste a data de término';
+        return;
+      }
+
+      const conflicting = findOverlappingPeriod(loteId, inicio, fim);
+      if (conflicting) {
+        conflictBox.style.display = 'flex';
+        const rangeText = `${formatDateBR(conflicting.inicio)} a ${formatDateBR(conflicting.fim)}`;
+        const dietaText = conflicting.tipo_dieta_label || conflicting.tipo_dieta;
+        conflictDetail.innerHTML = `O período selecionado colide diretamente com o manejo já cadastrado de <strong>${rangeText}</strong> (${dietaText}). Conforme a regra RN-08, não são permitidos períodos sobrepostos.`;
+        btnSubmitManejo.disabled = true;
+        btnSubmitManejo.title = 'Existe sobreposição temporal. Ajuste as datas para habilitar o cadastro.';
+      } else {
+        conflictBox.style.display = 'none';
+        btnSubmitManejo.disabled = false;
+        btnSubmitManejo.title = '';
+      }
+    }
+
+    function renderTimeline(loteId) {
+      const idNum = parseInt(loteId, 10);
+      const items = (AgroState.manejos || [])
+        .filter(m => m.lote_id === idNum)
+        .sort((a, b) => a.inicio.localeCompare(b.inicio));
+
+      const kpiCms = document.getElementById('kpi-manejo-cms');
+      const kpiFe = document.getElementById('kpi-manejo-fe');
+      const loteStatusBadge = document.getElementById('manejo-lote-status-badge');
+      const selectedOpt = lotSelect && lotSelect.options[lotSelect.selectedIndex];
+      const lotAnimalsCount = selectedOpt ? parseInt(selectedOpt.getAttribute('data-animals') || '0', 10) : 0;
+
+      if (loteStatusBadge) {
+        if (items.length === 0 || lotAnimalsCount === 0) {
+          loteStatusBadge.className = 'agro-badge neutral';
+          loteStatusBadge.textContent = 'Rascunho (Vazio)';
+        } else {
+          loteStatusBadge.className = 'agro-badge warning';
+          loteStatusBadge.textContent = 'Em manejo';
+        }
+      }
+
+      if (items.length === 0) {
+        if (emptyState) emptyState.style.display = 'block';
+        if (timelineCard) timelineCard.style.display = 'none';
+        if (kpiDias) kpiDias.textContent = '0';
+        if (kpiCms) kpiCms.textContent = '0.00';
+        if (kpiFe) kpiFe.textContent = '0.00';
+        if (countBadge) countBadge.textContent = '0 períodos';
+        if (kpiIntegrity) {
+          kpiIntegrity.className = 'agro-badge neutral';
+          kpiIntegrity.textContent = 'Sem Períodos';
+        }
+        return;
+      }
+
+      if (emptyState) emptyState.style.display = 'none';
+      if (timelineCard) timelineCard.style.display = 'block';
+      if (countBadge) countBadge.textContent = `${items.length} período${items.length > 1 ? 's' : ''}`;
+
+      let totalDays = 0;
+      let html = '';
+
+      items.forEach((m, idx) => {
+        const duracao = calculateDays(m.inicio, m.fim);
+        totalDays += duracao;
+        const isCurrent = idx === items.length - 1;
+        const statusBadge = m.status === 'Concluído'
+          ? '<span class="agro-badge success" style="font-size:10.5px; padding:2px 6px;">Concluído</span>'
+          : '<span class="agro-badge warning" style="font-size:10.5px; padding:2px 6px;">Em Andamento</span>';
+
+        html += `
+          <div class="agro-timeline-item" data-manejo-id="${m.id}" data-inicio="${m.inicio}" data-fim="${m.fim}">
+            <div class="agro-timeline-dot ${isCurrent ? 'active' : ''}" title="${m.status || 'Período'}"></div>
+            <div class="agro-timeline-content" style="background:#fafbfc; border:1px solid var(--agro-border); border-radius:var(--agro-radius-md); padding:16px;">
+              <div class="agro-timeline-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="agro-timeline-title" style="font-size:14px; font-weight:700; color:var(--agro-text-primary);">
+                      Dieta: ${m.tipo_dieta_label || m.tipo_dieta}
+                    </span>
+                    ${statusBadge}
+                  </div>
+                  <div class="agro-timeline-date" style="font-size:12.5px; font-weight:600; color:var(--agro-primary); margin-top:3px;">
+                    Datas: <span class="format-date-range">${formatDateBR(m.inicio)} a ${formatDateBR(m.fim)}</span> (Duração: ${duracao} dias inclusivos)
+                  </div>
+                </div>
+                <span class="agro-badge info" style="font-size:11px;">Parâmetro Set #${m.parametro_set_id} (v1.0-2026)</span>
+              </div>
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:12px; background:#fff; padding:12px; border-radius:6px; border:1px solid #e2e8f0;">
+                <div>
+                  <span style="font-size:11px; color:var(--agro-text-muted); display:block;">Consumo Diário (CMS)</span>
+                  <strong style="font-size:13px; color:var(--agro-text-primary);">${m.cms || '9.50'} kg MS/cab/dia</strong>
+                </div>
+                <div>
+                  <span style="font-size:11px; color:var(--agro-text-muted); display:block;">Conversão Metano (Ym)</span>
+                  <strong style="font-size:13px; color:var(--agro-text-primary);">${m.ym || '6.50'} % EB</strong>
+                </div>
+                <div>
+                  <span style="font-size:11px; color:var(--agro-text-muted); display:block;">Emissão Entérica</span>
+                  <strong style="font-size:13px; color:var(--agro-text-primary);">${m.fe || '56.00'} kg CH4/cab/ano</strong>
+                </div>
+                <div>
+                  <span style="font-size:11px; color:var(--agro-text-muted); display:block;">Classificação de Origem</span>
+                  <span class="agro-badge neutral" style="font-size:10px;">SYNTHETIC (Didático)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      if (timelineContainer) timelineContainer.innerHTML = html;
+      if (kpiDias) kpiDias.textContent = String(totalDays);
+      if (kpiCms) {
+        const avgCms = items.reduce((acc, item) => acc + parseFloat(item.cms || 9.5), 0) / items.length;
+        kpiCms.textContent = avgCms.toFixed(2);
+      }
+      if (kpiFe) {
+        const avgFe = items.reduce((acc, item) => acc + parseFloat(item.fe || 56.0), 0) / items.length;
+        kpiFe.textContent = avgFe.toFixed(2);
+      }
+      if (kpiIntegrity) {
+        kpiIntegrity.className = 'agro-badge success';
+        kpiIntegrity.textContent = '✓ Sem Conflitos (RN-08)';
+      }
+    }
+
+    if (lotSelect) {
+      lotSelect.addEventListener('change', (e) => {
+        const selVal = e.target.value;
+        if (selectModalLote) selectModalLote.value = selVal;
+        renderTimeline(selVal);
+        updateBreadcrumb();
+      });
+    }
+
+    if (btnOpenModal && modalCreateManejo) {
+      btnOpenModal.addEventListener('click', () => {
+        if (selectModalLote && lotSelect) selectModalLote.value = lotSelect.value;
+        if (inputInicio) inputInicio.value = '2026-12-01';
+        if (inputFim) inputFim.value = '2026-12-31';
+        validateModalDates();
+        modalCreateManejo.classList.add('active');
+      });
+    }
+
+    if (btnEmptyCreate && modalCreateManejo) {
+      btnEmptyCreate.addEventListener('click', () => {
+        if (selectModalLote && lotSelect) selectModalLote.value = lotSelect.value;
+        if (inputInicio) inputInicio.value = '2026-11-01';
+        if (inputFim) inputFim.value = '2026-11-30';
+        validateModalDates();
+        modalCreateManejo.classList.add('active');
+      });
+    }
+
+    const closeModal = () => {
+      if (modalCreateManejo) modalCreateManejo.classList.remove('active');
+    };
+    if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
+    if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
+
+    if (inputInicio) {
+      inputInicio.addEventListener('change', validateModalDates);
+      inputInicio.addEventListener('input', validateModalDates);
+    }
+    if (inputFim) {
+      inputFim.addEventListener('change', validateModalDates);
+      inputFim.addEventListener('input', validateModalDates);
+    }
+    if (selectModalLote) {
+      selectModalLote.addEventListener('change', validateModalDates);
+    }
+
+    if (btnDismissConflict && conflictBanner) {
+      btnDismissConflict.addEventListener('click', () => {
+        conflictBanner.style.display = 'none';
+        document.querySelectorAll('.agro-timeline-item.conflict').forEach(el => el.classList.remove('conflict'));
+      });
+    }
+
+    if (formCreateManejo) {
+      formCreateManejo.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const loteId = parseInt(selectModalLote ? selectModalLote.value : (lotSelect ? lotSelect.value : 1), 10);
+        const inicio = inputInicio ? inputInicio.value : '';
+        const fim = inputFim ? inputFim.value : '';
+        const tipoDieta = selectDieta ? selectDieta.value : 'PASTAGEM';
+        const parametroSetId = parseInt(selectParamSet ? selectParamSet.value : 1, 10);
+        const cmsVal = inputCms ? parseFloat(inputCms.value) || 9.50 : 9.50;
+
+        const conflicting = findOverlappingPeriod(loteId, inicio, fim);
+        if (conflicting) {
+          validateModalDates();
+          if (conflictBanner && conflictPeriodRange && conflictLotCode) {
+            conflictPeriodRange.textContent = `${formatDateBR(conflicting.inicio)} a ${formatDateBR(conflicting.fim)}`;
+            conflictLotCode.textContent = (selectModalLote && selectModalLote.options[selectModalLote.selectedIndex])
+              ? selectModalLote.options[selectModalLote.selectedIndex].text.split(' ')[0]
+              : 'LT-2026-001';
+            conflictBanner.style.display = 'flex';
+          }
+          return;
+        }
+
+        const correlationId = AgroState.correlationId || '123e4567-e89b-42d3-a456-426614174000';
+        const newManejo = {
+          id: Date.now(),
+          lote_id: loteId,
+          inicio: inicio,
+          fim: fim,
+          parametro_set_id: parametroSetId,
+          tipo_dieta: tipoDieta,
+          tipo_dieta_label: (selectDieta && selectDieta.options[selectDieta.selectedIndex])
+            ? selectDieta.options[selectDieta.selectedIndex].text
+            : tipoDieta,
+          cms: cmsVal.toFixed(2),
+          ym: '6.50',
+          fe: '56.00',
+          status: 'Em Andamento',
+          statusType: 'warning'
+        };
+
+        AgroState.manejos = AgroState.manejos || [];
+        AgroState.manejos.push(newManejo);
+
+        closeModal();
+        renderTimeline(loteId);
+
+        showToast(
+          `Período de manejo cadastrado (${formatDateBR(inicio)} a ${formatDateBR(fim)}).`,
+          correlationId,
+          'success'
+        );
+      });
+    }
+
+    const initialLote = lotSelect ? lotSelect.value : 1;
+    renderTimeline(initialLote);
+  }
+
+  // Sprint 4 (S4-T04): Fechamento do Lote e Cálculo CarbonEngine
+  function setupFechamentoModule() {
+    const lotSelect = document.getElementById('select-fechamento-lote');
+    const statusBadge = document.getElementById('fechamento-lote-status-badge');
+
+    const inputDataAbate = document.getElementById('fechamento-data-abate');
+    const inputAnimais = document.getElementById('fechamento-animais-abate');
+    const inputPeso = document.getElementById('fechamento-peso-medio');
+    const inputRendimento = document.getElementById('fechamento-rendimento');
+    const form = document.getElementById('form-fechar-lote');
+    const btnSubmit = document.getElementById('btn-submit-fechamento');
+    const btnSubmitText = document.getElementById('btn-submit-fechamento-text');
+    const spinner = document.getElementById('spinner-fechamento');
+
+    const rendimentoFracao = document.getElementById('rendimento-fração-preview');
+    const previewPesoVivo = document.getElementById('preview-peso-vivo-total');
+    const previewCarcaca = document.getElementById('preview-carcaca-total');
+    const hintDataMinima = document.getElementById('data-minima-abate-hint');
+    const hintMaxAnimais = document.getElementById('max-animais-permitidos-hint');
+
+    const resumoCodigo = document.getElementById('resumo-lote-codigo');
+    const resumoFazenda = document.getElementById('resumo-lote-fazenda');
+    const resumoAnimais = document.getElementById('resumo-lote-animais');
+    const resumoPeriodo = document.getElementById('resumo-lote-periodo');
+    const resumoParamSet = document.getElementById('resumo-lote-param-set');
+    const boxJaFechado = document.getElementById('box-lote-ja-fechado');
+
+    const errorBanner = document.getElementById('fechamento-actionable-error-banner');
+    const errorCodeBadge = document.getElementById('fechamento-error-code-badge');
+    const errorTitle = document.getElementById('fechamento-error-title');
+    const errorMessage = document.getElementById('fechamento-error-message');
+    const errorActionGuide = document.getElementById('fechamento-error-action-guide');
+    const btnErrorAction = document.getElementById('btn-fechamento-error-action');
+    const btnRetrySeguro = document.getElementById('btn-fechamento-retry-seguro');
+    const spinnerRetry = document.getElementById('spinner-retry-fechamento');
+    const idempotencyStatus = document.getElementById('fechamento-idempotency-status');
+    const errorCorrelation = document.getElementById('fechamento-error-correlation-id');
+    const btnDismissError = document.getElementById('btn-dismiss-fechamento-error');
+
+    const resultadoCard = document.getElementById('fechamento-resultado-card');
+    const resEmissaoTotal = document.getElementById('res-emissao-total');
+    const resIntensidade = document.getElementById('res-intensidade');
+    const resVersaoMetodo = document.getElementById('res-versao-metodo');
+    const resFechamentoId = document.getElementById('res-fechamento-id');
+    const resParamId = document.getElementById('res-param-id');
+    const resCorrelationId = document.getElementById('res-correlation-id');
+
+    const certCard = document.getElementById('certificado-resultado-card');
+    const certResId = document.getElementById('cert-res-id');
+    const certResStatus = document.getElementById('cert-res-status');
+    const certResSnapshotSha = document.getElementById('cert-res-snapshot-sha256');
+    const certResPdfShaRow = document.getElementById('cert-res-pdf-sha256-row');
+    const certResPdfSha = document.getElementById('cert-res-pdf-sha256');
+    const certResTokenBox = document.getElementById('cert-res-token-box');
+    const certResQrContainer = document.getElementById('cert-res-qr-container');
+    const certResPublicUrl = document.getElementById('cert-res-public-url');
+    const certResPublicOpenLink = document.getElementById('cert-res-public-open-link');
+    const btnCopyTokenUrl = document.getElementById('btn-copy-cert-token-url');
+    const btnDownloadPdf = document.getElementById('btn-download-certificado-pdf');
+    const btnDownloadPdfText = document.getElementById('btn-download-pdf-text');
+    const spinnerDownloadPdf = document.getElementById('spinner-download-pdf');
+    const certPdfErrorBox = document.getElementById('cert-pdf-error-box');
+    const certPdfErrorMsg = document.getElementById('cert-pdf-error-message');
+    const btnRetryDownloadPdf = document.getElementById('btn-retry-download-pdf');
+
+    const modalConfirm = document.getElementById('modal-confirm-fechamento');
+    const modalConfirmLoteCode = document.getElementById('modal-confirm-lote-code');
+    const modalConfirmData = document.getElementById('modal-confirm-data-abate');
+    const modalConfirmAnimais = document.getElementById('modal-confirm-animais');
+    const modalConfirmPeso = document.getElementById('modal-confirm-peso');
+    const modalConfirmRendimento = document.getElementById('modal-confirm-rendimento');
+    const modalConfirmCarcaca = document.getElementById('modal-confirm-carcaca-total');
+    const btnCancelConfirm = document.getElementById('btn-cancel-confirm-fechamento');
+    const btnCloseConfirm = document.getElementById('btn-close-confirm-fechamento');
+    const btnDoConfirm = document.getElementById('btn-execute-confirm-fechamento');
+
+    const btnOpenFromLot = document.getElementById('btn-open-fechamento-from-lot');
+
+    // Prevenção estrita de submissão dupla e preservação de Idempotency-Key (S4-T04 / S5-T04)
+    let isSubmitting = false;
+    let isDownloadingPdf = false;
+    let activeAttemptFingerprint = null;
+    let activeIdempotencyKey = null;
+    let lastFailedPayload = null;
+    let currentCertificate = null;
+
+    // Catálogo de dados de mock zootécnicos dos lotes
+    const mockLotProfiles = {
+      1: {
+        code: 'LT-2026-001',
+        farm: 'Fazenda Modelo (Aquidauana/MS)',
+        animals: 50,
+        status: 'EM_MANEJO',
+        statusLabel: 'Em manejo',
+        statusBadgeClass: 'agro-badge warning',
+        lastManejoFim: '2026-05-30',
+        periodoTexto: '01/01/2026 a 30/05/2026 (150 dias inclusivos)',
+        paramSet: 'v1.0-2026 [SYNTHETIC / Didático]',
+        isClosed: false
+      },
+      2: {
+        code: 'LT-2026-003',
+        farm: 'Fazenda São Bento (Corumbá/MS)',
+        animals: 45,
+        status: 'FECHADO',
+        statusLabel: 'Fechado',
+        statusBadgeClass: 'agro-badge info',
+        lastManejoFim: '2026-05-30',
+        periodoTexto: '15/04/2026 a 30/05/2026 (46 dias)',
+        paramSet: 'v1.0-2026 [SYNTHETIC / Didático]',
+        isClosed: true,
+        closedResult: {
+          emissao: '12.285,00',
+          intensidade: '0,942',
+          id: '#100'
+        }
+      },
+      3: {
+        code: 'LT-2025-090',
+        farm: 'Fazenda Boa Vista (Miranda/MS)',
+        animals: 75,
+        status: 'CERTIFICADO',
+        statusLabel: 'Certificado',
+        statusBadgeClass: 'agro-badge success',
+        lastManejoFim: '2026-04-15',
+        periodoTexto: '01/03/2026 a 15/04/2026 (46 dias)',
+        paramSet: 'v1.0-2026 [SYNTHETIC / Didático]',
+        isClosed: true,
+        hasCertificate: true,
+        closedResult: {
+          emissao: '2,10',
+          intensidade: '0,007',
+          id: '#1'
+        },
+        certificate: {
+          id: 1,
+          lote_id: 3,
+          status: 'VALIDO',
+          snapshot_sha256: '4c280d6ae4b96dbe7bc46eed22c20c01fdb51de5024c256cbb17f26bee02ae96',
+          pdf_sha256: 'aff21415a620fb08aeb788033f61d9be0a928da235e7c6bba4b75ebf6970f724',
+          public_url: ((typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '') + '/certificado/'
+        }
+      },
+      4: {
+        code: 'LT-2024-087',
+        farm: 'Fazenda Estrela do Sul (Bodoquena/MS)',
+        animals: 0,
+        status: 'RASCUNHO',
+        statusLabel: 'Rascunho (Vazio)',
+        statusBadgeClass: 'agro-badge neutral',
+        lastManejoFim: null,
+        periodoTexto: 'Sem períodos de manejo cadastrados',
+        paramSet: 'Nenhum',
+        isClosed: false
+      }
+    };
+
+    function formatDateBR(isoStr) {
+      if (!isoStr || typeof isoStr !== 'string') return '—';
+      const parts = isoStr.split('-');
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      return isoStr;
+    }
+
+    function formatNumberBR(val, decimals = 2) {
+      return (Number(val) || 0).toLocaleString('pt-BR', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function updateZootecnicPreview() {
+      if (!inputAnimais || !inputPeso || !inputRendimento) return;
+      const animais = parseInt(inputAnimais.value, 10) || 0;
+      const peso = parseFloat(inputPeso.value) || 0;
+      let rendimento = parseFloat(inputRendimento.value) || 0;
+
+      if (rendimentoFracao) {
+        const fracao = rendimento > 1.0 ? rendimento / 100.0 : rendimento;
+        rendimentoFracao.textContent = fracao.toFixed(4);
+      }
+
+      const rendimentoPercent = rendimento > 1.0 ? rendimento / 100.0 : rendimento;
+      const pesoTotal = animais * peso;
+      const carcacaTotal = pesoTotal * rendimentoPercent;
+
+      if (previewPesoVivo) {
+        previewPesoVivo.textContent = `${formatNumberBR(pesoTotal, 2)} kg`;
+      }
+      if (previewCarcaca) {
+        previewCarcaca.textContent = `${formatNumberBR(carcacaTotal, 2)} kg carcaça`;
+      }
+    }
+
+    function updateSelectedLotInfo(loteId) {
+      const profile = mockLotProfiles[loteId] || mockLotProfiles[1];
+
+      if (resumoCodigo) resumoCodigo.textContent = profile.code;
+      if (resumoFazenda) resumoFazenda.textContent = profile.farm;
+      if (resumoAnimais) resumoAnimais.textContent = `${profile.animals} cabeças`;
+      if (resumoPeriodo) resumoPeriodo.textContent = profile.periodoTexto;
+      if (resumoParamSet) resumoParamSet.textContent = profile.paramSet;
+
+      if (statusBadge) {
+        statusBadge.className = profile.statusBadgeClass;
+        statusBadge.textContent = profile.statusLabel;
+      }
+
+      if (hintMaxAnimais) {
+        hintMaxAnimais.textContent = `${profile.animals} animais`;
+      }
+      if (hintDataMinima) {
+        hintDataMinima.textContent = profile.lastManejoFim
+          ? formatDateBR(profile.lastManejoFim)
+          : 'Sem manejo registrado';
+      }
+
+      if (inputAnimais) {
+        if (profile.animals > 0) {
+          inputAnimais.value = profile.animals;
+          inputAnimais.max = profile.animals;
+        } else {
+          inputAnimais.value = '';
+          inputAnimais.max = 1;
+        }
+      }
+
+      const checkStatus = document.getElementById('check-status-lote');
+      const checkManejo = document.getElementById('check-manejo-existente');
+      if (checkStatus && checkManejo) {
+        if (profile.status === 'RASCUNHO') {
+          checkStatus.innerHTML = '✗ Status do lote é <strong>RASCUNHO</strong> — cadastre animais e manejo primeiro (RN-04)';
+          checkManejo.innerHTML = '✗ Nenhum período de manejo registrado (RN-08)';
+        } else if (profile.status === 'CERTIFICADO') {
+          checkStatus.innerHTML = '✓ Status do lote é <strong>CERTIFICADO</strong> — fechamento e emissão concluídos (RN-04)';
+          checkManejo.innerHTML = '✓ Manejo nutricional consolidado no snapshot imutável (RN-08 / RN-11)';
+        } else if (profile.status === 'FECHADO') {
+          checkStatus.innerHTML = '✓ Status do lote é <strong>FECHADO</strong> — apto para emissão de certificado (RN-04)';
+          checkManejo.innerHTML = '✓ Manejo nutricional presente e consolidado (RN-08)';
+        } else {
+          checkStatus.innerHTML = '✓ Status do lote é <strong>EM_MANEJO</strong> (RN-04)';
+          checkManejo.innerHTML = '✓ Manejo nutricional presente e contínuo (RN-08)';
+        }
+      }
+
+      if (profile.isClosed && profile.hasCertificate) {
+        if (boxJaFechado) boxJaFechado.style.display = 'block';
+        if (btnSubmit) {
+          btnSubmit.disabled = true;
+          btnSubmit.title = 'Este lote já foi fechado e possui certificado válido emitido.';
+        }
+        if (resultadoCard && profile.closedResult) {
+          resultadoCard.style.display = 'block';
+          if (resEmissaoTotal) resEmissaoTotal.textContent = profile.closedResult.emissao;
+          if (resIntensidade) resIntensidade.textContent = profile.closedResult.intensidade;
+          if (resFechamentoId) resFechamentoId.textContent = profile.closedResult.id;
+        }
+        if (certCard && profile.certificate) {
+          renderCertificateCard(profile.certificate);
+        } else {
+          currentCertificate = null;
+          if (certCard) certCard.style.display = 'none';
+        }
+      } else {
+        currentCertificate = null;
+        if (boxJaFechado) boxJaFechado.style.display = profile.isClosed ? 'block' : 'none';
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.title = '';
+          if (btnSubmitText) {
+            btnSubmitText.textContent = profile.isClosed
+              ? 'Emitir Certificado do Lote Fechado'
+              : 'Fechar Lote e Emitir Certificado';
+          }
+        }
+        if (resultadoCard) {
+          if (profile.isClosed && profile.closedResult) {
+            resultadoCard.style.display = 'block';
+            if (resEmissaoTotal) resEmissaoTotal.textContent = profile.closedResult.emissao;
+            if (resIntensidade) resIntensidade.textContent = profile.closedResult.intensidade;
+            if (resFechamentoId) resFechamentoId.textContent = profile.closedResult.id;
+          } else {
+            resultadoCard.style.display = 'none';
+          }
+        }
+        if (certCard) certCard.style.display = 'none';
+      }
+
+      updateZootecnicPreview();
+    }
+
+    function generateIdempotencyKey() {
+      if (typeof window !== 'undefined' && window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return `agro-${window.crypto.randomUUID()}`;
+      }
+      const rand = Math.random().toString(16).slice(2, 10);
+      return `agro-${Date.now().toString(36)}-${rand}`;
+    }
+
+    function buildAttemptFingerprint(payload) {
+      return [
+        payload.lote_id,
+        payload.data_abate,
+        payload.numero_animais_abate,
+        payload.peso_medio_abate_kg,
+        payload.rendimento_carcaca
+      ].join('|');
+    }
+
+    function getOrCreateIdempotencyKey(payload) {
+      const fingerprint = buildAttemptFingerprint(payload);
+      if (activeIdempotencyKey && activeAttemptFingerprint === fingerprint) {
+        return activeIdempotencyKey;
+      }
+      activeAttemptFingerprint = fingerprint;
+      activeIdempotencyKey = generateIdempotencyKey();
+      return activeIdempotencyKey;
+    }
+
+    function resetIdempotencyAttempt() {
+      activeAttemptFingerprint = null;
+      activeIdempotencyKey = null;
+      lastFailedPayload = null;
+      if (btnRetrySeguro) btnRetrySeguro.style.display = 'none';
+      if (idempotencyStatus) idempotencyStatus.style.display = 'none';
+    }
+
+    function invalidatePendingRetryIfChanged() {
+      if (!activeAttemptFingerprint) return;
+      const currentPayload = collectPayloadFromForm();
+      if (buildAttemptFingerprint(currentPayload) !== activeAttemptFingerprint) {
+        resetIdempotencyAttempt();
+      }
+    }
+
+    function renderCertificateCard(cert) {
+      if (!certCard || !cert) return;
+      currentCertificate = cert;
+      certCard.style.display = 'block';
+      if (certResId) certResId.textContent = `#${cert.id || '—'}`;
+      if (certResStatus) certResStatus.textContent = cert.status || 'VALIDO';
+      if (certResSnapshotSha) certResSnapshotSha.textContent = cert.snapshot_sha256 || '—';
+      if (certPdfErrorBox) certPdfErrorBox.style.display = 'none';
+      if (certResPdfShaRow) certResPdfShaRow.style.display = cert.pdf_sha256 ? 'block' : 'none';
+      if (certResPdfSha && cert.pdf_sha256) certResPdfSha.textContent = cert.pdf_sha256;
+
+      if (certResTokenBox && certResPublicUrl) {
+        if (cert.token || cert.public_url) {
+          const baseOrigin = (typeof window !== 'undefined' && window.location && window.location.origin)
+            ? window.location.origin
+            : '';
+          const publicUrl = cert.token
+            ? `${baseOrigin}/certificado/?token=${encodeURIComponent(cert.token)}`
+            : cert.public_url;
+          certResPublicUrl.textContent = publicUrl;
+          if (certResPublicOpenLink) {
+            certResPublicOpenLink.setAttribute('href', publicUrl);
+          }
+          if (certResQrContainer) {
+            certResQrContainer.innerHTML = buildQrCodeSvg(publicUrl);
+          }
+          certResTokenBox.style.display = 'block';
+        } else {
+          certResTokenBox.style.display = 'none';
+          if (certResQrContainer) certResQrContainer.innerHTML = '';
+        }
+      }
+    }
+
+    /**
+     * Gerador QR Code ISO-18004 (Byte Mode, ECC-M, Versões 1..10) 100% local em memória.
+     * Evita envio do token opaco a APIs externas de QR Code.
+     */
+    function buildQrCodeSvg(text) {
+      const bytes = new TextEncoder().encode(String(text || ''));
+      // Versões 1..10 (ECC Level M): [capBytes, ecPerBlock, [[count, dataCw], ...]]
+      const SPECS = [
+        null,
+        [14, 10, [[1, 16]]],
+        [26, 16, [[1, 28]]],
+        [42, 26, [[1, 44]]],
+        [62, 18, [[2, 32]]],
+        [84, 24, [[2, 43]]],
+        [106, 16, [[4, 27]]],
+        [122, 18, [[4, 31]]],
+        [152, 22, [[2, 38], [2, 39]]],
+        [180, 22, [[3, 36], [2, 37]]],
+        [213, 26, [[4, 43], [1, 44]]]
+      ];
+      const ALIGN = [null, [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+
+      let ver = 0;
+      for (let v = 1; v < SPECS.length; v++) {
+        if (bytes.length <= SPECS[v][0]) {
+          ver = v;
+          break;
+        }
+      }
+      if (ver === 0) return '';
+
+      const spec = SPECS[ver];
+      const ecLen = spec[1];
+      const groups = spec[2];
+      const totalDataCw = groups.reduce((acc, g) => acc + g[0] * g[1], 0);
+      const size = ver * 4 + 17;
+
+      // GF(256) com polinômio primitivo 0x11d
+      const EXP = new Uint8Array(512);
+      const LOG = new Uint8Array(256);
+      let x = 1;
+      for (let i = 0; i < 255; i++) {
+        EXP[i] = x;
+        LOG[x] = i;
+        x <<= 1;
+        if (x & 0x100) x ^= 0x11d;
+      }
+      for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+
+      function rsGenPoly(deg) {
+        let poly = [1];
+        for (let i = 0; i < deg; i++) {
+          const next = new Array(poly.length + 1).fill(0);
+          const root = EXP[i];
+          for (let j = 0; j < poly.length; j++) {
+            next[j] ^= poly[j];
+            next[j + 1] ^= poly[j] ? EXP[(LOG[poly[j]] + LOG[root]) % 255] : 0;
+          }
+          poly = next;
+        }
+        return poly;
+      }
+
+      function rsEncode(data, deg) {
+        const gen = rsGenPoly(deg);
+        const rem = new Uint8Array(deg);
+        for (let i = 0; i < data.length; i++) {
+          const factor = data[i] ^ rem[0];
+          rem.copyWithin(0, 1);
+          rem[deg - 1] = 0;
+          if (factor !== 0) {
+            for (let j = 0; j < deg; j++) {
+              if (gen[j + 1] !== 0) {
+                rem[j] ^= EXP[(LOG[gen[j + 1]] + LOG[factor]) % 255];
+              }
+            }
+          }
+        }
+        return rem;
+      }
+
+      // Bitstream Byte Mode (0100)
+      const bits = [];
+      const pushBits = (val, len) => {
+        for (let i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1);
+      };
+      pushBits(0b0100, 4);
+      pushBits(bytes.length, ver >= 10 ? 16 : 8);
+      for (let i = 0; i < bytes.length; i++) pushBits(bytes[i], 8);
+
+      const maxBits = totalDataCw * 8;
+      pushBits(0, Math.min(4, maxBits - bits.length));
+      while (bits.length % 8 !== 0) bits.push(0);
+      let padByte = 0xec;
+      while (bits.length < maxBits) {
+        pushBits(padByte, 8);
+        padByte = padByte === 0xec ? 0x11 : 0xec;
+      }
+
+      const dataCw = new Uint8Array(totalDataCw);
+      for (let i = 0; i < totalDataCw; i++) {
+        let b = 0;
+        for (let k = 0; k < 8; k++) b = (b << 1) | bits[i * 8 + k];
+        dataCw[i] = b;
+      }
+
+      // Blocos + intercalação
+      const dataBlocks = [];
+      const ecBlocks = [];
+      let offset = 0;
+      for (const [count, cwLen] of groups) {
+        for (let i = 0; i < count; i++) {
+          const blk = dataCw.slice(offset, offset + cwLen);
+          offset += cwLen;
+          dataBlocks.push(blk);
+          ecBlocks.push(rsEncode(blk, ecLen));
+        }
+      }
+
+      const interleaved = [];
+      const maxBlockLen = Math.max(...dataBlocks.map(b => b.length));
+      for (let i = 0; i < maxBlockLen; i++) {
+        for (const blk of dataBlocks) if (i < blk.length) interleaved.push(blk[i]);
+      }
+      for (let i = 0; i < ecLen; i++) {
+        for (const blk of ecBlocks) interleaved.push(blk[i]);
+      }
+
+      const codeBits = [];
+      for (const cw of interleaved) {
+        for (let k = 7; k >= 0; k--) codeBits.push((cw >>> k) & 1);
+      }
+      if (ver >= 2 && ver <= 6) {
+        for (let i = 0; i < 7; i++) codeBits.push(0);
+      }
+
+      // Matriz base + padrões fixos
+      const createMatrix = () => Array.from({ length: size }, () => new Int8Array(size).fill(-1));
+      const reserved = Array.from({ length: size }, () => new Uint8Array(size));
+
+      function drawFinder(m, r0, c0) {
+        for (let dr = -1; dr <= 7; dr++) {
+          for (let dc = -1; dc <= 7; dc++) {
+            const r = r0 + dr;
+            const c = c0 + dc;
+            if (r < 0 || r >= size || c < 0 || c >= size) continue;
+            const isBorder = dr === -1 || dr === 7 || dc === -1 || dc === 7;
+            const isRing = dr === 0 || dr === 6 || dc === 0 || dc === 6;
+            const isCenter = dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4;
+            m[r][c] = (!isBorder && (isRing || isCenter)) ? 1 : 0;
+            reserved[r][c] = 1;
+          }
+        }
+      }
+
+      function drawAlignment(m, r0, c0) {
+        for (let dr = -2; dr <= 2; dr++) {
+          for (let dc = -2; dc <= 2; dc++) {
+            const r = r0 + dr;
+            const c = c0 + dc;
+            m[r][c] = (Math.abs(dr) === 2 || Math.abs(dc) === 2 || (dr === 0 && dc === 0)) ? 1 : 0;
+            reserved[r][c] = 1;
+          }
+        }
+      }
+
+      const base = createMatrix();
+      drawFinder(base, 0, 0);
+      drawFinder(base, 0, size - 7);
+      drawFinder(base, size - 7, 0);
+
+      for (let i = 8; i < size - 8; i++) {
+        base[6][i] = i % 2 === 0 ? 1 : 0;
+        base[i][6] = i % 2 === 0 ? 1 : 0;
+        reserved[6][i] = 1;
+        reserved[i][6] = 1;
+      }
+
+      const alignPos = ALIGN[ver];
+      for (const r of alignPos) {
+        for (const c of alignPos) {
+          if (reserved[r][c] === 0) drawAlignment(base, r, c);
+        }
+      }
+
+      base[size - 8][8] = 1;
+      reserved[size - 8][8] = 1;
+
+      // Reserva áreas de Format Info e Version Info
+      for (let i = 0; i < 9; i++) {
+        if (i !== 6) {
+          reserved[8][i] = 1;
+          reserved[i][8] = 1;
+        }
+      }
+      for (let i = 0; i < 8; i++) {
+        reserved[8][size - 1 - i] = 1;
+        reserved[size - 1 - i][8] = 1;
+      }
+      if (ver >= 7) {
+        let vInfo = ver << 12;
+        for (let i = 5; i >= 0; i--) {
+          if ((vInfo >>> (i + 12)) & 1) vInfo ^= 0x1f25 << i;
+        }
+        vInfo = (ver << 12) | vInfo;
+        for (let i = 0; i < 18; i++) {
+          const bit = (vInfo >>> i) & 1;
+          const a = Math.floor(i / 3);
+          const b = size - 11 + (i % 3);
+          base[a][b] = bit;
+          base[b][a] = bit;
+          reserved[a][b] = 1;
+          reserved[b][a] = 1;
+        }
+      }
+
+      // Aloca bits de dados em zigue-zague
+      let bitIdx = 0;
+      let up = true;
+      for (let col = size - 1; col >= 1; col -= 2) {
+        if (col === 6) col--;
+        for (let step = 0; step < size; step++) {
+          const r = up ? size - 1 - step : step;
+          for (let dx = 0; dx < 2; dx++) {
+            const c = col - dx;
+            if (reserved[r][c] === 0) {
+              base[r][c] = bitIdx < codeBits.length ? codeBits[bitIdx++] : 0;
+            }
+          }
+        }
+        up = !up;
+      }
+
+      function applyMaskAndFormat(maskId) {
+        const m = base.map(row => new Int8Array(row));
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            if (reserved[r][c] === 1) continue;
+            let invert = false;
+            if (maskId === 0) invert = (r + c) % 2 === 0;
+            else if (maskId === 1) invert = r % 2 === 0;
+            else if (maskId === 2) invert = c % 3 === 0;
+            else if (maskId === 3) invert = (r + c) % 3 === 0;
+            else if (maskId === 4) invert = (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0;
+            else if (maskId === 5) invert = ((r * c) % 2 + (r * c) % 3) === 0;
+            else if (maskId === 6) invert = (((r * c) % 2 + (r * c) % 3) % 2) === 0;
+            else invert = (((r + c) % 2 + (r * c) % 3) % 2) === 0;
+            if (invert) m[r][c] ^= 1;
+          }
+        }
+
+        // Format info ECC-M (00) + maskId (3 bits) -> BCH(15,5) ^ 0x5412
+        const rawFmt = (0b00 << 3) | maskId;
+        let fmt = rawFmt << 10;
+        for (let i = 4; i >= 0; i--) {
+          if ((fmt >>> (i + 10)) & 1) fmt ^= 0x537 << i;
+        }
+        fmt = ((rawFmt << 10) | fmt) ^ 0x5412;
+
+        for (let i = 0; i < 15; i++) {
+          const bit = (fmt >>> i) & 1;
+          if (i < 6) m[i][8] = bit;
+          else if (i < 8) m[i + 1][8] = bit;
+          else m[size - 15 + i][8] = bit;
+
+          if (i < 8) m[8][size - 1 - i] = bit;
+          else if (i < 9) m[8][7] = bit;
+          else m[8][14 - i] = bit;
+        }
+        return m;
+      }
+
+      function penalty(m) {
+        let score = 0;
+        for (let r = 0; r < size; r++) {
+          let run = 1;
+          for (let c = 1; c < size; c++) {
+            if (m[r][c] === m[r][c - 1]) run++;
+            else {
+              if (run >= 5) score += run - 2;
+              run = 1;
+            }
+          }
+          if (run >= 5) score += run - 2;
+        }
+        for (let c = 0; c < size; c++) {
+          let run = 1;
+          for (let r = 1; r < size; r++) {
+            if (m[r][c] === m[r - 1][c]) run++;
+            else {
+              if (run >= 5) score += run - 2;
+              run = 1;
+            }
+          }
+          if (run >= 5) score += run - 2;
+        }
+        for (let r = 0; r < size - 1; r++) {
+          for (let c = 0; c < size - 1; c++) {
+            const v = m[r][c];
+            if (v === m[r][c + 1] && v === m[r + 1][c] && v === m[r + 1][c + 1]) score += 3;
+          }
+        }
+        return score;
+      }
+
+      let bestMatrix = null;
+      let bestScore = Infinity;
+      for (let maskId = 0; maskId < 8; maskId++) {
+        const candidate = applyMaskAndFormat(maskId);
+        const s = penalty(candidate);
+        if (s < bestScore) {
+          bestScore = s;
+          bestMatrix = candidate;
+        }
+      }
+
+      const quiet = 2;
+      const dim = size + quiet * 2;
+      const paths = [];
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (bestMatrix[r][c] === 1) {
+            paths.push(`M${c + quiet},${r + quiet}h1v1h-1z`);
+          }
+        }
+      }
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${dim} ${dim}" role="img" aria-label="QR Code de verificação pública" shape-rendering="crispEdges"><rect width="${dim}" height="${dim}" fill="#ffffff"/><path d="${paths.join('')}" fill="#0f172a"/></svg>`;
+    }
+
+    const publicCertQr = document.getElementById('public-cert-qr-container');
+    if (publicCertQr && typeof window !== 'undefined' && window.location && window.location.href) {
+      publicCertQr.innerHTML = buildQrCodeSvg(window.location.href);
+    }
+
+    function showActionableError(code, message, correlationId, options = {}) {
+      if (!errorBanner) return;
+
+      const corrId = correlationId || AgroState.correlationId || generateCorrelationId();
+      if (errorCodeBadge) errorCodeBadge.textContent = code || 'ERRO_FECHAMENTO';
+      if (errorCorrelation) errorCorrelation.textContent = corrId;
+      if (errorMessage) errorMessage.textContent = message || 'Ocorreu um erro ao processar o fechamento.';
+
+      const isRetryable = Boolean(options.retryable);
+      if (btnRetrySeguro) {
+        btnRetrySeguro.style.display = isRetryable ? 'inline-flex' : 'none';
+        btnRetrySeguro.disabled = false;
+      }
+      if (spinnerRetry) spinnerRetry.style.display = 'none';
+      if (idempotencyStatus) {
+        idempotencyStatus.style.display = isRetryable ? 'inline-block' : 'none';
+      }
+
+      // Mapeamento semântico acionável (Critério de Aceite 2)
+      let titleText = 'Falha no Fechamento / Certificação do Lote';
+      let guideText = 'Verifique os dados informados e tente novamente.';
+      let actionBtnText = 'Entendido';
+      let actionHandler = () => { errorBanner.style.display = 'none'; };
+
+      switch (code) {
+        case 'CERTIFICACAO_JA_PROCESSADA':
+          titleText = 'Emissão Já Processada com Segurança (Idempotente)';
+          guideText = 'Esta tentativa já foi processada anteriormente para a mesma Idempotency-Key. Nenhuma emissão duplicada foi criada; verifique os certificados do lote.';
+          actionBtnText = 'Fechar Aviso';
+          break;
+
+        case 'IDEMPOTENCY_KEY_REUTILIZADA':
+          titleText = 'Chave de Idempotência Reutilizada com Dados Diferentes';
+          guideText = 'Os parâmetros foram alterados em relação à tentativa anterior. Uma nova chave foi preparada — clique em Fechar Lote e Emitir Certificado para enviar novamente.';
+          actionBtnText = 'Preparar Nova Tentativa';
+          break;
+
+        case 'CERTIFICADO_JA_EXISTENTE':
+        case 'CERTIFICACAO_CONFLITANTE':
+          titleText = 'Lote Já Possui Certificado Válido';
+          guideText = 'A regra de unicidade garante apenas um certificado VALIDO por lote. Consulte o certificado existente sem emitir outro.';
+          actionBtnText = 'Ver Painel de Lotes';
+          actionHandler = () => {
+            errorBanner.style.display = 'none';
+            switchScreen('lotes');
+          };
+          break;
+
+        case 'FECHAMENTO_DIVERGENTE':
+          titleText = 'Parâmetros Divergentes do Fechamento Imutável';
+          guideText = 'Este lote já está FECHADO com snapshot imutável. Para emitir o certificado, informe exatamente os mesmos parâmetros registrados no fechamento original.';
+          actionBtnText = 'Revisar Parâmetros';
+          break;
+
+        case 'SERVICE_UNAVAILABLE':
+        case 'ERRO_CONEXAO':
+        case 'PDF_INDISPONIVEL':
+          titleText = 'Instabilidade Temporária de Comunicação';
+          guideText = 'Sua Idempotency-Key foi preservada nesta tentativa. Você pode clicar em "Tentar Novamente (Retry Seguro)" sem risco de duplicar o certificado.';
+          actionBtnText = 'Fechar Aviso';
+          break;
+
+        case 'ABATE_SUPERIOR_AOS_ANIMAIS':
+          titleText = 'Quantidade Abatida Inválida (Excede o Lote)';
+          guideText = 'A quantidade de animais abatidos não pode exceder o número de animais comprovado no último período de manejo. Ajuste o campo para no máximo o total de animais do lote.';
+          actionBtnText = 'Ajustar para Total do Lote';
+          actionHandler = () => {
+            const currentLot = lotSelect ? lotSelect.value : 1;
+            const profile = mockLotProfiles[currentLot];
+            if (inputAnimais && profile) {
+              inputAnimais.value = profile.animals;
+              updateZootecnicPreview();
+            }
+            errorBanner.style.display = 'none';
+          };
+          break;
+
+        case 'ABATE_ANTERIOR_AO_MANEJO':
+          titleText = 'Data de Abate Incompatível com o Manejo';
+          guideText = 'A data de abate não pode ser anterior à data final do último período de manejo. Ajuste a data de abate para ser igual ou posterior ao término do manejo.';
+          actionBtnText = 'Corrigir Data de Abate';
+          actionHandler = () => {
+            const currentLot = lotSelect ? lotSelect.value : 1;
+            const profile = mockLotProfiles[currentLot];
+            if (inputDataAbate && profile && profile.lastManejoFim) {
+              inputDataAbate.value = profile.lastManejoFim;
+            }
+            errorBanner.style.display = 'none';
+          };
+          break;
+
+        case 'ASSOCIACOES_PARCIAIS':
+          titleText = 'Associações Parciais Detectadas no Manejo (RN-09 / RN-10)';
+          guideText = 'Houve entrada ou saída de animais no meio de um período de manejo. Para garantir cálculo exato e sem dupla contagem, acesse a timeline de manejo e divida o período nas datas em que houve movimentação.';
+          actionBtnText = 'Ir para Tela de Manejo';
+          actionHandler = () => {
+            errorBanner.style.display = 'none';
+            switchScreen('manejo');
+          };
+          break;
+
+        case 'MANEJO_OBRIGATORIO':
+          titleText = 'Lote Sem Manejo Nutricional Registrado';
+          guideText = 'Conforme a regra RN-04, um lote só pode ser fechado se possuir ao menos um período de manejo nutricional cadastrado. Registre os manejos antes de fechar.';
+          actionBtnText = 'Cadastrar Manejo Agora';
+          actionHandler = () => {
+            errorBanner.style.display = 'none';
+            switchScreen('manejo');
+          };
+          break;
+
+        case 'LOTE_JA_FECHADO':
+        case 'LOTE_ESTADO_INVALIDO':
+          titleText = 'Lote Já Fechado (Operação Irreversível RN-11/21)';
+          guideText = 'Este lote já se encontra no status FECHADO com snapshot imutável protegido por triggers no PostgreSQL. Não é permitido fechar novamente um lote finalizado.';
+          actionBtnText = 'Ver Painel de Lotes';
+          actionHandler = () => {
+            errorBanner.style.display = 'none';
+            switchScreen('lotes');
+          };
+          break;
+
+        case 'PARAMETROS_NAO_PUBLICADOS':
+        case 'PARAMETROS_FORA_VIGENCIA':
+          titleText = 'Parâmetros Zootécnicos Não Publicados ou Fora da Vigência';
+          guideText = 'O conjunto de fatores vinculado ao manejo deve estar publicado (ATIVO ou INATIVO) e cobrir integralmente as datas de manejo. Verifique os parâmetros versionados.';
+          actionBtnText = 'Ver Timeline de Manejo';
+          actionHandler = () => {
+            errorBanner.style.display = 'none';
+            switchScreen('manejo');
+          };
+          break;
+
+        default:
+          guideText = message || 'Verifique as pré-condições do lote e tente novamente.';
+          break;
+      }
+
+      if (errorTitle) errorTitle.textContent = titleText;
+      if (errorActionGuide) errorActionGuide.textContent = guideText;
+      if (btnErrorAction) {
+        btnErrorAction.textContent = actionBtnText;
+        btnErrorAction.onclick = actionHandler;
+      }
+
+      errorBanner.style.display = 'block';
+      errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function resetSubmitState() {
+      isSubmitting = false;
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        if (btnSubmitText) btnSubmitText.textContent = 'Fechar Lote e Emitir Certificado';
+      }
+      if (spinner) spinner.style.display = 'none';
+      if (btnDoConfirm) {
+        btnDoConfirm.disabled = false;
+        btnDoConfirm.textContent = 'Sim, Confirmar e Fechar Lote';
+      }
+      if (btnRetrySeguro) btnRetrySeguro.disabled = false;
+      if (spinnerRetry) spinnerRetry.style.display = 'none';
+    }
+
+    function collectPayloadFromForm() {
+      const loteId = parseInt(lotSelect ? lotSelect.value : 1, 10);
+      const dataAbate = inputDataAbate ? inputDataAbate.value : '2026-06-01';
+      const animais = parseInt(inputAnimais ? inputAnimais.value : 50, 10);
+      const peso = parseFloat(inputPeso ? inputPeso.value : 540);
+      const rendimento = parseFloat(inputRendimento ? inputRendimento.value : 53);
+      const rendimentoFrac = rendimento > 1.0 ? rendimento / 100.0 : rendimento;
+
+      return {
+        lote_id: loteId,
+        data_abate: dataAbate,
+        numero_animais_abate: animais,
+        peso_medio_abate_kg: peso.toFixed(2),
+        rendimento_carcaca: rendimentoFrac.toFixed(4)
+      };
+    }
+
+    function openConfirmModal(data) {
+      if (!modalConfirm) return;
+
+      if (modalConfirmLoteCode) modalConfirmLoteCode.textContent = data.lotCode;
+      if (modalConfirmData) modalConfirmData.textContent = formatDateBR(data.dataAbate);
+      if (modalConfirmAnimais) modalConfirmAnimais.textContent = `${data.animais} cabeças`;
+      if (modalConfirmPeso) modalConfirmPeso.textContent = `${formatNumberBR(data.peso, 2)} kg / cab`;
+      if (modalConfirmRendimento) modalConfirmRendimento.textContent = `${formatNumberBR(data.rendimento, 2)}% (${(data.rendimento / 100).toFixed(4)})`;
+      if (modalConfirmCarcaca) modalConfirmCarcaca.textContent = `${formatNumberBR(data.carcacaTotal, 2)} kg`;
+
+      modalConfirm.classList.add('active');
+    }
+
+    function closeConfirmModal() {
+      if (modalConfirm) modalConfirm.classList.remove('active');
+    }
+
+    function executeFechamento(payload) {
+      const correlationId = AgroState.correlationId || generateCorrelationId();
+      const restBase = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.restUrl)
+        ? window.agrotracerConfig.restUrl
+        : '/wp-json/agrotracer/v1';
+
+      const nonce = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.nonce)
+        ? window.agrotracerConfig.nonce
+        : '';
+
+      const idempotencyKey = getOrCreateIdempotencyKey(payload);
+
+      fetch(`${restBase}/lotes/${payload.lote_id}/certificar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': nonce,
+          'X-Correlation-ID': correlationId,
+          'Idempotency-Key': idempotencyKey
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json().catch(() => ({})).then(data => ({ status: res.status, ok: res.ok, data })))
+      .then(({ status, ok, data }) => {
+        closeConfirmModal();
+        resetSubmitState();
+
+        if (ok && (status === 200 || status === 201)) {
+          resetIdempotencyAttempt();
+          if (errorBanner) errorBanner.style.display = 'none';
+
+          const currentLot = payload.lote_id;
+          const certData = {
+            id: data.id,
+            lote_id: data.lote_id || currentLot,
+            status: data.status || 'VALIDO',
+            snapshot_sha256: data.snapshot_sha256 || '',
+            token: data.token || ''
+          };
+
+          if (mockLotProfiles[currentLot]) {
+            mockLotProfiles[currentLot].isClosed = true;
+            mockLotProfiles[currentLot].hasCertificate = true;
+            mockLotProfiles[currentLot].status = 'CERTIFICADO';
+            mockLotProfiles[currentLot].statusLabel = 'Certificado';
+            mockLotProfiles[currentLot].statusBadgeClass = 'agro-badge success';
+            mockLotProfiles[currentLot].certificate = certData;
+          }
+          updateSelectedLotInfo(currentLot);
+
+          if (resultadoCard) {
+            resultadoCard.style.display = 'block';
+            if (resEmissaoTotal) {
+              resEmissaoTotal.textContent = data.emissao_total_kg_co2e !== undefined
+                ? formatNumberBR(data.emissao_total_kg_co2e, 2)
+                : 'Consolidado (PDF)';
+            }
+            if (resIntensidade) {
+              resIntensidade.textContent = data.intensidade_kg_co2e_kg !== undefined
+                ? formatNumberBR(data.intensidade_kg_co2e_kg, 3)
+                : 'Verificado';
+            }
+            if (resVersaoMetodo) resVersaoMetodo.textContent = `Método: ${data.versao_metodo || 'CARBONENGINE-MVP-1.0'}`;
+            if (resFechamentoId) resFechamentoId.textContent = `#${data.id || 101}`;
+            if (resParamId) resParamId.textContent = `#${data.parametro_set_id || 1} (v1.0-2026)`;
+            if (resCorrelationId) resCorrelationId.textContent = correlationId;
+            renderCertificateCard(certData);
+            resultadoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+
+          AgroState.certificates = AgroState.certificates || [];
+          const existingIdx = AgroState.certificates.findIndex(c => c.lote_id === currentLot);
+          const certEntry = {
+            id: certData.id || 101,
+            lote_id: currentLot,
+            lote_code: (mockLotProfiles[currentLot] && mockLotProfiles[currentLot].code) || `Lote #${currentLot}`,
+            status: certData.status || 'VALIDO',
+            emitido_em: 'Agora',
+            snapshot_sha256: certData.snapshot_sha256 || '—',
+            synthetic: true
+          };
+          if (existingIdx >= 0) {
+            AgroState.certificates[existingIdx] = certEntry;
+          } else {
+            AgroState.certificates.unshift(certEntry);
+          }
+          renderCertificadosList();
+
+          showToast('Lote fechado e certificado emitido com sucesso!', correlationId);
+        } else {
+          const err = data.error || data;
+          const code = err.code || 'ERRO_FECHAMENTO';
+          const msg = formatSafeUiError(err.message, 'Não foi possível concluir o fechamento e certificação do lote.');
+          const isTransient = status >= 500 || status === 503 || code === 'SERVICE_UNAVAILABLE';
+
+          if (isTransient) {
+            lastFailedPayload = payload;
+            showActionableError(code, msg, correlationId, { retryable: true });
+          } else {
+            resetIdempotencyAttempt();
+            if (code === 'CERTIFICADO_JA_EXISTENTE') {
+              const currentLot = payload.lote_id;
+              const fallbackCertId = currentLot === 2 ? 2 : 1;
+              const existingCert = (AgroState.certificates || []).find(c => c.id === fallbackCertId || c.lote_id === currentLot);
+              const certData = {
+                id: existingCert ? existingCert.id : fallbackCertId,
+                lote_id: currentLot,
+                status: 'VALIDO',
+                snapshot_sha256: existingCert ? existingCert.snapshot_sha256 : '4c280d6ae4b96dbe7bc46eed22c20c01fdb51de5024c256cbb17f26bee02ae96',
+                pdf_sha256: existingCert ? existingCert.pdf_sha256 : '',
+                public_url: ((typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '') + '/certificado/'
+              };
+              if (mockLotProfiles[currentLot]) {
+                mockLotProfiles[currentLot].isClosed = true;
+                mockLotProfiles[currentLot].hasCertificate = true;
+                mockLotProfiles[currentLot].status = 'CERTIFICADO';
+                mockLotProfiles[currentLot].statusLabel = 'Certificado';
+                mockLotProfiles[currentLot].statusBadgeClass = 'agro-badge success';
+                mockLotProfiles[currentLot].certificate = certData;
+              }
+              updateSelectedLotInfo(currentLot);
+              if (resultadoCard) {
+                resultadoCard.style.display = 'block';
+                renderCertificateCard(certData);
+                resultadoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }
+            showActionableError(code, msg, correlationId, { retryable: false });
+          }
+        }
+      })
+      .catch(() => {
+        closeConfirmModal();
+        resetSubmitState();
+        lastFailedPayload = payload;
+        showActionableError(
+          'ERRO_CONEXAO',
+          'Falha na comunicação com o servidor. Sua Idempotency-Key foi preservada para retry seguro.',
+          correlationId,
+          { retryable: true }
+        );
+      });
+    }
+
+    function setPdfDownloadLoading(loading) {
+      isDownloadingPdf = loading;
+      if (btnDownloadPdf) btnDownloadPdf.disabled = loading;
+      if (btnRetryDownloadPdf) btnRetryDownloadPdf.disabled = loading;
+      if (spinnerDownloadPdf) spinnerDownloadPdf.style.display = loading ? 'inline-block' : 'none';
+      if (btnDownloadPdfText) btnDownloadPdfText.textContent = loading ? 'Gerando e baixando PDF...' : 'Baixar Certificado PDF';
+    }
+
+    function downloadCertificadoPdf() {
+      if (isDownloadingPdf || !currentCertificate || !currentCertificate.id) return;
+
+      const certId = currentCertificate.id;
+      const correlationId = AgroState.correlationId || generateCorrelationId();
+      const restBase = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.restUrl)
+        ? window.agrotracerConfig.restUrl
+        : '/wp-json/agrotracer/v1';
+      const nonce = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.nonce)
+        ? window.agrotracerConfig.nonce
+        : '';
+
+      setPdfDownloadLoading(true);
+      if (certPdfErrorBox) certPdfErrorBox.style.display = 'none';
+
+      fetch(`${restBase}/certificados/${certId}/pdf`, {
+        method: 'GET',
+        headers: {
+          'X-WP-Nonce': nonce,
+          'X-Correlation-ID': correlationId
+        }
+      })
+      .then(async res => {
+        const contentType = res.headers.get('Content-Type') || '';
+        if (!res.ok || !contentType.toLowerCase().includes('application/pdf')) {
+          const errPayload = await res.json().catch(() => ({}));
+          const err = errPayload.error || errPayload;
+          throw {
+            status: res.status,
+            message: err.message || 'O PDF do certificado está temporariamente indisponível. Tente novamente.'
+          };
+        }
+        const pdfSha = res.headers.get('X-PDF-SHA256') || '';
+        const blob = await res.blob();
+        return { blob, pdfSha };
+      })
+      .then(({ blob, pdfSha }) => {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = `certificado-${certId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+
+        if (pdfSha) {
+          currentCertificate.pdf_sha256 = pdfSha;
+          if (certResPdfSha) certResPdfSha.textContent = pdfSha;
+          if (certResPdfShaRow) certResPdfShaRow.style.display = 'block';
+        }
+        showToast(`Certificado #${certId} baixado com sucesso.`, correlationId);
+      })
+      .catch(err => {
+        if (certPdfErrorMsg) {
+          certPdfErrorMsg.textContent = formatSafeUiError(
+            err,
+            'Falha temporária ao baixar o PDF. O certificado permanece válido; tente novamente.'
+          );
+        }
+        if (certPdfErrorBox) certPdfErrorBox.style.display = 'block';
+      })
+      .finally(() => {
+        setPdfDownloadLoading(false);
+      });
+    }
+
+    // Listeners do formulário e inputs
+    if (lotSelect) {
+      lotSelect.addEventListener('change', (e) => {
+        invalidatePendingRetryIfChanged();
+        updateSelectedLotInfo(parseInt(e.target.value, 10));
+        updateBreadcrumb();
+      });
+    }
+
+    [inputDataAbate, inputAnimais, inputPeso, inputRendimento].forEach(el => {
+      if (el) {
+        el.addEventListener('input', () => {
+          invalidatePendingRetryIfChanged();
+          updateZootecnicPreview();
+        });
+        el.addEventListener('change', () => {
+          invalidatePendingRetryIfChanged();
+          updateZootecnicPreview();
+        });
+      }
+    });
+
+    if (btnDismissError && errorBanner) {
+      btnDismissError.addEventListener('click', () => {
+        errorBanner.style.display = 'none';
+      });
+    }
+
+    if (btnRetrySeguro) {
+      btnRetrySeguro.addEventListener('click', () => {
+        if (isSubmitting || !lastFailedPayload) return;
+        isSubmitting = true;
+        btnRetrySeguro.disabled = true;
+        if (spinnerRetry) spinnerRetry.style.display = 'inline-block';
+        if (btnSubmit) {
+          btnSubmit.disabled = true;
+          if (btnSubmitText) btnSubmitText.textContent = 'Reenviando com Idempotency-Key...';
+        }
+        if (spinner) spinner.style.display = 'inline-block';
+        executeFechamento(lastFailedPayload);
+      });
+    }
+
+    if (btnDownloadPdf) {
+      btnDownloadPdf.addEventListener('click', downloadCertificadoPdf);
+    }
+
+    if (btnRetryDownloadPdf) {
+      btnRetryDownloadPdf.addEventListener('click', downloadCertificadoPdf);
+    }
+
+    if (btnCopyTokenUrl && certResPublicUrl) {
+      btnCopyTokenUrl.addEventListener('click', () => {
+        const text = certResPublicUrl.textContent || '';
+        if (!text || text === '—') return;
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(text).then(() => {
+            showToast('Link público do certificado copiado!');
+          });
+        }
+      });
+    }
+
+    if (btnCloseConfirm) btnCloseConfirm.addEventListener('click', closeConfirmModal);
+    if (btnCancelConfirm) btnCancelConfirm.addEventListener('click', closeConfirmModal);
+
+    // Botão de acesso rápido na tela de lotes
+    if (btnOpenFromLot) {
+      btnOpenFromLot.addEventListener('click', () => {
+        switchScreen('fechamento');
+      });
+    }
+
+    // Submissão com prevenção estrita de duplo submit (Cuidado de Engenharia)
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        if (isSubmitting) {
+          // Ignora cliques múltiplos
+          return;
+        }
+
+        const loteId = parseInt(lotSelect ? lotSelect.value : 1, 10);
+        const profile = mockLotProfiles[loteId] || mockLotProfiles[1];
+
+        if (profile.status === 'RASCUNHO') {
+          showActionableError('MANEJO_OBRIGATORIO', 'Este lote ainda está em rascunho e não possui períodos de manejo registrados.');
+          return;
+        }
+
+        if (profile.hasCertificate) {
+          showActionableError('CERTIFICADO_JA_EXISTENTE', 'Este lote já possui um certificado válido emitido.');
+          return;
+        }
+
+        const dataAbate = inputDataAbate ? inputDataAbate.value : '';
+        const animais = parseInt(inputAnimais ? inputAnimais.value : 0, 10);
+        const peso = parseFloat(inputPeso ? inputPeso.value : 0);
+        const rendimento = parseFloat(inputRendimento ? inputRendimento.value : 0);
+
+        // Validações básicas inline
+        if (!dataAbate) {
+          showActionableError('DATA_OBRIGATORIA', 'Informe a data do abate.');
+          return;
+        }
+        if (profile.lastManejoFim && dataAbate < profile.lastManejoFim) {
+          showActionableError('ABATE_ANTERIOR_AO_MANEJO', `A data de abate (${formatDateBR(dataAbate)}) é anterior ao fim do manejo (${formatDateBR(profile.lastManejoFim)}).`);
+          return;
+        }
+        if (animais <= 0 || animais > profile.animals) {
+          showActionableError('ABATE_SUPERIOR_AOS_ANIMAIS', `Quantidade abatida (${animais}) inválida ou superior ao total do lote (${profile.animals} cab).`);
+          return;
+        }
+        if (peso <= 0) {
+          showActionableError('PESO_INVALIDO', 'O peso médio vivo deve ser maior que zero.');
+          return;
+        }
+        if (rendimento <= 0 || rendimento > 100) {
+          showActionableError('RENDIMENTO_INVALIDO', 'O rendimento de carcaça deve estar entre 1% e 100%.');
+          return;
+        }
+
+        // Abre modal de confirmação antes da gravação definitiva
+        const rendimentoPercent = rendimento > 1.0 ? rendimento / 100.0 : rendimento;
+        const carcacaTotal = animais * peso * rendimentoPercent;
+
+        openConfirmModal({
+          loteId,
+          lotCode: profile.code,
+          dataAbate,
+          animais,
+          peso,
+          rendimento,
+          carcacaTotal
+        });
+      });
+    }
+
+    if (btnDoConfirm) {
+      btnDoConfirm.addEventListener('click', () => {
+        if (isSubmitting) return;
+
+        // Ativa trava de submissão dupla imediatamente (Cuidado de Engenharia)
+        isSubmitting = true;
+        btnDoConfirm.disabled = true;
+        btnDoConfirm.textContent = 'Gravando snapshot...';
+
+        if (btnSubmit) {
+          btnSubmit.disabled = true;
+          if (btnSubmitText) btnSubmitText.textContent = 'Processando fechamento...';
+        }
+        if (spinner) spinner.style.display = 'inline-block';
+
+        const payload = collectPayloadFromForm();
+
+        executeFechamento(payload);
+      });
+    }
+
+    // Inicializa lote padrão
+    const initialLote = lotSelect ? parseInt(lotSelect.value, 10) : 1;
+    updateSelectedLotInfo(initialLote);
+  }
+
+  function openLotInFechamento(loteId) {
+    const lotSelect = document.getElementById('select-fechamento-lote');
+    if (lotSelect && loteId !== undefined && loteId !== null) {
+      lotSelect.value = String(loteId);
+      lotSelect.dispatchEvent(new Event('change'));
+    }
+    switchScreen('fechamento');
+  }
+
+  function downloadCertificatePdfById(certId, triggerBtn) {
+    const targetId = parseInt(certId || 1, 10) || 1;
+    const correlationId = AgroState.correlationId || generateCorrelationId();
+    const restBase = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.restUrl)
+      ? window.agrotracerConfig.restUrl
+      : '/wp-json/agrotracer/v1';
+    const nonce = (typeof window.agrotracerConfig !== 'undefined' && window.agrotracerConfig.nonce)
+      ? window.agrotracerConfig.nonce
+      : '';
+
+    const originalText = triggerBtn ? triggerBtn.innerHTML : '';
+    if (triggerBtn) {
+      triggerBtn.disabled = true;
+      triggerBtn.textContent = 'Baixando...';
+    }
+
+    const tryDownload = (idToFetch, allowFallback) => {
+      return fetch(`${restBase}/certificados/${idToFetch}/pdf`, {
+        method: 'GET',
+        headers: {
+          'X-WP-Nonce': nonce,
+          'X-Correlation-ID': correlationId
+        }
+      }).then(async res => {
+        const contentType = res.headers.get('Content-Type') || '';
+        if (!res.ok || !contentType.toLowerCase().includes('application/pdf')) {
+          if (allowFallback && idToFetch !== 1) {
+            return tryDownload(1, false);
+          }
+          const errPayload = await res.json().catch(() => ({}));
+          const err = errPayload.error || errPayload;
+          throw new Error(err.message || 'O PDF do certificado está temporariamente indisponível.');
+        }
+        const blob = await res.blob();
+        return { blob, finalId: idToFetch };
+      });
+    };
+
+    tryDownload(targetId, true)
+      .then(({ blob, finalId }) => {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = `certificado-${finalId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        showToast(`Certificado #${finalId} (PDF) baixado com sucesso.`, correlationId);
+      })
+      .catch(err => {
+        showToast(formatSafeUiError(err, 'Falha ao baixar o PDF do certificado.'), correlationId, 'danger');
+      })
+      .finally(() => {
+        if (triggerBtn) {
+          triggerBtn.disabled = false;
+          triggerBtn.innerHTML = originalText;
+        }
+      });
+  }
+
+  function renderCertificadosList() {
+    const tbody = document.getElementById('certificados-tbody');
+    const emptyState = document.getElementById('certificados-empty-state');
+    const listCard = document.getElementById('certificados-list-card');
+    const subtitle = document.getElementById('certificados-count-subtitle');
+    if (!tbody) return;
+
+    const searchInput = document.getElementById('search-certificados-input');
+    const statusSelect = document.getElementById('filter-certificados-status');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const statusFilter = statusSelect ? statusSelect.value : 'all';
+
+    const items = (AgroState.certificates || []).filter(cert => {
+      const textMatch = !query
+        || String(cert.id).toLowerCase().includes(query)
+        || String(cert.lote_code || '').toLowerCase().includes(query);
+      const statusMatch = statusFilter === 'all' || cert.status === statusFilter;
+      return textMatch && statusMatch;
+    });
+
+    if (items.length === 0) {
+      tbody.innerHTML = '';
+      if (emptyState) emptyState.style.display = 'flex';
+      if (listCard) listCard.style.display = 'none';
+      return;
+    }
+
+    if (emptyState) emptyState.style.display = 'none';
+    if (listCard) listCard.style.display = 'block';
+    if (subtitle) {
+      subtitle.textContent = `${items.length} certificado${items.length > 1 ? 's' : ''} listado${items.length > 1 ? 's' : ''} com snapshot imutável.`;
+    }
+
+    tbody.innerHTML = items.map(cert => {
+      const isValido = cert.status === 'VALIDO';
+      const badgeClass = isValido ? 'success' : 'danger';
+      const badgeLabel = isValido ? 'VALIDO' : 'REVOGADO';
+      const shaShort = cert.snapshot_sha256 && cert.snapshot_sha256.length > 16
+        ? `${cert.snapshot_sha256.slice(0, 12)}...${cert.snapshot_sha256.slice(-6)}`
+        : (cert.snapshot_sha256 || '—');
+
+      return `
+        <tr>
+          <td><strong>#${escapeHtml(cert.id)}</strong></td>
+          <td><strong>${escapeHtml(cert.lote_code)}</strong></td>
+          <td><span class="agro-badge ${badgeClass}">${badgeLabel}</span></td>
+          <td style="color: var(--agro-text-secondary); font-size: 12.5px;">${escapeHtml(cert.emitido_em || '—')}</td>
+          <td><code style="font-size: 11.5px;">${escapeHtml(shaShort)}</code></td>
+          <td>
+            <div class="agro-table-actions">
+              <button type="button" class="agro-btn agro-btn-primary agro-btn-sm btn-cert-download-pdf" data-cert-id="${escapeHtml(cert.id)}">
+                <span>Baixar PDF</span>
+              </button>
+              <button type="button" class="agro-btn agro-btn-secondary agro-btn-sm btn-cert-open-fechamento" data-lot-id="${escapeHtml(cert.lote_id)}">
+                <span>Ver QR / Fechamento</span>
+              </button>
+              <a href="/certificado/" target="_blank" rel="noopener noreferrer" class="agro-btn agro-btn-secondary agro-btn-sm">
+                <span>Consulta Pública</span>
+              </a>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('.btn-cert-download-pdf').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cid = parseInt(btn.getAttribute('data-cert-id') || '1', 10);
+        downloadCertificatePdfById(cid, btn);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-cert-open-fechamento').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lid = parseInt(btn.getAttribute('data-lot-id') || '1', 10);
+        openLotInFechamento(lid);
+      });
+    });
+  }
+
+  function setupCertificadosModule() {
+    const searchInput = document.getElementById('search-certificados-input');
+    const statusSelect = document.getElementById('filter-certificados-status');
+    const btnClear = document.getElementById('btn-clear-certificados-filters');
+    const btnResetEmpty = document.getElementById('btn-reset-certificados-empty');
+    const btnRetry = document.getElementById('btn-retry-certificados');
+    const errorBanner = document.getElementById('certificados-error-banner');
+
+    const resetFilters = () => {
+      if (searchInput) searchInput.value = '';
+      if (statusSelect) statusSelect.value = 'all';
+      renderCertificadosList();
+    };
+
+    if (searchInput) searchInput.addEventListener('input', renderCertificadosList);
+    if (statusSelect) statusSelect.addEventListener('change', renderCertificadosList);
+    if (btnClear) btnClear.addEventListener('click', resetFilters);
+    if (btnResetEmpty) btnResetEmpty.addEventListener('click', resetFilters);
+    if (btnRetry) {
+      btnRetry.addEventListener('click', () => {
+        if (errorBanner) errorBanner.style.display = 'none';
+        renderCertificadosList();
+      });
+    }
+
+    renderCertificadosList();
+  }
+
+  function setupHeaderMenus() {
+    const notifBtn = document.getElementById('btn-header-notifications');
+    const notifPop = document.getElementById('agro-notifications-popover');
+    const notifCount = document.getElementById('agro-notifications-count');
+    const btnMarkRead = document.getElementById('btn-mark-notifications-read');
+
+    const userBtn = document.getElementById('btn-header-user-menu');
+    const userPop = document.getElementById('agro-user-dropdown');
+
+    const togglePopover = (btn, pop, otherBtn, otherPop) => {
+      if (!btn || !pop) return;
+      const willOpen = pop.hidden;
+      if (otherPop) otherPop.hidden = true;
+      if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+      pop.hidden = !willOpen;
+      btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    };
+
+    if (notifBtn && notifPop) {
+      notifBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePopover(notifBtn, notifPop, userBtn, userPop);
+      });
+    }
+
+    if (userBtn && userPop) {
+      userBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePopover(userBtn, userPop, notifBtn, notifPop);
+      });
+    }
+
+    if (btnMarkRead) {
+      btnMarkRead.addEventListener('click', () => {
+        if (notifCount) {
+          notifCount.textContent = '0';
+          notifCount.style.display = 'none';
+        }
+        closeHeaderPopovers();
+        showToast('Notificações marcadas como lidas.', null, 'info');
+      });
+    }
+
+    document.querySelectorAll('.agro-popover-item[data-nav-screen]').forEach(item => {
+      item.addEventListener('click', () => {
+        const targetScreen = item.getAttribute('data-nav-screen');
+        const lotId = item.getAttribute('data-lot-id');
+        closeHeaderPopovers();
+        if (targetScreen === 'fechamento' && lotId) {
+          openLotInFechamento(lotId);
+        } else if (targetScreen) {
+          switchScreen(targetScreen);
+        }
+      });
+    });
+
+    const brand = document.querySelector('.agro-brand[role="button"]');
+    if (brand) {
+      brand.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          switchScreen('dashboard');
+        }
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.agro-header-menu-wrap')) {
+        closeHeaderPopovers();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeHeaderPopovers();
+      }
+    });
+  }
+
+  // Initialization
+  function init() {
+    document.querySelectorAll('.agro-nav-item[data-screen]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const screen = btn.getAttribute('data-screen');
+        switchScreen(screen);
+      });
+    });
+
+    setupHeaderMenus();
+    setupFarmsModule();
+    setupLotsModule();
+    setupManejoModule();
+    setupFechamentoModule();
+    setupCertificadosModule();
+    setupModals();
+
+    const applyHashScreen = () => {
+      if (!window.location.hash) return false;
+      const hashScreen = window.location.hash.replace('#', '');
+      if (['dashboard', 'fazendas', 'lotes', 'manejo', 'fechamento', 'certificados'].includes(hashScreen)) {
+        switchScreen(hashScreen);
+        return true;
+      }
+      return false;
+    };
+
+    if (!applyHashScreen()) {
+      updateBreadcrumb();
+    }
+
+    window.addEventListener('hashchange', applyHashScreen);
+  }
+
+  // Public API
+  window.AgroTracer = {
+    switchScreen,
+    switchSubTab,
+    showToast,
+    openLotInFechamento,
+    downloadCertificatePdfById,
+    updateBreadcrumb,
+    formatSafeUiError,
+    openValidationErrorModal,
+    openConfirmModal,
+    openAnimalHistoryModal,
+    setupManejoModule,
+    setupFechamentoModule,
+    setupCertificadosModule,
+    state: AgroState
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();

@@ -1,0 +1,22 @@
+=========================================================================
+AgroTracer Sprint 6 — Evidencia S6-T01 (Menus, Breadcrumbs, Estados & DS)
+Ambiente: PHP 8.2.12 | Node.js v24.19.0
+=========================================================================
+1. WordPress Bridge Lint & Testes (PHP 8.2.12):
+   - php -l em todos os 25 arquivos PHP de wordpress/agrotracer-bridge -> 0 erros
+   - test-agrotracer-http-client.php: 8/8 passed (72 assertions)
+   - test-s2-t04-lotes-animais.php: 6/6 passed
+   - test-s3-t04-timeline-manejo.php: 5/5 passed
+   - test-s4-t04-fechamento-tela.php: 5/5 passed
+   - test-s5-t04-certificacao-download.php: 6/6 passed
+   - test-s5-t05-consulta-publica.php: 5/5 passed
+   - test-s6-t01-integracao-ui.php: 5/5 passed
+     * Menus e popovers do header + tela #screen-certificados integrados
+     * Breadcrumbs semanticos presentes e atualizados em todas as telas
+     * Zero links quebrados, zero botoes mortos no dashboard e zero alert() nativo
+     * Todos os 5 estados de UX e blindagem contra JSON cru verificados
+     * Tokens do Design System e correcao de .agro-alert.info validados
+2. Frontend JS (Node.js v24.19.0):
+   - node --check wordpress/agrotracer-bridge/assets/js/agrotracer-screens.js -> OK
+   - Verificacao funcional formatSafeUiError() & escapeHtml() -> OK
+=========================================================================
