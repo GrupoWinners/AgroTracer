@@ -1,0 +1,16 @@
+{
+  "issue": "AG-113",
+  "versao_alvo": "v1.0.0",
+  "status": "PENDENTE",
+  "commit_candidato": null,
+  "ensaios": "Verificar aceite da AG-111 no Jira; atividade fora do Git",
+  "review_independente": null,
+  "qa_final": null,
+  "ci_candidato": null,
+  "artefatos_e_hashes": null,
+  "decisao_equipe": null,
+  "tag_publicada": null,
+  "board_fechado": null,
+  "fonte_board": "https://losel.atlassian.net/jira/software/projects/AG/boards/2",
+  "observacao": "Preencher links, responsaveis, datas e decisao real depois dos dois ensaios. Nao deduzir aceite de CI verde."
+}

@@ -1,0 +1,29 @@
+{
+  "data_local": "2026-11-27",
+  "commit_empacotado": "9570b797230ee09cd931c3d3b9779fbff3b523ec",
+  "tipo": "CANDIDATO_NAO_PUBLICADO",
+  "testes_locais": {
+    "quantidade": 18,
+    "resultado": "PASS",
+    "suite": "test_s7_t06_bundle.py test_s7_t03_qa_final.py test_s7_t01_seed.py test_s7_t05_release.py"
+  },
+  "lint": "PASS",
+  "hashes_verificados": 3,
+  "artefatos": {
+    "agrotracer-candidato.zip": "12ae2e77d68cc874dd1285badd79cbac515ccf4505db4a7b5650637cc3cac2e8",
+    "agrotracer-documentacao.zip": "02a4c7df44b172cddbcde3dd559f5f724ca78e31019b92b04eae736bab1cb3fe"
+  },
+  "imagens_declaradas": [
+    "python:3.14.7-slim",
+    "postgres:16-alpine",
+    "redis:7-alpine",
+    "mariadb:11.4",
+    "wordpress:6.8.3-php8.3-apache",
+    "wordpress:cli-php8.3"
+  ],
+  "docker_local": "INDISPONIVEL; integracao real na CI",
+  "ensaios_humanos": "PENDENTES; usuaria confirmou que ainda nao ocorreram",
+  "tag_criada": false,
+  "board_fechado": false,
+  "ci_s7_t04": "https://github.com/GrupoWinners/AgroTracer/actions/runs/46092220497"
+}

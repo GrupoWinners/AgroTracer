@@ -32,3 +32,4 @@ mode_modules/
 Thumbs.db
 # Demo local: senhas e tokens sinteticos, nunca versionar
 .demo/
+.release/
