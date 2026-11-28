@@ -18,8 +18,9 @@ O aceite de release S7-T05 permanece pendente de QA final (S7-T03) sem
 P1/P2: em especial o impacto das listagens antes exclusivamente simuladas.
 S7-T04 e S7-T06 nao executadas (tag `v1.0.0` aguarda QA final).
 
-## Entregas complementares (João Vitor)
+## Entregas complementares (João Vitor e Nadiny Martins)
 
 - **PR #52 e PR #53:** revisados e integrados na `develop` na ordem `#52 -> #53`.
-- **S7-T02:** manual curto do fluxo do usuario em `docs/operacao/manual-usuario.md` e evidencia em `docs/evidencias/sprint-7/S7-T02.md`.
-- **S7-T05 (review Bridge/UI/Proxy):** registrado em `docs/evidencias/sprint-7/S7-T05-review-joao.md`.
+- **S7-T02 (João Vitor):** manual curto do fluxo do usuario em `docs/operacao/manual-usuario.md` e evidencia em `docs/evidencias/sprint-7/S7-T02.md`.
+- **S7-T05 (review Bridge/UI/Proxy - João Vitor):** registrado em `docs/evidencias/sprint-7/S7-T05-review-joao.md`.
+- **S7-T03 (QA Final e Release Gate - Nadiny Martins):** matriz consolidada de testes (S0 a S7), resultados de UAT nos 5 vetores de resiliência e inventário de bugs conhecidos (zero P1/P2 em aberto), registrado em `docs/evidencias/sprint-7/S7-T03.md`, `S7-T03-testes.txt` e suíte automatizada `backend/tests/test_s7_t03_qa_final.py`. Homologação aprovada, liberando S7-T04 e S7-T06.
