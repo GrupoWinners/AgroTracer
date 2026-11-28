@@ -1,0 +1,11 @@
+{
+  "issue": "AG-111",
+  "status": "PENDENTE_EXECUCAO_EQUIPE",
+  "ensaios": [],
+  "campos_por_ensaio": [
+    "commit", "data", "participantes", "duracao_apresentacao_segundos",
+    "duracao_perguntas_segundos", "etapas_concluidas", "plano_b",
+    "perguntas_respostas", "evidencias", "resultado"
+  ],
+  "observacao": "Nenhum ensaio humano declarado por automacao. Registrar duas execucoes completas de 8 a 12 minutos."
+}
