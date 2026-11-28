@@ -1,7 +1,7 @@
 # Sprint 7 — entregas Samela
 
 Escopo inicial: S7-T01 (AG-108) e S7-T05 (AG-112). Encerramento acrescenta
-S7-T04 (AG-111) e S7-T06 (AG-113), conforme requisitos nos documentos abaixo.
+somente S7-T06 (AG-113) ao Git. S7-T04 (AG-111) é atividade fora do repositório.
 Requisitos integrais, dependencias, DoD e achados nos respectivos documentos.
 Base develop apos Sprint 6: 86015bc1ee81a6064e95bfded83dd450e50fd377.
 
@@ -21,8 +21,7 @@ Nao ha tag ou fechamento de board executados por esta entrega.
 
 ## Encerramento preparado
 
-- [S7-T04](S7-T04.md): roteiro da banca, perguntas e plano B. Usuaria confirmou
-  que os dois ensaios ainda nao ocorreram; [registro](ensaios.json) pendente.
+- S7-T04: ensaios conduzidos pela equipe fora do Git; aceite acompanhado no Jira.
 - [S7-T06](S7-T06.md): pacote candidato com commit/hashes/versoes e CI;
   [aceite interno](aceite-interno.json) pendente de decisao real da equipe.
 - [Publicacao](../../operacao/publicar-release.md): ordem de review/merge,

@@ -6,10 +6,10 @@ implícita por CI verde. Os dois ensaios ainda não foram realizados.
 
 ## Revisão e ordem dos PRs
 
-1. Revisar S7-T04 com João Vitor e Nadiny; executar e registrar dois ensaios
-   de 8–12 minutos conforme [banca.md](banca.md).
-2. Integrar S7-T04 somente após review/QA. Retargetar o PR S7-T06 para
-   `develop`, conferir diff e CI novamente, então revisar/integrar S7-T06.
+1. Acompanhar no Jira o aceite da S7-T04, executada fora do Git pela equipe.
+   Não há PR nem registro obrigatório de ensaio neste repositório.
+2. Revisar S7-T06 diretamente contra `develop`, com João Vitor/Nadiny;
+   conferir diff e CI e integrar somente após review/QA.
 3. Fixar o SHA completo integrado e registrar no [aceite](../evidencias/sprint-7/aceite-interno.json).
    Validar CI desse SHA, riscos conhecidos, QA e review independente.
    Não usar SHA temporário de merge de PR como tag de release.

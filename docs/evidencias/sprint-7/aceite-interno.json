@@ -3,7 +3,7 @@
   "versao_alvo": "v1.0.0",
   "status": "PENDENTE",
   "commit_candidato": null,
-  "ensaios": "ensaios.json",
+  "ensaios": "Verificar aceite da AG-111 no Jira; atividade fora do Git",
   "review_independente": null,
   "qa_final": null,
   "ci_candidato": null,

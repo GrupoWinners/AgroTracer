@@ -25,7 +25,6 @@ def repo(tmp_path):
         "backend/Dockerfile": "FROM python:3.14.7-slim\n",
         "ops/demo/compose.yaml": (
             "services:\n  wp:\n    image: wordpress:6.8.3\n"),
-        "docs/evidencias/sprint-7/ensaios.json": '{"ensaios": []}',
         "docs/evidencias/sprint-7/aceite-interno.json": (
             '{"status":"PENDENTE"}'),
     }.items():
@@ -88,7 +87,7 @@ def test_recusa_privados_sem_gerar_pacote(repo, tmp_path, name, content, code):
 def test_exige_commit_completo_e_evidencia(repo, tmp_path):
     with pytest.raises(ValueError, match="COMMIT_INVALIDO"):
         module.bundle(repo, "HEAD", tmp_path / "saida")
-    (repo / "docs/evidencias/sprint-7/ensaios.json").unlink()
+    (repo / "docs/evidencias/sprint-7/aceite-interno.json").unlink()
     sha = commit(repo)
     with pytest.raises(ValueError, match="EVIDENCIA_AUSENTE"):
         module.bundle(repo, sha, tmp_path / "saida")

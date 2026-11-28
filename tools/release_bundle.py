@@ -43,7 +43,6 @@ def bundle(root, commit, output):
                 raise ValueError("RELEASE_SEGREDO_DETECTADO")
             files[info.filename] = data
         required = ["backend/Dockerfile", "ops/demo/compose.yaml",
-                    "docs/evidencias/sprint-7/ensaios.json",
                     "docs/evidencias/sprint-7/aceite-interno.json"]
         if any(name not in files for name in required):
             raise ValueError("RELEASE_EVIDENCIA_AUSENTE")
