@@ -1,2 +1,12 @@
 *.pdf binary
 *.png binary
+
+# GitHub Linguist — Classificacao precisa das linguagens do projeto
+docs/** linguist-documentation
+wordpress/preview.html linguist-generated=true
+wordpress/agrotracer-plugin/** linguist-generated=true
+wordpress/agrotracer-bridge/**/*.php linguist-vendored=false linguist-language=PHP
+wordpress/agrotracer-bridge/**/*.js linguist-vendored=false linguist-language=JavaScript
+wordpress/agrotracer-bridge/**/*.css linguist-vendored=false linguist-language=CSS
+backend/**/*.py linguist-vendored=false linguist-language=Python
+tools/**/*.py linguist-vendored=false linguist-language=Python
