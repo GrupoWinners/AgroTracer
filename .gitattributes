@@ -5,8 +5,8 @@
 docs/** linguist-documentation
 wordpress/preview.html linguist-generated=true
 wordpress/agrotracer-plugin/** linguist-generated=true
-wordpress/agrotracer-bridge/**/*.php linguist-vendored=false linguist-language=PHP
-wordpress/agrotracer-bridge/**/*.js linguist-vendored=false linguist-language=JavaScript
-wordpress/agrotracer-bridge/**/*.css linguist-vendored=false linguist-language=CSS
-backend/**/*.py linguist-vendored=false linguist-language=Python
-tools/**/*.py linguist-vendored=false linguist-language=Python
+wordpress/agrotracer-bridge/**/*.php linguist-detectable=true
+wordpress/agrotracer-bridge/**/*.js linguist-detectable=true
+wordpress/agrotracer-bridge/**/*.css linguist-detectable=true
+backend/**/*.py linguist-detectable=true
+tools/**/*.py linguist-detectable=true
